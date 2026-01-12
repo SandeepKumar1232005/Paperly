@@ -1,0 +1,8 @@
+django
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+django-allauth
+dj-rest-auth
+stripe
+django-jazzmin
