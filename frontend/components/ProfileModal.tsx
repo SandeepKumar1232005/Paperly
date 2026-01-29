@@ -75,6 +75,26 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                 className="hidden"
                 accept="image/*"
               />
+
+              {/* Avatar Selection */}
+              <div className="mt-6 w-full">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Or Choose an Avatar</p>
+                <div className="flex gap-3 justify-center">
+                  {['Felix', 'Aneka', 'Zoro', 'Luffy', 'Naruto'].map((seed) => {
+                    const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+                    return (
+                      <button
+                        key={seed}
+                        type="button"
+                        onClick={() => setAvatar(url)}
+                        className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 ${avatar === url ? 'border-indigo-600 ring-2 ring-indigo-100 scale-110' : 'border-white shadow-sm'}`}
+                      >
+                        <img src={url} alt={seed} className="w-full h-full object-cover" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-6">

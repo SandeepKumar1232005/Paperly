@@ -24,6 +24,8 @@ class RegisterView(APIView):
             name = data.get('name')
             username = data.get('username') # New field
             role = data.get('role', 'STUDENT')
+            avatar = data.get('avatar', '') # New field
+            address = data.get('address', '') # New field
 
             print(f"Register attempt: {email}, {username}")
 
@@ -52,6 +54,8 @@ class RegisterView(APIView):
                 'password': hashed_password, # Store hash!
                 'name': name,
                 'role': role,
+                'avatar': avatar,
+                'address': address,
                 'created_at': datetime.datetime.utcnow()
             }
 
@@ -59,7 +63,7 @@ class RegisterView(APIView):
             print("User inserted successfully")
             
             # Determine redirect/payload
-            return Response({'message': 'User created successfully', 'user': {'email': email, 'username': username, 'role': role, 'id': user_id}}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'User created successfully', 'user': {'email': email, 'username': username, 'role': role, 'id': user_id, 'avatar': avatar}}, status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -106,7 +110,11 @@ class LoginView(APIView):
                 'id': user['id'],
                 'email': user['email'],
                 'name': user.get('name'),
-                'role': user.get('role')
+                'role': user.get('role'),
+                'avatar': user.get('avatar'),
+                'username': user.get('username'),
+                'address': user.get('address'),
+                'is_verified': user.get('is_verified', False)
             }
         })
 
@@ -185,3 +193,78 @@ class UserDetailsView(APIView):
             'address': updated_user.get('address'),
             'is_verified': updated_user.get('is_verified', False)
         })
+
+class RequestPasswordResetView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = db.users.find_one({'email': email})
+        if not user:
+            # For security, don't reveal if user exists. But for UX/Demo, we might return error.
+            # Let's verify user actually exists for this MVP.
+            return Response({'error': 'User not found with this email'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Generate OTP
+        import random
+        otp = str(random.randint(100000, 999999))
+        
+        # Save to DB (password_resets collection)
+        expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+        db.password_resets.update_one(
+            {'email': email},
+            {'$set': {'otp': otp, 'created_at': datetime.datetime.utcnow(), 'expires_at': expiry}},
+            upsert=True
+        )
+
+        # Send Email (Console Backend)
+        from django.core.mail import send_mail
+        try:
+            print(f"--- OTP for {email}: {otp} ---") # Explicit print for console visibility
+            send_mail(
+                'Password Reset OTP - Paperly',
+                f'Your password reset OTP is: {otp}',
+                'noreply@paperly.com',
+                [email],
+                fail_silently=False,
+            )
+            return Response({'message': 'OTP sent successfully'})
+        except Exception as e:
+            print(e)
+            return Response({'error': 'Failed to send email'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PasswordResetVerifyView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        new_password = request.data.get('new_password')
+
+        if not email or not otp or not new_password:
+             return Response({'error': 'Email, OTP, and new password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check OTP
+        record = db.password_resets.find_one({'email': email})
+        if not record:
+            return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if record['otp'] != otp:
+             return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if datetime.datetime.utcnow() > record['expires_at']:
+             return Response({'error': 'OTP expired'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update Password
+        hashed_password = pbkdf2_sha256.hash(new_password)
+        db.users.update_one({'email': email}, {'$set': {'password': hashed_password}})
+        
+        # Delete OTP record
+        db.password_resets.delete_one({'email': email})
+
+        return Response({'message': 'Password reset successfully'})
