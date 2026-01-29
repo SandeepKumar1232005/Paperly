@@ -1,4 +1,5 @@
 
+import { Eye, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import Logo from '../components/Logo';
@@ -15,6 +16,7 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [showSocialPicker, setShowSocialPicker] = useState<'google' | 'apple' | null>(null);
@@ -68,7 +70,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Sign in to Paperly</p>
           </div>
 
-{/* 
+          {/* 
           <div className="space-y-3 mb-6">
             <button
               onClick={() => loginWithGoogle()}
@@ -98,26 +100,35 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
           <form onSubmit={handleStandardSubmit} className="space-y-5">
             {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-medium border border-red-100">{error}</div>}
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email Address or Username</label>
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
-                placeholder="alice@student.com"
+                placeholder="alice@student.com or alice123"
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors pr-12"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <div className="text-right mb-4">
               <button type="button" onClick={() => onNavigate('FORGOT_PASSWORD')} className="text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:underline">

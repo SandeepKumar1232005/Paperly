@@ -19,6 +19,51 @@ const logger = async (method: SystemLog['method'], endpoint: string, start: numb
 
 export const api = {
   // Authentication
+  async getCurrentUser(): Promise<User | null> {
+    const start = Date.now();
+    const token = localStorage.getItem('auth_token');
+    if (!token) return null;
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/auth/user/?_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        const firstName = userData.first_name || '';
+        const lastName = userData.last_name || '';
+        const fullName = (firstName + ' ' + lastName).trim() || userData.username || 'User';
+
+        const roleMap: Record<string, 'STUDENT' | 'WRITER' | 'ADMIN'> = {
+          'student': 'STUDENT',
+          'STUDENT': 'STUDENT',
+          'provider': 'WRITER',
+          'WRITER': 'WRITER',
+          'admin': 'ADMIN',
+          'ADMIN': 'ADMIN'
+        };
+
+        const user: User = {
+          id: String(userData.id),
+          name: fullName,
+          email: userData.email,
+          role: roleMap[userData.role] || 'STUDENT',
+          avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`,
+          lastActive: new Date().toISOString(),
+          address: userData.address || '',
+          is_verified: userData.is_verified || false,
+          username: userData.username
+        };
+        await logger('GET', '/auth/user', start);
+        return user;
+      }
+    } catch (e) {
+      console.warn("Session restore failed", e);
+    }
+    return null;
+  },
+
   async login(email: string, password?: string): Promise<User> {
     const start = Date.now();
     await delay(800);
@@ -43,7 +88,7 @@ export const api = {
       if (token) {
         localStorage.setItem('auth_token', token);
         // Fetch full user details
-        const userResponse = await fetch('http://localhost:8000/api/auth/user/', {
+        const userResponse = await fetch(`http://localhost:8000/api/auth/user/?_t=${Date.now()}`, {
           headers: { 'Authorization': `Bearer ${token}` } // Or Bearer depending on JWT setting, trying Token first for dj-rest-auth default
         });
 
@@ -55,8 +100,11 @@ export const api = {
 
           const roleMap: Record<string, 'STUDENT' | 'WRITER' | 'ADMIN'> = {
             'student': 'STUDENT',
+            'STUDENT': 'STUDENT',
             'provider': 'WRITER',
-            'admin': 'ADMIN'
+            'WRITER': 'WRITER',
+            'admin': 'ADMIN',
+            'ADMIN': 'ADMIN'
           };
 
           backendUser = {
@@ -64,7 +112,7 @@ export const api = {
             name: fullName,
             email: userData.email,
             role: roleMap[userData.role] || 'STUDENT',
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`,
+            avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`,
             lastActive: new Date().toISOString(),
             address: userData.address || '',
             is_verified: userData.is_verified || false,
@@ -144,7 +192,9 @@ export const api = {
           email: user.email,
           password: user.password,
           name: user.name,
-          role: user.role
+          role: user.role,
+          avatar: user.avatar,
+          address: user.address
         })
       });
 
@@ -241,7 +291,7 @@ export const api = {
         name: fullName,
         email: userData.email,
         role: roleMap[userData.role] || 'STUDENT',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`,
+        avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`,
         lastActive: new Date().toISOString(),
         username: userData.username,
         is_verified: userData.is_verified || false,
@@ -320,9 +370,57 @@ export const api = {
 
   async updateUserById(id: string, updates: Partial<User>): Promise<User> {
     const start = Date.now();
-    await delay(600);
+    await delay(300);
 
-    // Mock persistent update
+    // Try backend update
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) throw new Error("No auth token");
+
+      const response = await fetch('http://localhost:8000/api/auth/user/', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await logger('PATCH', `/users/${id}`, start);
+
+        // Update local mock DB to stay in sync
+        const users = db.getUsers();
+        const idx = users.findIndex(u => u.id === id);
+        if (idx !== -1) {
+          // Merge backend data with local data format
+          const roleMap: Record<string, 'STUDENT' | 'WRITER' | 'ADMIN'> = {
+            'student': 'STUDENT',
+            'provider': 'WRITER',
+            'admin': 'ADMIN'
+          };
+
+          const backendUser = {
+            ...users[idx],
+            ...updates,
+            name: data.name,
+            email: data.email,
+            avatar: data.avatar || users[idx].avatar,
+            role: roleMap[data.role] || users[idx].role,
+            username: data.username,
+            address: data.address
+          };
+          users[idx] = backendUser;
+          db.saveUsers(users);
+          return backendUser;
+        }
+      }
+    } catch (e) {
+      console.warn("Backend update failed, falling back to local only", e);
+    }
+
+    // Mock persistent update (Fallback)
     const users = db.getUsers();
     const idx = users.findIndex(u => u.id === id);
     if (idx !== -1) {
@@ -330,7 +428,7 @@ export const api = {
       db.saveUsers(users);
     }
 
-    await logger('PATCH', `/ users / ${id} `, start);
+    await logger('PATCH', `/users/${id}`, start);
     return users[idx];
   },
 
@@ -367,7 +465,7 @@ export const api = {
           name: (u.first_name + ' ' + u.last_name).trim() || u.username || 'User',
           email: u.email,
           role: u.role || 'STUDENT', // Default to student
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
+          avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
           lastActive: new Date().toISOString(),
           is_verified: u.is_verified
         }));
@@ -429,7 +527,7 @@ export const api = {
           name: (u.first_name + ' ' + u.last_name).trim() || u.username,
           email: u.email,
           role: 'WRITER' as const,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
+          avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
           lastActive: new Date().toISOString() // Mock
         }));
         await logger('GET', '/users/?role=provider', start);
@@ -469,7 +567,7 @@ export const api = {
           name: (u.first_name + ' ' + u.last_name).trim() || u.username,
           email: u.email,
           role: u.role === 'provider' ? 'WRITER' : (u.role === 'admin' ? 'ADMIN' : 'STUDENT'),
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
+          avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
           lastActive: new Date().toISOString(),
           username: u.username,
           is_verified: u.is_verified

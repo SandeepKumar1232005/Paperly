@@ -24,6 +24,8 @@ class RegisterView(APIView):
             name = data.get('name')
             username = data.get('username') # New field
             role = data.get('role', 'STUDENT')
+            avatar = data.get('avatar', '') # New field
+            address = data.get('address', '') # New field
 
             print(f"Register attempt: {email}, {username}")
 
@@ -52,6 +54,8 @@ class RegisterView(APIView):
                 'password': hashed_password, # Store hash!
                 'name': name,
                 'role': role,
+                'avatar': avatar,
+                'address': address,
                 'created_at': datetime.datetime.utcnow()
             }
 
@@ -59,7 +63,7 @@ class RegisterView(APIView):
             print("User inserted successfully")
             
             # Determine redirect/payload
-            return Response({'message': 'User created successfully', 'user': {'email': email, 'username': username, 'role': role, 'id': user_id}}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'User created successfully', 'user': {'email': email, 'username': username, 'role': role, 'id': user_id, 'avatar': avatar}}, status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -70,10 +74,20 @@ class LoginView(APIView):
     permission_classes = []
 
     def post(self, request):
-        email = request.data.get('email')
+        identifier = request.data.get('email') # Frontend still sends 'email' state, but it can be username
         password = request.data.get('password')
 
-        user = db.users.find_one({'email': email})
+        if not identifier or not password:
+             return Response({'error': 'Please provide both username/email and password'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Find by email OR username
+        user = db.users.find_one({
+            '$or': [
+                {'email': identifier},
+                {'username': identifier}
+            ]
+        })
+
         if not user:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -96,6 +110,161 @@ class LoginView(APIView):
                 'id': user['id'],
                 'email': user['email'],
                 'name': user.get('name'),
-                'role': user.get('role')
+                'role': user.get('role'),
+                'avatar': user.get('avatar'),
+                'username': user.get('username'),
+                'address': user.get('address'),
+                'is_verified': user.get('is_verified', False)
             }
         })
+
+class UserDetailsView(APIView):
+    # Retrieve and Update user details
+    # Expects Authorization: Bearer <token> (or Token ?)
+    # My simple implementation in api.ts uses 'Bearer' or 'Token'.
+    # I need a custom authentication class or manually decode token here because I disabled global auth classes?
+    # Ideally I should use a permission class, but since I am using manual JWT encoding in LoginView...
+    # I need to duplicate the verify logic or use a middleware/DRF auth.
+    # For speed/simplicity in this "Do it yourself" backend, I'll verifying token in the view.
+    
+    authentication_classes = [] 
+    permission_classes = []
+
+    def get_user_from_token(self, request):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return None
+        
+        try:
+            # "Bearer <token>" or "Token <token>"
+            token = auth_header.split(' ')[1]
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            user_id = payload.get('user_id')
+            user = db.users.find_one({'id': user_id})
+            return user
+        except Exception as e:
+            print("Token Error:", e)
+            return None
+
+    def get(self, request):
+        user = self.get_user_from_token(request)
+        if not user:
+             return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        return Response({
+            'id': user['id'],
+            'username': user.get('username'),
+            'email': user['email'],
+            'first_name': user.get('name', '').split(' ')[0], # Adapter for frontend expecting first_name
+            'last_name': ' '.join(user.get('name', '').split(' ')[1:]),
+            'name': user.get('name'),
+            'role': user.get('role'),
+            'avatar': user.get('avatar'),
+            'address': user.get('address'),
+            'is_verified': user.get('is_verified', False)
+        })
+
+    def patch(self, request):
+        user = self.get_user_from_token(request)
+        if not user:
+             return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        updates = request.data
+        valid_updates = {}
+        
+        # Whitelist fields
+        if 'name' in updates: valid_updates['name'] = updates['name']
+        if 'address' in updates: valid_updates['address'] = updates['address']
+        if 'avatar' in updates: valid_updates['avatar'] = updates['avatar']
+        
+        if valid_updates:
+            db.users.update_one({'id': user['id']}, {'$set': valid_updates})
+            
+        # Return updated user
+        updated_user = db.users.find_one({'id': user['id']})
+        
+        return Response({
+            'id': updated_user['id'],
+            'username': updated_user.get('username'),
+            'email': updated_user['email'],
+             'name': updated_user.get('name'),
+            'role': updated_user.get('role'),
+            'avatar': updated_user.get('avatar'),
+            'address': updated_user.get('address'),
+            'is_verified': updated_user.get('is_verified', False)
+        })
+
+class RequestPasswordResetView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = db.users.find_one({'email': email})
+        if not user:
+            # For security, don't reveal if user exists. But for UX/Demo, we might return error.
+            # Let's verify user actually exists for this MVP.
+            return Response({'error': 'User not found with this email'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Generate OTP
+        import random
+        otp = str(random.randint(100000, 999999))
+        
+        # Save to DB (password_resets collection)
+        expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+        db.password_resets.update_one(
+            {'email': email},
+            {'$set': {'otp': otp, 'created_at': datetime.datetime.utcnow(), 'expires_at': expiry}},
+            upsert=True
+        )
+
+        # Send Email (Console Backend)
+        from django.core.mail import send_mail
+        try:
+            print(f"--- OTP for {email}: {otp} ---") # Explicit print for console visibility
+            send_mail(
+                'Password Reset OTP - Paperly',
+                f'Your password reset OTP is: {otp}',
+                'noreply@paperly.com',
+                [email],
+                fail_silently=False,
+            )
+            return Response({'message': 'OTP sent successfully'})
+        except Exception as e:
+            print(e)
+            return Response({'error': 'Failed to send email'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PasswordResetVerifyView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        new_password = request.data.get('new_password')
+
+        if not email or not otp or not new_password:
+             return Response({'error': 'Email, OTP, and new password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check OTP
+        record = db.password_resets.find_one({'email': email})
+        if not record:
+            return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if record['otp'] != otp:
+             return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if datetime.datetime.utcnow() > record['expires_at']:
+             return Response({'error': 'OTP expired'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update Password
+        hashed_password = pbkdf2_sha256.hash(new_password)
+        db.users.update_one({'email': email}, {'$set': {'password': hashed_password}})
+        
+        # Delete OTP record
+        db.password_resets.delete_one({'email': email})
+
+        return Response({'message': 'Password reset successfully'})
