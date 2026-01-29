@@ -141,7 +141,24 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
 ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
 SOCIALACCOUNT_QUERY_EMAIL = True
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Increase max upload size to 10MB to handle large Base64 avatars
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# --- Real Email Configuration (Gmail Example) ---
+# 1. Go to your Google Account > Security > 2-Step Verification > App Passwords
+# 2. Generate a new App Password
+# 3. Fill in the values below:
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+# Replace with your actual email and App Password
+EMAIL_HOST_USER = 'your_email@gmail.com' 
+EMAIL_HOST_PASSWORD = 'your_app_password_here' 
+# ------------------------------------------------
 SOCIALACCOUNT_ADAPTER = 'apps.authentication.adapters.CustomSocialAccountAdapter'
 
 SOCIALACCOUNT_PROVIDERS = {

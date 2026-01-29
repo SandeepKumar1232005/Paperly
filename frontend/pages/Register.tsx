@@ -1,4 +1,5 @@
 
+import { Eye, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { UserRole, User } from '../types';
@@ -16,6 +17,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
   const [username, setUsername] = useState(''); // New state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [role, setRole] = useState<UserRole>('STUDENT');
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -157,15 +159,24 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Password</label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
-                placeholder="Must be at least 8 characters"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors pr-12"
+                  placeholder="Must be at least 8 characters"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"

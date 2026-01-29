@@ -301,7 +301,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in duration-200 shadow-2xl">
             <div className="p-6 border-b flex justify-between items-center bg-indigo-50/50">
               <h2 className="text-xl font-bold text-slate-900">Post New Assignment</h2>
               <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 text-3xl">&times;</button>

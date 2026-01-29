@@ -1,0 +1,14 @@
+Total Users: 3
+User: debug_test@example.com
+  Address: No Address
+  Avatar:  MISSING
+------------------------------
+User: kit27.cse306@gmail.com
+  Address: STAR VISION GARDENSERAYAMPALAYAM
+1 50 81
+  Avatar:  PRESENT (Len: 149359)
+------------------------------
+User: testuser_1769677192@example.com
+  Address: 123 Test St, Test City
+  Avatar:  PRESENT (Len: 114)
+------------------------------

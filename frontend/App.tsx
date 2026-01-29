@@ -39,13 +39,41 @@ const AppContent: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]); // For Admin Dashboard
-  const [view, setView] = useState<ViewState>('LANDING');
+
+  // Initialize view from storage or default to LANDING
+  const [view, setView] = useState<ViewState>(() => {
+    return (localStorage.getItem('app_view') as ViewState) || 'LANDING';
+  });
+
   const [activeChatAsgn, setActiveChatAsgn] = useState<Assignment | null>(null);
   const [chatCounterpart, setChatCounterpart] = useState<User | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [selectedWriterId, setSelectedWriterId] = useState<string | null>(null); // State to hold selected writer for assignment creation
+
+  // Persist view changes
+  useEffect(() => {
+    localStorage.setItem('app_view', view);
+  }, [view]);
+
+  // Restore Session
+  useEffect(() => {
+    const restoreSession = async () => {
+      if (user) return; // Already logged in
+      const storedUser = await api.getCurrentUser();
+      if (storedUser) {
+        setUser(storedUser);
+      } else {
+        // If no session, force landing only if trying to access protected routes
+        if (view !== 'LANDING' && view !== 'LOGIN' && view !== 'REGISTER' && view !== 'FORGOT_PASSWORD') {
+          setView('LANDING');
+        }
+      }
+    };
+    restoreSession();
+  }, []); // Run once on mount
+
 
   // Initialize data on mount or user change
   useEffect(() => {
