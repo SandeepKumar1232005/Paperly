@@ -58,7 +58,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
 
     setIsLoading('email');
     try {
-      await onRegister(name, email, username, password, role);
+      await onRegister(name, email, username.toLowerCase(), password, role);
     } catch (e: any) {
       setError(e.message || "Registration failed");
       setIsLoading(null);
@@ -152,10 +152,22 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                 type="text"
                 required
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (/[A-Z]/.test(e.target.value)) {
+                    setError('Username must be in lowercase. It will be converted automatically.');
+                  } else {
+                    setError('');
+                  }
+                }}
+                className={`w-full px-4 py-3 rounded-xl border ${/[A-Z]/.test(username) ? 'border-amber-300 focus:ring-amber-200' : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500'} bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 outline-none transition-colors`}
                 placeholder="sandeep123"
               />
+              {/[A-Z]/.test(username) && (
+                <p className="text-xs text-amber-500 mt-1 font-bold animate-pulse">
+                  ⚠️ Uppercase letters will be converted to lowercase.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Password</label>
