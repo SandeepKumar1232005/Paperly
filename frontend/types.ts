@@ -28,6 +28,8 @@ export interface User {
   availability_status?: 'ONLINE' | 'BUSY' | 'OFFLINE'; // New
   average_rating?: number;
   is_verified?: boolean; // For verification system
+  handwriting_style?: string;
+  handwriting_confidence?: number;
 }
 
 export interface Assignment {
