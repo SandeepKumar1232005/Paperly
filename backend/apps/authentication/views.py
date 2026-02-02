@@ -176,6 +176,8 @@ class UserDetailsView(APIView):
         if 'name' in updates: valid_updates['name'] = updates['name']
         if 'address' in updates: valid_updates['address'] = updates['address']
         if 'avatar' in updates: valid_updates['avatar'] = updates['avatar']
+        if 'availability_status' in updates: valid_updates['availability_status'] = updates['availability_status']
+        if 'coordinates' in updates: valid_updates['coordinates'] = updates['coordinates']
         
         if valid_updates:
             db.users.update_one({'id': user['id']}, {'$set': valid_updates})
@@ -267,4 +269,69 @@ class PasswordResetVerifyView(APIView):
         # Delete OTP record
         db.password_resets.delete_one({'email': email})
 
-        return Response({'message': 'Password reset successfully'})
+# Helper for distance
+import math
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371 # km
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = math.sin(dLat/2) * math.sin(dLat/2) + \
+        math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
+        math.sin(dLon/2) * math.sin(dLon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+class UserListView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        role = request.query_params.get('role')
+        lat = request.query_params.get('lat')
+        lon = request.query_params.get('lon')
+        
+        query = {}
+        if role:
+            # Handle frontend mapping mismatch (api.ts sends 'provider' for writers, or 'WRITER')
+            if role == 'provider':
+                query['$or'] = [{'role': 'provider'}, {'role': 'WRITER'}]
+            else:
+                query['role'] = role
+            
+        users = list(db.users.find(query))
+        
+        results = []
+        for u in users:
+            user_data = {
+                'id': u.get('id', str(u.get('_id'))),
+                'email': u.get('email'),
+                'name': u.get('name') or u.get('first_name', '') + ' ' + u.get('last_name', ''),
+                'first_name': u.get('first_name'),
+                'last_name': u.get('last_name'),
+                'username': u.get('username'),
+                'role': u.get('role'),
+                'avatar': u.get('avatar'),
+                'address': u.get('address'),
+                'is_verified': u.get('is_verified', False),
+                'handwriting_style': u.get('handwriting_style'), # Include new fields
+                'handwriting_confidence': u.get('handwriting_confidence'),
+                'availability_status': u.get('availability_status', 'ONLINE'),
+            }
+            
+            # Calculate distance if coords provided
+            if lat and lon and u.get('coordinates'):
+                try:
+                    u_lat = u['coordinates']['lat']
+                    u_lon = u['coordinates']['lon']
+                    dist = calculate_distance(float(lat), float(lon), float(u_lat), float(u_lon))
+                    user_data['distance_km'] = round(dist, 1)
+                except:
+                    pass
+            
+            results.append(user_data)
+            
+        if lat and lon:
+            # Sort by distance
+            results.sort(key=lambda x: x.get('distance_km', float('inf')))
+
+        return Response(results)
