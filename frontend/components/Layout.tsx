@@ -7,6 +7,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Moon, Sun } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 
+import LocationPrompt from './LocationPrompt';
+
 interface LayoutProps {
   user: User | null;
   unreadCount: number;
@@ -31,10 +33,36 @@ const Layout: React.FC<LayoutProps> = ({
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Check if user is logged in and we haven't asked for location yet (session storage or similar)
+    if (user && !sessionStorage.getItem('location_prompted')) {
+      const timer = setTimeout(() => setShowLocationPrompt(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
+  const handleLocationGranted = (coords: { lat: number; lon: number }) => {
+    // Save to API for user profile
+    onUpdateProfile({
+      // @ts-ignore - handling extra field
+      coordinates: coords
+    });
+    sessionStorage.setItem('location_prompted', 'true');
+    sessionStorage.setItem('user_coords', JSON.stringify(coords));
+    setShowLocationPrompt(false);
+    window.location.reload(); // Reload to refresh writers list with new location
+  };
+
+  const handleLocationSkip = () => {
+    sessionStorage.setItem('location_prompted', 'true');
+    setShowLocationPrompt(false);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -240,6 +268,12 @@ const Layout: React.FC<LayoutProps> = ({
           />
         )
       }
+      {showLocationPrompt && (
+        <LocationPrompt
+          onLocationGranted={handleLocationGranted}
+          onSkip={handleLocationSkip}
+        />
+      )}
     </div >
   );
 };

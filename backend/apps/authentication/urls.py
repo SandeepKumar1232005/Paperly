@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import RegisterView, LoginView, UserDetailsView, RequestPasswordResetView, PasswordResetVerifyView
+from .views import RegisterView, LoginView, UserDetailsView, RequestPasswordResetView, PasswordResetVerifyView, UserListView
 
 urlpatterns = [
+    path('', UserListView.as_view(), name='user_list'), # Handles /api/users/
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('user/', UserDetailsView.as_view(), name='user_details'),

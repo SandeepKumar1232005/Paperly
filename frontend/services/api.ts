@@ -53,7 +53,12 @@ export const api = {
           lastActive: new Date().toISOString(),
           address: userData.address || '',
           is_verified: userData.is_verified || false,
-          username: userData.username
+          username: userData.username,
+          availability_status: userData.availability_status || 'ONLINE',
+          // @ts-ignore
+          coordinates: userData.coordinates,
+          handwriting_style: userData.handwriting_style,
+          handwriting_confidence: userData.handwriting_confidence
         };
         await logger('GET', '/auth/user', start);
         return user;
@@ -116,7 +121,12 @@ export const api = {
             lastActive: new Date().toISOString(),
             address: userData.address || '',
             is_verified: userData.is_verified || false,
-            username: userData.username // Map username
+            username: userData.username,
+            availability_status: userData.availability_status || 'ONLINE',
+            // @ts-ignore
+            coordinates: userData.coordinates, // Map coordinates
+            handwriting_style: userData.handwriting_style,
+            handwriting_confidence: userData.handwriting_confidence
           };
         }
       }
@@ -507,14 +517,19 @@ export const api = {
     return data;
   },
 
-  async getWriters(): Promise<User[]> {
+  async getWriters(coords?: { lat: number; lon: number }): Promise<User[]> {
     const start = Date.now();
     await delay(400);
 
     // Try backend fetch
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/users/?role=provider', {
+      let url = 'http://localhost:8000/api/users/?role=provider';
+      if (coords) {
+        url += `&lat=${coords.lat}&lon=${coords.lon}`;
+      }
+
+      const response = await fetch(url, {
         headers: {
           'Authorization': token ? `Bearer ${token} ` : ''
         }
@@ -522,14 +537,23 @@ export const api = {
       if (response.ok) {
         const users = await response.json();
         // Map backend users to frontend format
-        const mappedUsers = users.map((u: any) => ({
-          id: String(u.id),
-          name: (u.first_name + ' ' + u.last_name).trim() || u.username,
-          email: u.email,
-          role: 'WRITER' as const,
-          avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
-          lastActive: new Date().toISOString() // Mock
-        }));
+        const mappedUsers = users.map((u: any) => {
+          const fName = u.first_name || '';
+          const lName = u.last_name || '';
+          const fullName = `${fName} ${lName}`.trim();
+
+          return {
+            id: String(u.id),
+            name: fullName || u.username || 'User',
+            email: u.email,
+            role: 'WRITER' as const,
+            avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
+            lastActive: new Date().toISOString(), // Mock
+            handwriting_style: u.handwriting_style,
+            handwriting_confidence: u.handwriting_confidence,
+            distance_km: u.distance_km // Map distance
+          };
+        });
         await logger('GET', '/users/?role=provider', start);
         return mappedUsers;
       }
