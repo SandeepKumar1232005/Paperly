@@ -7,3 +7,6 @@ pymongo
 pyjwt
 passlib
 bcrypt
+tensorflow
+numpy
+pillow

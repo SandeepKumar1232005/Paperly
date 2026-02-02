@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { User } from '../types';
 import { Star, MapPin, CheckCircle, Briefcase, ArrowLeft } from 'lucide-react';
+import WriterFilter from '../components/WriterFilter';
+import StyleBadge from '../components/StyleBadge';
 
 interface WritersProps {
     onNavigate: (view: any) => void;
@@ -12,6 +14,12 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
     const [writers, setWriters] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedWriter, setSelectedWriter] = useState<User | null>(null);
+    const [handwritingFilter, setHandwritingFilter] = useState('All');
+
+    const filteredWriters = writers.filter(writer => {
+        if (handwritingFilter === 'All') return true;
+        return writer.handwriting_style === handwritingFilter;
+    });
 
     useEffect(() => {
         loadWriters();
@@ -42,13 +50,15 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                     <p className="mt-2 text-gray-600">Browse our top-rated academic writers and choose the best fit for your assignment.</p>
                 </div>
 
+                <WriterFilter currentFilter={handwritingFilter} onFilterChange={setHandwritingFilter} />
+
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {writers.map((writer) => (
+                        {filteredWriters.map((writer) => (
                             <div key={writer.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-100">
                                 <div className="p-6">
                                     <div className="flex items-start justify-between">
@@ -94,6 +104,11 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                             <CheckCircle className="h-4 w-4 mr-2" />
                                             <span>98% Completion Rate</span>
                                         </div>
+                                        {writer.handwriting_style && (
+                                            <div className="pt-2">
+                                                <StyleBadge style={writer.handwriting_style} confidence={writer.handwriting_confidence} />
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="mt-6 pt-6 border-t border-gray-100">

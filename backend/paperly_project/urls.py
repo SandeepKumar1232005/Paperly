@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/core/', include('apps.core.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
     path('api/reviews/', include('apps.reviews.urls')),
+    path('api/handwriting/', include('apps.handwriting.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

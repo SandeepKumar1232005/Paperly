@@ -77,12 +77,7 @@ const Layout: React.FC<LayoutProps> = ({
               <span className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">Paperly</span>
             </div>
 
-            {user && (
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-100">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Live Cloud Sync</span>
-              </div>
-            )}
+
           </div>
 
           <div className="flex items-center gap-4">

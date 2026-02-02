@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/cropImage';
 import { User } from '../types';
+import HandwritingUpload from './HandwritingUpload';
 
 interface ProfileModalProps {
   user: User;
@@ -13,7 +14,9 @@ interface ProfileModalProps {
 const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) => {
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar || '');
-  const [address, setAddress] = useState(user.address || ''); // New
+  const [address, setAddress] = useState(user.address || '');
+  const [handwritingStyle, setHandwritingStyle] = useState(user.handwriting_style || '');
+  const [handwritingConfidence, setHandwritingConfidence] = useState(user.handwriting_confidence || 0);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,7 +64,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   };
 
   const handleSave = () => {
-    onSave({ name, avatar, address });
+    onSave({
+      name,
+      avatar,
+      address,
+      handwriting_style: handwritingStyle,
+      handwriting_confidence: handwritingConfidence
+    });
     onClose();
   };
 
@@ -227,6 +236,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     </svg>
                     Profile changes will be reflected across all your active assignments and chat windows.
                   </div>
+
+                  {/* Handwriting Analysis Section */}
+                  <HandwritingUpload
+                    onAnalysisComplete={(style, confidence) => {
+                      setHandwritingStyle(style);
+                      setHandwritingConfidence(confidence);
+                    }}
+                    currentStyle={handwritingStyle}
+                    currentConfidence={handwritingConfidence}
+                  />
 
                   {/* Closing the space-y-6 div */}
                 </div>
