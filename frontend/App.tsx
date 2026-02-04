@@ -42,7 +42,7 @@ const AppContent: React.FC = () => {
 
   // Initialize view from storage or default to LANDING
   const [view, setView] = useState<ViewState>(() => {
-    return (localStorage.getItem('app_view') as ViewState) || 'LANDING';
+    return (sessionStorage.getItem('app_view') as ViewState) || 'LANDING';
   });
 
   const [activeChatAsgn, setActiveChatAsgn] = useState<Assignment | null>(null);
@@ -52,23 +52,29 @@ const AppContent: React.FC = () => {
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [selectedWriterId, setSelectedWriterId] = useState<string | null>(null); // State to hold selected writer for assignment creation
 
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
+
   // Persist view changes
   useEffect(() => {
-    localStorage.setItem('app_view', view);
+    sessionStorage.setItem('app_view', view);
   }, [view]);
 
   // Restore Session
   useEffect(() => {
     const restoreSession = async () => {
-      if (user) return; // Already logged in
-      const storedUser = await api.getCurrentUser();
-      if (storedUser) {
-        setUser(storedUser);
-      } else {
-        // If no session, force landing only if trying to access protected routes
-        if (view !== 'LANDING' && view !== 'LOGIN' && view !== 'REGISTER' && view !== 'FORGOT_PASSWORD') {
-          setView('LANDING');
+      try {
+        if (user) return; // Already logged in
+        const storedUser = await api.getCurrentUser();
+        if (storedUser) {
+          setUser(storedUser);
+        } else {
+          // If no session, force landing only if trying to access protected routes
+          if (view !== 'LANDING' && view !== 'LOGIN' && view !== 'REGISTER' && view !== 'FORGOT_PASSWORD') {
+            setView('LANDING');
+          }
         }
+      } finally {
+        setIsRestoringSession(false);
       }
     };
     restoreSession();
@@ -524,7 +530,13 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {renderView()}
+      {isRestoringSession ? (
+        <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : (
+        renderView()
+      )}
 
       {activeChatAsgn && user && (
         <ChatWindow

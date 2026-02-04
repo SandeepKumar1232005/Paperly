@@ -30,6 +30,8 @@ export interface User {
   is_verified?: boolean; // For verification system
   handwriting_style?: string;
   handwriting_confidence?: number;
+  handwriting_sample_url?: string;
+  qr_code_url?: string; // New - For direct payments
 }
 
 export interface Assignment {
@@ -46,7 +48,7 @@ export interface Assignment {
   submission?: string;
   feedback?: string;
   createdAt: string;
-  paymentStatus: 'UNPAID' | 'ESCROW' | 'RELEASED';
+  paymentStatus: 'UNPAID' | 'ESCROW' | 'RELEASED' | 'PAID';
   quoted_amount?: number; // New
   revision_count?: number; // New
   writer_comment?: string; // New
@@ -55,6 +57,8 @@ export interface Assignment {
   rejectedBy?: string[]; // New - IDs of writers who rejected this
   attachment?: string | null; // New - URL/Path to attached file
   pages?: number; // New - Number of pages
+  platform_fee?: number; // New - Platform fee deducted
+  net_earnings?: number; // New - Writer's earnings after fee
 }
 
 export interface Transaction {

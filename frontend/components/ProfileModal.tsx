@@ -23,6 +23,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   // Cropping State
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [tempImg, setTempImg] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
@@ -46,7 +47,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   const handleCropSave = async () => {
     if (tempImg && croppedAreaPixels) {
       try {
-        const croppedImage = await getCroppedImg(tempImg, croppedAreaPixels);
+        const croppedImage = await getCroppedImg(tempImg, croppedAreaPixels, rotation);
         if (croppedImage) {
           setAvatar(croppedImage);
           setIsCropping(false);
@@ -76,7 +77,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-300 shadow-2xl">
+      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-300 shadow-2xl">
         <div className="p-6 border-b flex justify-between items-center bg-slate-50 flex-none">
           <h2 className="text-xl font-bold text-slate-900">{isCropping ? 'Adjust Photo' : 'Edit Profile'}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-3xl">&times;</button>
@@ -85,15 +86,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
         <div className="flex flex-col overflow-hidden h-full">
           {isCropping ? (
             <div className="flex-1 relative bg-slate-900 w-full h-full flex flex-col">
-              <div className="relative flex-1 w-full h-[300px] bg-slate-900">
+              <div className="relative flex-1 w-full h-[500px] bg-slate-900">
                 <Cropper
                   image={tempImg!}
                   crop={crop}
                   zoom={zoom}
+                  rotation={rotation}
                   aspect={1}
                   onCropChange={setCrop}
                   onCropComplete={onCropComplete}
                   onZoomChange={setZoom}
+                  onRotationChange={setRotation}
                   classes={{
                     containerClassName: "h-full"
                   }}
@@ -101,36 +104,49 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
               </div>
 
               <div className="flex-none p-6 bg-white space-y-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Zoom</span>
-                  <input
-                    type="range"
-                    value={zoom}
-                    min={1}
-                    max={3}
-                    step={0.1}
-                    aria-labelledby="Zoom"
-                    onChange={(e) => setZoom(Number(e.target.value))}
-                    className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
-                </div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Zoom</span>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+              </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleCropCancel}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-sm transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCropSave}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-                  >
-                    Apply Crop
-                  </button>
-                </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Rotate</span>
+                <input
+                  type="range"
+                  value={rotation}
+                  min={0}
+                  max={360}
+                  step={1}
+                  aria-labelledby="Rotation"
+                  onChange={(e) => setRotation(Number(e.target.value))}
+                  className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCropCancel}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCropSave}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                >
+                  Apply Crop
+                </button>
               </div>
             </div>
+
           ) : (
             <>
               <div className="p-8 overflow-y-auto">
@@ -219,16 +235,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     </div>
                   )}
 
-                  {/* Address Field */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Address (For Courier)</label>
-                    <textarea
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Enter your full physical address..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-700 min-h-[80px]"
-                    />
-                  </div>
+                  {/* Address Field - Hide for Admin */}
+                  {user.role !== 'ADMIN' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Address (For Courier)</label>
+                      <textarea
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter your full physical address..."
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-700 min-h-[80px]"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-xs text-indigo-700 leading-relaxed">
                     <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -237,15 +255,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     Profile changes will be reflected across all your active assignments and chat windows.
                   </div>
 
-                  {/* Handwriting Analysis Section */}
-                  <HandwritingUpload
-                    onAnalysisComplete={(style, confidence) => {
-                      setHandwritingStyle(style);
-                      setHandwritingConfidence(confidence);
-                    }}
-                    currentStyle={handwritingStyle}
-                    currentConfidence={handwritingConfidence}
-                  />
+                  {/* Handwriting Analysis Section - Hide for Admin */}
+                  {user.role !== 'ADMIN' && (
+                    <HandwritingUpload
+                      onAnalysisComplete={(style, confidence) => {
+                        setHandwritingStyle(style);
+                        setHandwritingConfidence(confidence);
+                      }}
+                      currentStyle={handwritingStyle}
+                      currentConfidence={handwritingConfidence}
+                      currentSampleUrl={user.handwriting_sample_url}
+                    />
+                  )}
 
                   {/* Closing the space-y-6 div */}
                 </div>
@@ -272,7 +293,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

@@ -43,7 +43,19 @@ class LocalDB {
   }
 
   private save<T>(key: string, data: T[]) {
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22 || e.message?.includes('usage limit')) {
+        console.error('LocalStorage quota exceeded. Data could not be saved locally.');
+        // Optional: Clear low priority data here (e.g. logs)
+        if (key !== STORAGE_KEYS.LOGS) {
+          this.save(STORAGE_KEYS.LOGS, []); // Clear logs to free space?
+        }
+      } else {
+        console.error('Error saving to localStorage', e);
+      }
+    }
   }
 
   getUsers(): User[] { return this.get<User>(STORAGE_KEYS.USERS); }

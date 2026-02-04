@@ -95,8 +95,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                 key={status}
                 onClick={() => onUpdateProfile({ availability_status: status as any })}
                 className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${user.availability_status === status
-                    ? (status === 'ONLINE' ? 'bg-green-100 text-green-700' : status === 'BUSY' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-200 text-slate-700')
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                  ? (status === 'ONLINE' ? 'bg-green-100 text-green-700' : status === 'BUSY' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-200 text-slate-700')
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                   }`}
               >
                 {status}
@@ -121,15 +121,24 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
             <div>
               <h3 className="text-sm font-semibold text-slate-600 mb-2">Verified Samples</h3>
               <div className="flex flex-wrap gap-4 mb-4">
-                {(user.handwriting_samples || []).map((url, idx) => (
-                  <div key={idx} className="relative group w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border">
-                    <img src={url} alt="Sample" className="w-full h-full object-cover" />
-                    <button onClick={() => removeSample(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
-                  </div>
-                ))}
-                {(!user.handwriting_samples || user.handwriting_samples.length === 0) && (
-                  <p className="text-sm text-slate-400 italic">No samples uploaded yet. Upload specific handwriting styles to attract more students.</p>
-                )}
+                {(() => {
+                  const displayedSamples = (user.handwriting_samples && user.handwriting_samples.length > 0)
+                    ? user.handwriting_samples
+                    : (user.handwriting_sample_url ? [user.handwriting_sample_url] : []);
+
+                  if (displayedSamples.length === 0) {
+                    return (
+                      <p className="text-sm text-slate-400 italic">No samples uploaded yet. Upload specific handwriting styles to attract more students.</p>
+                    );
+                  }
+
+                  return displayedSamples.map((url, idx) => (
+                    <div key={idx} className="relative group w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border">
+                      <img src={url} alt="Sample" className="w-full h-full object-cover" />
+                      <button onClick={() => removeSample(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                    </div>
+                  ));
+                })()}
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -161,6 +170,63 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                 </button>
               </div>
               <p className="text-xs text-slate-400 mt-2">✨ Tip: Upload high-clarity images of your cursive, print, and block handwriting.</p>
+
+              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
+                <h3 className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                  Payment QR Code
+                </h3>
+                <p className="text-xs text-slate-400 mb-4">Upload your UPI/Payment QR code to accept direct payments from students.</p>
+
+                <div className="flex items-start gap-4">
+                  {user.qr_code_url ? (
+                    <div className="relative group w-32 h-32 bg-white p-2 rounded-xl border2 shadow-sm border-indigo-100">
+                      <img src={user.qr_code_url} alt="Payment QR" className="w-full h-full object-contain" />
+                      <button
+                        onClick={() => onUpdateProfile({ qr_code_url: '' })}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove QR Code"
+                      >
+                        ×
+                      </button>
+                      <div className="absolute inset-x-0 bottom-0 bg-green-500 text-white text-[10px] font-bold text-center py-1 opacity-90">Active</div>
+                    </div>
+                  ) : (
+                    <div className="w-32 h-32 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2">
+                      <svg className="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      <span className="text-[10px]">Upload QR</span>
+                    </div>
+                  )}
+
+                  <div className="flex-1">
+                    <label className="block w-full">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const file = e.target.files[0];
+                            setIsChecking(true);
+                            try {
+                              const url = await api.uploadFile(file);
+                              onUpdateProfile({ qr_code_url: url });
+                            } finally {
+                              setIsChecking(false);
+                            }
+                          }
+                        }}
+                      />
+                      <span className="inline-block px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold cursor-pointer transition-colors border border-slate-200">
+                        {user.qr_code_url ? 'Replace QR Code' : 'Select Image'}
+                      </span>
+                    </label>
+                    <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                      Accepted formats: PNG, JPG. Ensure the QR code is clear and scannable.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="border-l pl-8">
               <h3 className="text-sm font-semibold text-slate-600 mb-2">Profile Preview</h3>
@@ -203,6 +269,24 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">{asgn.subject} • {new Date(asgn.deadline).toLocaleDateString()}</p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4">{asgn.description}</p>
+
+                {/* Financial Breakdown for Active/Completed Assignments */}
+                {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
+                  <div className="mb-4 text-xs bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-slate-500">Gross Budget:</span>
+                      <span className="font-medium">₹{asgn.budget}</span>
+                    </div>
+                    <div className="flex justify-between mb-1 text-red-500">
+                      <span>Platform Fee (10%):</span>
+                      <span>- ₹{asgn.platform_fee || (asgn.budget * 0.10).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-green-600 pt-1 border-t border-slate-200 dark:border-slate-700">
+                      <span>Net Earnings:</span>
+                      <span>₹{asgn.net_earnings || (asgn.budget * 0.90).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
 
 
                 {quoteData?.id === asgn.id ? (

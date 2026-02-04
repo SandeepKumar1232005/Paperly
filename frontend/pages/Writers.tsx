@@ -27,7 +27,12 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
 
     const loadWriters = async () => {
         try {
-            const data = await api.getWriters();
+            const storedCoords = sessionStorage.getItem('user_coords');
+            let coords;
+            if (storedCoords) {
+                coords = JSON.parse(storedCoords);
+            }
+            const data = await api.getWriters(coords);
             setWriters(data);
         } catch (error) {
             console.error('Failed to load writers', error);
@@ -98,7 +103,13 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         </div>
                                         <div className="flex items-center text-sm text-gray-600">
                                             <MapPin className="h-4 w-4 mr-2" />
-                                            <span>New York, USA</span>
+                                            <span>{writer.address || 'New York, USA'}</span>
+                                            {/* @ts-ignore - dynamic field */}
+                                            {writer.distance_km !== undefined && (
+                                                <span className="ml-2 text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">
+                                                    {writer.distance_km} km away
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex items-center text-sm text-green-600">
                                             <CheckCircle className="h-4 w-4 mr-2" />
