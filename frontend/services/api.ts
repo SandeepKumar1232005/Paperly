@@ -21,7 +21,7 @@ export const api = {
   // Authentication
   async getCurrentUser(): Promise<User | null> {
     const start = Date.now();
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     if (!token) return null;
 
     try {
@@ -58,8 +58,27 @@ export const api = {
           // @ts-ignore
           coordinates: userData.coordinates,
           handwriting_style: userData.handwriting_style,
-          handwriting_confidence: userData.handwriting_confidence
+          handwriting_confidence: userData.handwriting_confidence,
+          // Merge with local data to preserve client-side only fields
         };
+
+        const localUsers = db.getUsers();
+        const localUserIdx = localUsers.findIndex(u => u.email === user.email);
+
+        if (localUserIdx !== -1) {
+          const localUser = localUsers[localUserIdx];
+          // Preserve local fields that might not be on backend yet
+          user.handwriting_samples = localUser.handwriting_samples || [];
+          user.qr_code_url = localUser.qr_code_url;
+          user.handwriting_sample_url = localUser.handwriting_sample_url; // Legacy support
+
+          // Update local DB
+          localUsers[localUserIdx] = { ...localUser, ...user };
+        } else {
+          localUsers.push(user);
+        }
+        db.saveUsers(localUsers);
+
         await logger('GET', '/auth/user', start);
         return user;
       }
@@ -91,7 +110,7 @@ export const api = {
       const token = data.key || data.access_token || data.access; // Support both Token and JWT
 
       if (token) {
-        localStorage.setItem('auth_token', token);
+        sessionStorage.setItem('auth_token', token);
         // Fetch full user details
         const userResponse = await fetch(`http://localhost:8000/api/auth/user/?_t=${Date.now()}`, {
           headers: { 'Authorization': `Bearer ${token}` } // Or Bearer depending on JWT setting, trying Token first for dj-rest-auth default
@@ -225,7 +244,7 @@ export const api = {
         const data = await response.json();
         const token = data.key || data.access_token;
         if (token) {
-          localStorage.setItem('auth_token', token);
+          sessionStorage.setItem('auth_token', token);
         }
         // 2. If successful, we might need to update the Role since standard registration might not handle it
         // For now, we assume the user is created.
@@ -267,7 +286,7 @@ export const api = {
       const data = await response.json();
       const backendToken = data.key || data.access_token || data.token || data.access;
       if (backendToken) {
-        localStorage.setItem('auth_token', backendToken);
+        sessionStorage.setItem('auth_token', backendToken);
       }
 
       let userData = data.user;
@@ -352,7 +371,7 @@ export const api = {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('auth_token')} `
+          'Authorization': `Token ${sessionStorage.getItem('auth_token')} `
         },
         body: JSON.stringify(updates)
       });
@@ -390,7 +409,7 @@ export const api = {
 
     // Try backend update
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token');
       if (!token) throw new Error("No auth token");
 
       const response = await fetch('http://localhost:8000/api/auth/user/', {
@@ -466,7 +485,7 @@ export const api = {
         url += `? role = ${backendRole} `;
       }
 
-      const token = localStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token');
       const response = await fetch(url, {
         headers: {
           'Authorization': token ? `Bearer ${token} ` : ''
@@ -500,7 +519,7 @@ export const api = {
 
   async deleteUser(userId: string): Promise<void> {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token');
       await fetch(`http://localhost:8000/api/users/${userId}/`, {
         method: 'DELETE',
         headers: {
@@ -513,13 +532,62 @@ export const api = {
     }
   },
 
+  async verifyUser(userId: string): Promise<User> {
+    const start = Date.now();
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ is_verified: true })
+      });
+
+      if (response.ok) {
+        // Update local DB if successful
+        const users = db.getUsers();
+        const idx = users.findIndex(u => u.id === userId);
+        if (idx !== -1) {
+          users[idx].is_verified = true;
+          db.saveUsers(users);
+        }
+        await logger('PATCH', `/users/${userId}/verify`, start);
+        return await response.json();
+      }
+      throw new Error('Verification failed');
+    } catch (e) {
+      // Fallback for mock/offline
+      const users = db.getUsers();
+      const idx = users.findIndex(u => u.id === userId);
+      if (idx !== -1) {
+        users[idx].is_verified = true;
+        db.saveUsers(users);
+        return users[idx];
+      }
+      throw e;
+    }
+  },
+
   // Assignments
   async getAssignments(): Promise<Assignment[]> {
     const start = Date.now();
     await delay(400);
     const data = db.getAssignments();
+    // Hydrate provider details (especially for QR code)
+    const users = db.getUsers();
+    const hydrated = data.map(a => {
+      if (a.writerId) {
+        const writer = users.find(u => u.id === a.writerId);
+        if (writer) {
+          return { ...a, provider: writer };
+        }
+      }
+      return a;
+    });
     await logger('GET', '/assignments', start);
-    return data;
+    return hydrated;
   },
 
   async getWriters(coords?: { lat: number; lon: number }): Promise<User[]> {
@@ -528,7 +596,7 @@ export const api = {
 
     // Try backend fetch
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token');
       let url = 'http://localhost:8000/api/users/?role=provider';
       if (coords) {
         url += `&lat=${coords.lat}&lon=${coords.lon}`;
@@ -582,7 +650,7 @@ export const api = {
       // However, UserViewSet (ReadOnly) might be accessible if session cookie works?
       // dj-rest-auth uses token usually.
       // But let's try.
-      const token = localStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token');
       const response = await fetch('http://localhost:8000/api/users/', {
         headers: {
           'Authorization': token ? `Bearer ${token}` : ''
@@ -757,6 +825,31 @@ export const api = {
     asgns[idx] = updated;
     db.saveAssignments(asgns);
     await logger('POST', `/assignments/${assignmentId}/reject`, start);
+    return updated;
+  },
+
+  async confirmPayment(assignmentId: string): Promise<Assignment> {
+    const start = Date.now();
+    await delay(600);
+    const asgns = db.getAssignments();
+    const idx = asgns.findIndex(a => a.id === assignmentId);
+    if (idx === -1) throw new Error('Assignment not found');
+
+    const assignment = asgns[idx];
+    const budget = assignment.budget || 0;
+    const fee = budget * 0.10; // 10% Platform Fee
+
+    const updated = {
+      ...assignment,
+      status: AssignmentStatus.IN_PROGRESS,
+      paymentStatus: 'PAID' as const, // Direct payment confirmed
+      platform_fee: fee,
+      net_earnings: budget - fee
+    };
+
+    asgns[idx] = updated;
+    db.saveAssignments(asgns);
+    await logger('POST', `/assignments/${assignmentId}/payment-confirm`, start);
     return updated;
   },
 

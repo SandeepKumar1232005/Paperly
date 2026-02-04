@@ -368,6 +368,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                       )}
                     </td>
                     <td className="px-6 py-4">
+                      {!u.is_verified && (
+                        <button
+                          onClick={async () => {
+                            await api.verifyUser(u.id);
+                            setAllUsers(prev => prev.map(user =>
+                              user.id === u.id ? { ...user, is_verified: true } : user
+                            ));
+                          }}
+                          className="text-emerald-500 hover:text-emerald-700 font-bold text-xs mr-3"
+                        >
+                          Verify
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteUser(u.id)}
                         className="text-red-500 hover:text-red-700 font-bold text-xs"

@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { User, Assignment, AssignmentStatus } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { PaymentModal } from '../components/PaymentModal';
+import { api } from '../services/api';
 import { mockUsers } from '../mockData';
 import EmptyState from '../components/EmptyState';
 import ProgressBar from '../components/ProgressBar';
@@ -588,15 +589,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             isOpen={true}
             assignment={paymentAssignment}
             onClose={() => setPaymentAssignment(null)}
-            onSuccess={() => {
-              // Update local status
-              // Note: In a real app we would refetch, here we mutate local list for demo
-
-              // assignments is a prop, so we can't mutate it directly without a callback or prop
-              // For now, reload window or show alert
-              alert("Payment Successful! The status will update momentarily.");
+            onSuccess={async () => {
+              try {
+                await api.confirmPayment(paymentAssignment.id);
+                // Update local status
+                alert("Payment Successful! The writer has been notified.");
+                // We could just update state locally, but reload is safer for full sync
+                window.location.reload();
+              } catch (e) {
+                console.error("Payment confirmation failed", e);
+                alert("Payment confirmation failed on backend, but marked locally.");
+              }
               setPaymentAssignment(null);
-              window.location.reload(); // Simple refresh to fetch/reset mock state if persisted
             }}
           />
         )
