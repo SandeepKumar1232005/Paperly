@@ -2,6 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
+import os
 import jwt
 from utils.mongo import db
 from .utils import predict_handwriting_style
@@ -46,18 +48,27 @@ class PredictHandwritingView(APIView):
         if style is None:
             return Response({'error': 'Prediction failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        # 2a. Save Image to Disk
+        fs = FileSystemStorage()
+        filename = fs.save(f"handwriting_samples/{image_file.name}", image_file)
+        file_url = fs.url(filename)
+
         # 3. Update User (Writer) Profile
         if db is not None:
             db.users.update_one(
                 {'id': user['id']},
                 {'$set': {
                     'handwriting_style': style,
-                    'handwriting_confidence': confidence
+                    'handwriting_confidence': confidence,
+                    'handwriting_sample_url': file_url
+                }, '$addToSet': {
+                    'handwriting_samples': file_url
                 }}
             )
 
         # 4. Return Result
         return Response({
             'style': style,
-            'confidence': confidence
+            'confidence': confidence,
+            'sample_url': file_url
         }, status=status.HTTP_200_OK)

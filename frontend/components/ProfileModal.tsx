@@ -219,16 +219,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     </div>
                   )}
 
-                  {/* Address Field */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Address (For Courier)</label>
-                    <textarea
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Enter your full physical address..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-700 min-h-[80px]"
-                    />
-                  </div>
+                  {/* Address Field - Hide for Admin */}
+                  {user.role !== 'ADMIN' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Address (For Courier)</label>
+                      <textarea
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter your full physical address..."
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-700 min-h-[80px]"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-xs text-indigo-700 leading-relaxed">
                     <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -237,15 +239,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     Profile changes will be reflected across all your active assignments and chat windows.
                   </div>
 
-                  {/* Handwriting Analysis Section */}
-                  <HandwritingUpload
-                    onAnalysisComplete={(style, confidence) => {
-                      setHandwritingStyle(style);
-                      setHandwritingConfidence(confidence);
-                    }}
-                    currentStyle={handwritingStyle}
-                    currentConfidence={handwritingConfidence}
-                  />
+                  {/* Handwriting Analysis Section - Hide for Admin */}
+                  {user.role !== 'ADMIN' && (
+                    <HandwritingUpload
+                      onAnalysisComplete={(style, confidence) => {
+                        setHandwritingStyle(style);
+                        setHandwritingConfidence(confidence);
+                      }}
+                      currentStyle={handwritingStyle}
+                      currentConfidence={handwritingConfidence}
+                      currentSampleUrl={user.handwriting_sample_url}
+                    />
+                  )}
 
                   {/* Closing the space-y-6 div */}
                 </div>

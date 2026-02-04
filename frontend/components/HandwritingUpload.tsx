@@ -6,13 +6,20 @@ interface HandwritingUploadProps {
     onAnalysisComplete: (style: string, confidence: number) => void;
     currentStyle?: string;
     currentConfidence?: number;
+    currentSampleUrl?: string;
 }
 
-const HandwritingUpload: React.FC<HandwritingUploadProps> = ({ onAnalysisComplete, currentStyle, currentConfidence }) => {
+const HandwritingUpload: React.FC<HandwritingUploadProps> = ({ onAnalysisComplete, currentStyle, currentConfidence, currentSampleUrl }) => {
     const [loading, setLoading] = useState(false);
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        if (currentSampleUrl) {
+            setPreview(currentSampleUrl);
+        }
+    }, [currentSampleUrl]);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
