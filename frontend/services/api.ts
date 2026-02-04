@@ -134,6 +134,12 @@ export const api = {
       await logger('POST', '/auth/login', start);
     } catch (e) {
       console.warn("Backend login failed, checking local mock fallback...");
+
+      // If explicit invalid credentials, do not fall back to mock
+      if (e.message === 'Invalid credentials') {
+        throw e;
+      }
+
       // Generic fallback: Generate user from email
       const namePart = email.split('@')[0];
       const name = namePart
@@ -472,7 +478,7 @@ export const api = {
         // Transform backend user to frontend User
         return data.map((u: any) => ({
           id: String(u.id),
-          name: (u.first_name + ' ' + u.last_name).trim() || u.username || 'User',
+          name: u.name || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username || 'User',
           email: u.email,
           role: u.role || 'STUDENT', // Default to student
           avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
@@ -495,17 +501,16 @@ export const api = {
   async deleteUser(userId: string): Promise<void> {
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch(`http://localhost:8000/api/users/${userId} / `, {
+      await fetch(`http://localhost:8000/api/users/${userId}/`, {
         method: 'DELETE',
         headers: {
           'Authorization': token ? `Bearer ${token} ` : ''
         }
       });
-    } catch (e) { console.warn("Backend delete user failed"); }
-
-    // Local fallback
-    const users = db.getUsers().filter(u => u.id !== userId);
-    db.saveUsers(users);
+    } catch (e) {
+      console.warn("Backend delete user failed");
+      throw e;
+    }
   },
 
   // Assignments
@@ -588,7 +593,7 @@ export const api = {
         // Map
         return users.map((u: any) => ({
           id: String(u.id),
-          name: (u.first_name + ' ' + u.last_name).trim() || u.username,
+          name: u.name || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username || 'User',
           email: u.email,
           role: u.role === 'provider' ? 'WRITER' : (u.role === 'admin' ? 'ADMIN' : 'STUDENT'),
           avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,

@@ -95,8 +95,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                 key={status}
                 onClick={() => onUpdateProfile({ availability_status: status as any })}
                 className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${user.availability_status === status
-                    ? (status === 'ONLINE' ? 'bg-green-100 text-green-700' : status === 'BUSY' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-200 text-slate-700')
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                  ? (status === 'ONLINE' ? 'bg-green-100 text-green-700' : status === 'BUSY' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-200 text-slate-700')
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                   }`}
               >
                 {status}
@@ -121,15 +121,24 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
             <div>
               <h3 className="text-sm font-semibold text-slate-600 mb-2">Verified Samples</h3>
               <div className="flex flex-wrap gap-4 mb-4">
-                {(user.handwriting_samples || []).map((url, idx) => (
-                  <div key={idx} className="relative group w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border">
-                    <img src={url} alt="Sample" className="w-full h-full object-cover" />
-                    <button onClick={() => removeSample(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
-                  </div>
-                ))}
-                {(!user.handwriting_samples || user.handwriting_samples.length === 0) && (
-                  <p className="text-sm text-slate-400 italic">No samples uploaded yet. Upload specific handwriting styles to attract more students.</p>
-                )}
+                {(() => {
+                  const displayedSamples = (user.handwriting_samples && user.handwriting_samples.length > 0)
+                    ? user.handwriting_samples
+                    : (user.handwriting_sample_url ? [user.handwriting_sample_url] : []);
+
+                  if (displayedSamples.length === 0) {
+                    return (
+                      <p className="text-sm text-slate-400 italic">No samples uploaded yet. Upload specific handwriting styles to attract more students.</p>
+                    );
+                  }
+
+                  return displayedSamples.map((url, idx) => (
+                    <div key={idx} className="relative group w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border">
+                      <img src={url} alt="Sample" className="w-full h-full object-cover" />
+                      <button onClick={() => removeSample(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                    </div>
+                  ));
+                })()}
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">

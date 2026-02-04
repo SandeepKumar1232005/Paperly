@@ -63,7 +63,16 @@ class RegisterView(APIView):
             print("User inserted successfully")
             
             # Determine redirect/payload
-            return Response({'message': 'User created successfully', 'user': {'email': email, 'username': username, 'role': role, 'id': user_id, 'avatar': avatar}}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'User created successfully', 'user': {
+                'email': email, 
+                'username': username, 
+                'role': role, 
+                'id': user_id, 
+                'avatar': avatar,
+                'handwriting_style': None,
+                'handwriting_confidence': None,
+                'handwriting_sample_url': None
+            }}, status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -114,7 +123,11 @@ class LoginView(APIView):
                 'avatar': user.get('avatar'),
                 'username': user.get('username'),
                 'address': user.get('address'),
-                'is_verified': user.get('is_verified', False)
+                'is_verified': user.get('is_verified', False),
+                'handwriting_style': user.get('handwriting_style'),
+                'handwriting_confidence': user.get('handwriting_confidence'),
+                'handwriting_sample_url': user.get('handwriting_sample_url'),
+                'handwriting_samples': user.get('handwriting_samples', []),
             }
         })
 
@@ -161,7 +174,11 @@ class UserDetailsView(APIView):
             'role': user.get('role'),
             'avatar': user.get('avatar'),
             'address': user.get('address'),
-            'is_verified': user.get('is_verified', False)
+            'is_verified': user.get('is_verified', False),
+            'handwriting_style': user.get('handwriting_style'),
+            'handwriting_confidence': user.get('handwriting_confidence'),
+            'handwriting_sample_url': user.get('handwriting_sample_url'),
+            'handwriting_samples': user.get('handwriting_samples', []),
         })
 
     def patch(self, request):
@@ -178,6 +195,7 @@ class UserDetailsView(APIView):
         if 'avatar' in updates: valid_updates['avatar'] = updates['avatar']
         if 'availability_status' in updates: valid_updates['availability_status'] = updates['availability_status']
         if 'coordinates' in updates: valid_updates['coordinates'] = updates['coordinates']
+        if 'handwriting_samples' in updates: valid_updates['handwriting_samples'] = updates['handwriting_samples']
         
         if valid_updates:
             db.users.update_one({'id': user['id']}, {'$set': valid_updates})
@@ -193,7 +211,11 @@ class UserDetailsView(APIView):
             'role': updated_user.get('role'),
             'avatar': updated_user.get('avatar'),
             'address': updated_user.get('address'),
-            'is_verified': updated_user.get('is_verified', False)
+            'is_verified': updated_user.get('is_verified', False),
+            'handwriting_style': updated_user.get('handwriting_style'),
+            'handwriting_confidence': updated_user.get('handwriting_confidence'),
+            'handwriting_sample_url': updated_user.get('handwriting_sample_url'),
+            'handwriting_samples': updated_user.get('handwriting_samples', []),
         })
 
 class RequestPasswordResetView(APIView):
@@ -316,6 +338,7 @@ class UserListView(APIView):
                 'handwriting_style': u.get('handwriting_style'), # Include new fields
                 'handwriting_confidence': u.get('handwriting_confidence'),
                 'availability_status': u.get('availability_status', 'ONLINE'),
+                'handwriting_samples': u.get('handwriting_samples', []),
             }
             
             # Calculate distance if coords provided
@@ -335,3 +358,21 @@ class UserListView(APIView):
             results.sort(key=lambda x: x.get('distance_km', float('inf')))
 
         return Response(results)
+
+class UserManagementView(APIView):
+    def delete(self, request, user_id):
+        # In a real app, verify admin permissions here
+        result = db.users.delete_one({'id': user_id})
+        if result.deleted_count > 0:
+            return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            # Try by _id just in case
+            try:
+                from bson.objectid import ObjectId
+                result = db.users.delete_one({'_id': ObjectId(user_id)})
+                if result.deleted_count > 0:
+                    return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+            except:
+                pass
+                
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

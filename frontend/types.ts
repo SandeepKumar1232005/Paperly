@@ -30,6 +30,7 @@ export interface User {
   is_verified?: boolean; // For verification system
   handwriting_style?: string;
   handwriting_confidence?: number;
+  handwriting_sample_url?: string;
 }
 
 export interface Assignment {
