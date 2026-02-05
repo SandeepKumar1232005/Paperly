@@ -1,8 +1,7 @@
-
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Zap, Star, Shield } from 'lucide-react';
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import Logo from '../components/Logo';
+import { motion } from 'framer-motion';
 
 import { User } from '../types';
 import { api } from '../services/api';
@@ -19,27 +18,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [showSocialPicker, setShowSocialPicker] = useState<'google' | 'apple' | null>(null);
 
   const loginWithGoogle = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setIsLoading('google');
       try {
-        console.log("Google Token:", tokenResponse.access_token);
-        // Call backend to verify token and get user
         const user = await api.socialLogin('google', tokenResponse.access_token);
-
-        if (onSocialLoginSuccess) {
-          await onSocialLoginSuccess(user);
-        } else {
-          // Fallback if prop not provided (shouldn't happen with updated App.tsx)
-          console.error("onSocialLoginSuccess definition missing");
-          setError("Login configuration error");
-        }
+        if (onSocialLoginSuccess) onSocialLoginSuccess(user);
       } catch (err: any) {
-        console.error(err);
         setError(err.message || 'Google login failed');
-      } finally {
         setIsLoading(null);
       }
     },
@@ -59,99 +46,159 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden transition-colors duration-300">
-        <div className="p-8">
-          <div className="text-center mb-8 flex flex-col items-center">
-            <div className="p-2 cursor-pointer hover:scale-105 transition-transform" onClick={() => onNavigate('LANDING')}>
-              <Logo className="w-24 h-24" />
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a] relative overflow-hidden px-4">
+
+      {/* Background Effects */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a]" />
+        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[150px]" />
+        <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-fuchsia-500/15 rounded-full blur-[120px]" />
+      </div>
+
+      {/* Back Button */}
+      <button
+        onClick={() => onNavigate('LANDING')}
+        className="absolute top-6 left-6 z-20 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+      >
+        <ArrowLeft className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
+      </button>
+
+      {/* Login Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl mx-auto mb-6 shadow-lg shadow-violet-500/30">
+              P
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-4">Welcome Back</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Sign in to Paperly</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+            <p className="text-white/50">Sign in to continue your journey</p>
           </div>
 
-          {/* 
-          <div className="space-y-3 mb-6">
-            <button
-              onClick={() => loginWithGoogle()}
-              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
-            >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-              {isLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
-            </button>
-            <button
-              onClick={() => { }} // Placeholder logic
-              className="w-full flex items-center justify-center gap-3 bg-black text-white py-3 rounded-xl hover:bg-gray-900 transition-colors font-medium"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06.35C2.79 20.18 0 14.83 0 10.5c0-4.08 2.65-6.61 5.37-6.61 1.09 0 2.2.5 2.87.97.74.5 1.5.5 2.22 0 .91-.56 2.05-1.06 3.41-1.06 1.09 0 2.25.31 3.03.88-1.55 1.02-2.3 2.86-2.12 4.9.23 2.5 2.45 4.31 4.98 4.31.06 0 .12 0 .18-.01-.39 2.53-1.63 4.98-3.32 6.4h.42zM12.03 3.75c-.24-1.7 1.1-3.27 2.62-3.75.31 1.77-1.15 3.52-2.62 3.75z" />
-              </svg>
-              Continue with Apple
-            </button>
-          </div>
+          {/* Google Login */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => loginWithGoogle()}
+            disabled={!!isLoading}
+            className="w-full flex items-center justify-center gap-3 bg-white text-slate-800 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all mb-6"
+          >
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
+            <span>{isLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
+          </motion.button>
 
+          {/* Divider */}
           <div className="flex items-center gap-4 mb-6">
-            <div className="h-px bg-slate-100 dark:bg-slate-800 flex-1"></div>
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Or continue with email</span>
-            <div className="h-px bg-slate-100 dark:bg-slate-800 flex-1"></div>
-          </div> 
-          */}
+            <div className="h-px bg-white/10 flex-1" />
+            <span className="text-xs text-white/30 font-semibold uppercase tracking-widest">or</span>
+            <div className="h-px bg-white/10 flex-1" />
+          </div>
 
+          {/* Form */}
           <form onSubmit={handleStandardSubmit} className="space-y-5">
-            {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-medium border border-red-100">{error}</div>}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm font-medium flex items-center gap-2"
+              >
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                {error}
+              </motion.div>
+            )}
+
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email Address or Username</label>
+              <label className="block text-sm font-semibold text-white/70 mb-2">Email</label>
               <input
                 type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
-                placeholder="alice@student.com or alice123"
+                className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
+                placeholder="you@example.com"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Password</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-semibold text-white/70">Password</label>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('FORGOT_PASSWORD')}
+                  className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
+                >
+                  Forgot?
+                </button>
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors pr-12"
+                  className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all pr-12"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
-            <div className="text-right mb-4">
-              <button type="button" onClick={() => onNavigate('FORGOT_PASSWORD')} className="text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
-                Forgot password?
-              </button>
-            </div>
-            <button
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={!!isLoading}
-              className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg"
+              className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
             >
-              {isLoading === 'email' ? 'Signing In...' : 'Sign In'}
-            </button>
+              {isLoading === 'email' ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Signing In...
+                </>
+              ) : 'Sign In'}
+            </motion.button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-500">
-              New to Paperly?{' '}
-              <button onClick={() => onNavigate('REGISTER')} className="font-bold text-indigo-600 hover:underline">Create an account</button>
-            </p>
+          {/* Register Link */}
+          <p className="text-center text-white/50 mt-6">
+            Don't have an account?{' '}
+            <button
+              onClick={() => onNavigate('REGISTER')}
+              className="font-bold text-violet-400 hover:text-violet-300 transition-colors"
+            >
+              Sign Up Free
+            </button>
+          </p>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="flex items-center justify-center gap-6 mt-6 text-white/30 text-xs">
+          <div className="flex items-center gap-2">
+            <Shield size={14} className="text-green-400" />
+            <span>Secure</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap size={14} className="text-yellow-400" />
+            <span>Fast</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Star size={14} className="text-violet-400" />
+            <span>Trusted</span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

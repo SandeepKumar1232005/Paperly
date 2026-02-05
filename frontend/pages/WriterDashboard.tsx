@@ -1,11 +1,14 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User, Assignment, AssignmentStatus } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { checkAssignmentQuality } from '../services/gemini';
 import { api } from '../services/api';
 import EmptyState from '../components/EmptyState';
-import { Search, Briefcase } from 'lucide-react';
+import { Search, Briefcase, DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, Upload, X, Filter, FileText, Sparkles, Star, Zap, MessageSquare } from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
 
 interface WriterDashboardProps {
   user: User;
@@ -25,15 +28,32 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
   const [isChecking, setIsChecking] = useState(false);
   const [aiResult, setAiResult] = useState<{ score: number, feedback: string, plagiarismLikelihood: string } | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [newSampleUrl, setNewSampleUrl] = useState('');
+  const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'ACTIVE'>('MARKETPLACE');
 
   const myAssignments = assignments.filter(a => a.writerId === user.id);
-  // Include PENDING (legacy support) and PENDING_REVIEW
   const availableAssignments = assignments.filter(a =>
     (a.status === AssignmentStatus.PENDING || a.status === AssignmentStatus.PENDING_REVIEW) &&
     !a.writerId &&
     (!a.rejectedBy || !a.rejectedBy.includes(user.id))
   );
+
+  const revenueData = useMemo(() => {
+    const data = [
+      { name: 'Mon', revenue: 0 }, { name: 'Tue', revenue: 0 },
+      { name: 'Wed', revenue: 0 }, { name: 'Thu', revenue: 0 },
+      { name: 'Fri', revenue: 0 }, { name: 'Sat', revenue: 0 }, { name: 'Sun', revenue: 0 }
+    ];
+    const completed = myAssignments.filter(a => a.status === AssignmentStatus.COMPLETED);
+    completed.forEach((a, i) => {
+      const day = i % 7;
+      data[day].revenue += a.budget;
+    });
+    return data;
+  }, [myAssignments]);
+
+  const totalEarnings = myAssignments
+    .filter(a => a.status === AssignmentStatus.COMPLETED)
+    .reduce((sum, a) => sum + (a.net_earnings || a.budget * 0.9), 0);
 
   const handleAiCheck = async () => {
     if (!submissionText || !selectedAsgn) return;
@@ -43,15 +63,6 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
     setIsChecking(false);
   };
 
-  const handleFinalSubmit = () => {
-    if (selectedAsgn) {
-      onUploadSubmission(selectedAsgn.id, submissionText);
-      setSelectedAsgn(null);
-      setSubmissionText('');
-      setAiResult(null);
-    }
-  };
-
   const submitQuote = () => {
     if (quoteData && quoteData.amount) {
       onSubmitQuote(quoteData.id, Number(quoteData.amount), quoteData.comment, user.id);
@@ -59,444 +70,386 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
     }
   };
 
-  const addSample = () => {
-    if (newSampleUrl) {
-      const currentSamples = user.handwriting_samples || [];
-      onUpdateProfile({ handwriting_samples: [...currentSamples, newSampleUrl] });
-      setNewSampleUrl('');
-    }
-  };
-
-  const removeSample = (index: number) => {
-    const currentSamples = user.handwriting_samples || [];
-    const newSamples = [...currentSamples];
-    newSamples.splice(index, 1);
-    onUpdateProfile({ handwriting_samples: newSamples });
-  };
-
-  const styles = {
-    // Basic font styles for handwriting preview
-    handwriting: { fontFamily: '"Cedarville Cursive", cursive' }
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Writer Portal</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage your workload and submissions.</p>
-        </div>
-
-        <div className="flex gap-3 items-center">
-          {/* Availability Toggle */}
-          <div className="bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center shadow-sm">
-            {['ONLINE', 'BUSY', 'OFFLINE'].map((status) => (
-              <button
-                key={status}
-                onClick={() => onUpdateProfile({ availability_status: status as any })}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${user.availability_status === status
-                  ? (status === 'ONLINE' ? 'bg-green-100 text-green-700' : status === 'BUSY' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-200 text-slate-700')
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                  }`}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => setIsEditingProfile(!isEditingProfile)}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100 dark:shadow-none flex items-center gap-2"
-          >
-            <span>{isEditingProfile ? 'Done Editing' : 'Manage Profile & Samples'}</span>
-            {!isEditingProfile && <span className="bg-indigo-500 px-2 py-0.5 rounded text-xs">New</span>}
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#0a0a1a]">
+      {/* Background Effects */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[150px]" />
+        <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-[120px]" />
       </div>
 
-      {isEditingProfile && (
-        <div className="mb-8 p-6 bg-white dark:bg-slate-900 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm animate-in slide-in-from-top-4">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">My Handwriting Profile</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-600 mb-2">Verified Samples</h3>
-              <div className="flex flex-wrap gap-4 mb-4">
-                {(() => {
-                  const displayedSamples = (user.handwriting_samples && user.handwriting_samples.length > 0)
-                    ? user.handwriting_samples
-                    : (user.handwriting_sample_url ? [user.handwriting_sample_url] : []);
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
 
-                  if (displayedSamples.length === 0) {
-                    return (
-                      <p className="text-sm text-slate-400 italic">No samples uploaded yet. Upload specific handwriting styles to attract more students.</p>
-                    );
-                  }
-
-                  return displayedSamples.map((url, idx) => (
-                    <div key={idx} className="relative group w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border">
-                      <img src={url} alt="Sample" className="w-full h-full object-cover" />
-                      <button onClick={() => removeSample(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+        {/* Header Section */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 backdrop-blur-xl border border-white/10 rounded-3xl p-8"
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <img src={user.avatar} alt={user.name} className="w-14 h-14 rounded-2xl border-2 border-emerald-500/30" />
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Welcome, {user.name.split(' ')[0]}!</h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex text-yellow-400 text-xs gap-0.5">
+                      {[1, 2, 3, 4, 5].map(s => <Star key={s} size={12} fill="currentColor" />)}
                     </div>
-                  ));
-                })()}
-              </div>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                    onChange={async (e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        setIsChecking(true); // Reuse loading state or add specific one
-                        try {
-                          const url = await api.uploadFile(file);
-                          setNewSampleUrl(url);
-                        } finally {
-                          setIsChecking(false);
-                        }
-                      }
-                    }}
-                  />
-                  {newSampleUrl && <p className="text-xs text-green-600 mt-1">✓ Image selected (Click 'Add' to confirm)</p>}
+                    <span className="text-white/40 text-xs">Top Writer</span>
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
                 <button
-                  onClick={addSample}
-                  disabled={!newSampleUrl}
-                  className={`px-4 py-2 rounded text-sm font-bold transition-colors ${newSampleUrl ? 'bg-slate-900 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                  onClick={() => setActiveTab('MARKETPLACE')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'MARKETPLACE' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 border border-white/10 text-white/60 hover:text-white'}`}
                 >
-                  Add
+                  <Search size={16} /> Marketplace ({availableAssignments.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('ACTIVE')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'ACTIVE' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 border border-white/10 text-white/60 hover:text-white'}`}
+                >
+                  <Briefcase size={16} /> My Work ({myAssignments.length})
                 </button>
               </div>
-              <p className="text-xs text-slate-400 mt-2">✨ Tip: Upload high-clarity images of your cursive, print, and block handwriting.</p>
+            </motion.div>
+          </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
-                <h3 className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                  Payment QR Code
-                </h3>
-                <p className="text-xs text-slate-400 mb-4">Upload your UPI/Payment QR code to accept direct payments from students.</p>
+          {/* Earnings Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-6 relative overflow-hidden"
+          >
+            <div className="absolute top-4 right-4 text-emerald-400/20">
+              <DollarSign size={60} />
+            </div>
+            <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Total Earnings</p>
+            <h2 className="text-4xl font-bold text-white mt-2">₹{totalEarnings.toLocaleString()}</h2>
+            <div className="h-[60px] mt-4 -mx-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueData}>
+                  <defs>
+                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        </div>
 
-                <div className="flex items-start gap-4">
-                  {user.qr_code_url ? (
-                    <div className="relative group w-32 h-32 bg-white p-2 rounded-xl border2 shadow-sm border-indigo-100">
-                      <img src={user.qr_code_url} alt="Payment QR" className="w-full h-full object-contain" />
-                      <button
-                        onClick={() => onUpdateProfile({ qr_code_url: '' })}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove QR Code"
-                      >
-                        ×
-                      </button>
-                      <div className="absolute inset-x-0 bottom-0 bg-green-500 text-white text-[10px] font-bold text-center py-1 opacity-90">Active</div>
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            <AnimatePresence mode='wait'>
+              {activeTab === 'MARKETPLACE' ? (
+                <motion.div
+                  key="market"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                >
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                        <Zap className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white">Available Jobs</h2>
+                    </div>
+                  </div>
+
+                  {availableAssignments.length === 0 ? (
+                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-12 text-center">
+                      <Search className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                      <h3 className="text-lg font-bold text-white mb-2">No Jobs Available</h3>
+                      <p className="text-white/50">Check back later for new opportunities</p>
                     </div>
                   ) : (
-                    <div className="w-32 h-32 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2">
-                      <svg className="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      <span className="text-[10px]">Upload QR</span>
+                    <div className="grid md:grid-cols-2 gap-5">
+                      {availableAssignments.map(asgn => (
+                        <motion.div
+                          key={asgn.id}
+                          whileHover={{ y: -5 }}
+                          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 hover:border-emerald-500/30 transition-all"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="px-3 py-1 bg-white/10 text-white/60 text-xs font-semibold rounded-lg uppercase">{asgn.subject}</span>
+                            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-lg text-sm">₹{asgn.budget}</span>
+                          </div>
+                          <h3 className="font-bold text-lg text-white mb-2 line-clamp-1">{asgn.title}</h3>
+                          <p className="text-sm text-white/50 mb-4 line-clamp-2">{asgn.description}</p>
+                          <div className="flex items-center text-xs text-white/30 mb-4 gap-4">
+                            <span className="flex items-center gap-1"><Clock size={14} /> {new Date(asgn.deadline).toLocaleDateString()}</span>
+                            <span className="flex items-center gap-1"><FileText size={14} /> {asgn.pages || 1} Pages</span>
+                          </div>
+
+                          {quoteData?.id === asgn.id ? (
+                            <div className="space-y-2 bg-white/5 p-4 rounded-xl border border-white/10">
+                              <input
+                                type="number"
+                                className="w-full text-sm p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                                placeholder="Your Offer (₹)"
+                                value={quoteData.amount}
+                                onChange={e => setQuoteData({ ...quoteData, amount: e.target.value })}
+                              />
+                              <textarea
+                                className="w-full text-sm p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-emerald-500 resize-none h-16"
+                                placeholder="Pitch yourself..."
+                                value={quoteData.comment}
+                                onChange={e => setQuoteData({ ...quoteData, comment: e.target.value })}
+                              />
+                              <div className="flex gap-2">
+                                <button onClick={submitQuote} className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm py-2.5 rounded-lg font-bold">Send Quote</button>
+                                <button onClick={() => setQuoteData(null)} className="flex-1 bg-white/5 border border-white/10 text-white/60 text-sm py-2.5 rounded-lg font-semibold">Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' })}
+                              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all"
+                            >
+                              Submit Quote
+                            </button>
+                          )}
+                        </motion.div>
+                      ))}
                     </div>
                   )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="active"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                      <Briefcase className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white">Your Projects</h2>
+                  </div>
 
-                  <div className="flex-1">
-                    <label className="block w-full">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            const file = e.target.files[0];
-                            setIsChecking(true);
-                            try {
-                              const url = await api.uploadFile(file);
-                              onUpdateProfile({ qr_code_url: url });
-                            } finally {
-                              setIsChecking(false);
-                            }
-                          }
-                        }}
-                      />
-                      <span className="inline-block px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold cursor-pointer transition-colors border border-slate-200">
-                        {user.qr_code_url ? 'Replace QR Code' : 'Select Image'}
-                      </span>
-                    </label>
-                    <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
-                      Accepted formats: PNG, JPG. Ensure the QR code is clear and scannable.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="border-l pl-8">
-              <h3 className="text-sm font-semibold text-slate-600 mb-2">Profile Preview</h3>
-              <div className="flex items-center gap-4">
-                <img src={user.avatar} className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800" />
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-white">{user.name}</p>
-                  <p className="text-xs text-slate-500 capitalize">{user.role}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-yellow-400">★</span>
-                    <span className="text-sm font-bold text-slate-700">{user.average_rating || 'New'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  {myAssignments.length === 0 ? (
+                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-12 text-center">
+                      <Briefcase className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                      <h3 className="text-lg font-bold text-white mb-2">No Active Projects</h3>
+                      <p className="text-white/50">Browse the marketplace to find work</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {myAssignments.map(asgn => (
+                        <motion.div
+                          key={asgn.id}
+                          whileHover={{ scale: 1.01 }}
+                          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-start md:items-center hover:border-violet-500/30 transition-all"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-bold text-lg text-white">{asgn.title}</h3>
+                              <StatusBadge status={asgn.status} />
+                            </div>
+                            <p className="text-sm text-white/40 mb-2">Deadline: {new Date(asgn.deadline).toLocaleDateString()}</p>
+                            {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
+                              <div className="flex gap-4 text-xs font-mono text-white/40 mt-2">
+                                <span>Budget: ₹{asgn.budget}</span>
+                                <span className="text-red-400">Fee: -₹{asgn.platform_fee || (asgn.budget * 0.1).toFixed(0)}</span>
+                                <span className="text-emerald-400 font-bold">Net: ₹{asgn.net_earnings || (asgn.budget * 0.9).toFixed(0)}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button onClick={() => onOpenChat(asgn)} className="px-4 py-2.5 bg-violet-500/10 text-violet-400 rounded-xl font-semibold text-sm flex items-center gap-2">
+                              <MessageSquare size={16} /> Chat
+                            </button>
+                            {asgn.status !== AssignmentStatus.COMPLETED && (
+                              <button onClick={() => setSelectedAsgn(asgn)} className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-500/20">
+                                Submit Work
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-      )}
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Available Tasks */}
-        <div className="lg:col-span-1 space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-            <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
-            Marketplace
-          </h2>
-          <div className="space-y-4">
-            {assignments.filter(a => a.status === AssignmentStatus.QUOTED && a.provider?.id === user.id).length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-4">
-                <h3 className="font-bold text-yellow-800 text-sm">Pending Student Approval</h3>
-                <p className="text-xs text-yellow-600 mt-1">You have sent quotes for some assignments. Waiting for student confirmation.</p>
-              </div>
-            )}
-
-            {availableAssignments.map(asgn => (
-              <div key={asgn.id} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{asgn.title}</h3>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">₹{asgn.budget}</span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">{asgn.subject} • {new Date(asgn.deadline).toLocaleDateString()}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4">{asgn.description}</p>
-
-                {/* Financial Breakdown for Active/Completed Assignments */}
-                {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
-                  <div className="mb-4 text-xs bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-slate-500">Gross Budget:</span>
-                      <span className="font-medium">₹{asgn.budget}</span>
-                    </div>
-                    <div className="flex justify-between mb-1 text-red-500">
-                      <span>Platform Fee (10%):</span>
-                      <span>- ₹{asgn.platform_fee || (asgn.budget * 0.10).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-green-600 pt-1 border-t border-slate-200 dark:border-slate-700">
-                      <span>Net Earnings:</span>
-                      <span>₹{asgn.net_earnings || (asgn.budget * 0.90).toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
-
-
-                {quoteData?.id === asgn.id ? (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                    <input
-                      type="number"
-                      className="w-full text-sm p-2 border rounded"
-                      placeholder="Your Price (₹)"
-                      value={quoteData.amount}
-                      onChange={e => setQuoteData({ ...quoteData, amount: e.target.value })}
-                    />
-                    <textarea
-                      className="w-full text-sm p-2 border rounded resize-none"
-                      placeholder="Why this price? (Comment)"
-                      rows={2}
-                      value={quoteData.comment}
-                      onChange={e => setQuoteData({ ...quoteData, comment: e.target.value })}
-                    />
-                    <div className="flex gap-2">
-                      <button onClick={submitQuote} className="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Submit</button>
-                      <button onClick={() => setQuoteData(null)} className="flex-1 bg-red-100 text-red-600 hover:bg-red-200 text-xs py-2 rounded font-bold">Reject</button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' })}
-                    className="w-full bg-slate-100 text-slate-700 py-2 rounded-lg font-medium hover:bg-indigo-600 hover:text-white transition-all text-sm"
-                  >
-                    Review & Quote
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Profile Card */}
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="text-center mb-6">
+                <div className="relative inline-block">
+                  <img src={user.avatar} className="w-20 h-20 rounded-2xl border-2 border-white/10 mb-3" />
+                  <button onClick={() => setIsEditingProfile(true)} className="absolute -bottom-1 -right-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-2 rounded-xl shadow-lg">
+                    <Upload size={12} />
                   </button>
-                )}
+                </div>
+                <h3 className="font-bold text-white">{user.name}</h3>
+                <div className="flex justify-center gap-0.5 text-yellow-400 text-sm mt-1">★★★★★</div>
               </div>
-            ))}
-            {availableAssignments.length === 0 && (
-              <EmptyState
-                icon={Search}
-                title="No Tasks Available"
-                description="Check back later for new assignments."
-              />
-            )}
-          </div>
-        </div>
 
-        {/* Active Tasks */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            Active Workflows
-          </h2>
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
-                  <tr>
-                    <th className="px-6 py-3 font-semibold">Project</th>
-                    <th className="px-6 py-3 font-semibold">Deadline</th>
-                    <th className="px-6 py-3 font-semibold text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {myAssignments.map(asgn => (
-                    <tr key={asgn.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-slate-800">{asgn.title}</p>
-                        <div className="flex items-center gap-2">
-                          <StatusBadge status={asgn.status} />
-                          <span className="text-[10px] text-slate-400 uppercase">{asgn.subject}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">
-                        {new Date(asgn.deadline).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => onOpenChat(asgn)}
-                            className="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all"
-                          >
-                            Chat
-                          </button>
-                          {(asgn.status === AssignmentStatus.CONFIRMED || asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.ASSIGNED) && (
-                            <button
-                              onClick={() => onRejectAssignment(asgn.id)}
-                              className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white transition-all"
-                            >
-                              Reject
-                            </button>
-                          )}
-                          {asgn.status !== AssignmentStatus.COMPLETED && (
-                            <button
-                              onClick={() => setSelectedAsgn(asgn)}
-                              className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all"
-                            >
-                              Submit
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Availability</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {['ONLINE', 'BUSY', 'OFFLINE'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => onUpdateProfile({ availability_status: status as any })}
+                      className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${user.availability_status === status
+                          ? (status === 'ONLINE' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : status === 'BUSY' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/10 border-white/20 text-white/60')
+                          : 'border-transparent text-white/30 hover:bg-white/5'
+                        }`}
+                    >
+                      {status}
+                    </button>
                   ))}
-                  {myAssignments.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="px-6 py-12">
-                        <EmptyState
-                          icon={Briefcase}
-                          title="No Active Work"
-                          description="Pick tasks from the marketplace to start earning."
-                        />
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Pro Tip */}
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden">
+              <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+              <h3 className="font-bold text-lg mb-2 relative z-10">💡 Pro Tip</h3>
+              <p className="text-emerald-100 text-sm relative z-10">Upload verified handwriting samples to increase your hire rate by 30%.</p>
+              <button onClick={() => setIsEditingProfile(true)} className="mt-4 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-bold transition-colors w-full relative z-10">
+                Manage Profile
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Submission Modal with AI Support */}
-      {
-        selectedAsgn && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 shadow-2xl">
-              <div className="p-6 border-b flex justify-between items-center bg-indigo-50">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Submit: {selectedAsgn.title}</h2>
-                  <p className="text-sm text-indigo-600 font-medium">Subject: {selectedAsgn.subject}</p>
-                </div>
-                <button onClick={() => setSelectedAsgn(null)} className="text-slate-400 hover:text-slate-600 text-3xl">&times;</button>
+      {/* Submission Modal */}
+      <AnimatePresence>
+        {selectedAsgn && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+              <div className="p-5 border-b border-white/10 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-white">Submitting: {selectedAsgn.title}</h2>
+                <button onClick={() => setSelectedAsgn(null)} className="p-2 hover:bg-white/10 rounded-xl text-white/60">
+                  <X size={20} />
+                </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <label className="block font-bold text-slate-800">Your Work (Text Content)</label>
-                  <textarea
-                    value={submissionText}
-                    onChange={e => setSubmissionText(e.target.value)}
-                    className="w-full h-[400px] p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none resize-none bg-slate-50 font-mono text-sm"
-                    placeholder="Paste or type your completed assignment content here..."
-                  />
-                </div>
+              <div className="flex-1 overflow-y-auto p-6 grid md:grid-cols-2 gap-6">
+                <textarea
+                  value={submissionText}
+                  onChange={e => setSubmissionText(e.target.value)}
+                  className="w-full h-full min-h-[300px] p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 font-mono text-sm focus:border-violet-500 outline-none resize-none"
+                  placeholder="Paste your final work here..."
+                />
 
                 <div className="space-y-6">
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-300">
-                    <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                      <span className="text-indigo-600">✨</span> Gemini AI Quality Check
-                    </h3>
-                    <p className="text-sm text-slate-500 mb-6">
-                      Use our AI engine to review your work for quality, structure, and plagiarism risk before final submission.
-                    </p>
+                  <div className="bg-violet-500/10 p-6 rounded-2xl border border-violet-500/20">
+                    <h3 className="font-bold text-violet-400 mb-2 flex items-center gap-2"><Sparkles size={18} /> AI Quality Check</h3>
+                    <p className="text-xs text-violet-400/60 mb-4">Validate your submission before sending.</p>
 
-                    {isChecking ? (
-                      <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                        <p className="text-indigo-600 font-medium animate-pulse text-sm">Analyzing content structure...</p>
-                      </div>
-                    ) : aiResult ? (
-                      <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-500">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-slate-600">Quality Score</span>
-                          <div className="w-16 h-16 rounded-full border-4 border-indigo-500 flex items-center justify-center">
-                            <span className="text-xl font-bold text-indigo-600">{aiResult.score}</span>
-                          </div>
-                        </div>
-                        <div className="p-4 bg-white rounded-xl border text-sm text-slate-700 italic">
-                          "{aiResult.feedback}"
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-500">Plagiarism Risk:</span>
-                          <span className={`font-bold ${aiResult.plagiarismLikelihood.toLowerCase().includes('low') ? 'text-green-600' : 'text-red-500'}`}>
-                            {aiResult.plagiarismLikelihood}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => { setAiResult(null); setSubmissionText(''); }}
-                          className="text-indigo-600 text-xs font-semibold hover:underline"
-                        >
-                          Reset & Edit
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleAiCheck}
-                        disabled={!submissionText}
-                        className="w-full py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition-all disabled:opacity-50"
-                      >
-                        Run AI Quality Check
+                    {!aiResult ? (
+                      <button onClick={handleAiCheck} disabled={!submissionText || isChecking} className="w-full py-3 bg-violet-600 text-white rounded-xl font-bold disabled:opacity-50">
+                        {isChecking ? 'Analyzing...' : 'Run Analysis'}
                       </button>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg">
+                          <span className="text-sm font-semibold text-white/60">Score</span>
+                          <span className="text-xl font-bold text-violet-400">{aiResult.score}/100</span>
+                        </div>
+                        <p className="text-xs italic text-white/50 p-3 bg-white/5 rounded-lg">"{aiResult.feedback}"</p>
+                        <button onClick={() => setAiResult(null)} className="text-xs text-violet-400 font-semibold">Reset</button>
+                      </div>
                     )}
                   </div>
 
-                  <div className="pt-6 border-t border-slate-100">
-                    <p className="text-xs text-slate-400 mb-4">
-                      By submitting, you confirm that this work is original and meets the academic standards requested by the student.
-                    </p>
-                    <button
-                      onClick={handleFinalSubmit}
-                      disabled={!submissionText}
-                      className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50"
-                    >
-                      Final Submission
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => { onUploadSubmission(selectedAsgn.id, submissionText); setSelectedAsgn(null); }}
+                    disabled={!submissionText}
+                    className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-violet-500/20 disabled:opacity-50"
+                  >
+                    Submit Final Work
+                  </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        )
-      }
-    </div >
+        )}
+      </AnimatePresence>
+
+      {/* Profile Edit Modal */}
+      {isEditingProfile && (
+        <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsEditingProfile(false); }}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#12122a] border border-white/10 p-6 rounded-2xl max-w-lg w-full shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-bold text-xl text-white">Edit Profile</h2>
+              <button onClick={() => setIsEditingProfile(false)} className="p-2 hover:bg-white/10 rounded-xl text-white/60">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Handwriting Sample */}
+              <div>
+                <p className="text-sm font-semibold text-white/70 mb-2">Handwriting Sample</p>
+                <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer relative group">
+                  <Upload className="mx-auto text-emerald-400 mb-2 group-hover:scale-110 transition-transform" size={24} />
+                  <p className="text-xs text-white/40">Upload sample image</p>
+                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={async (e) => {
+                    if (e.target.files?.[0]) {
+                      const url = await api.uploadFile(e.target.files[0]);
+                      onUpdateProfile({ handwriting_samples: [...(user.handwriting_samples || []), url] });
+                      alert('Handwriting Sample Uploaded!');
+                    }
+                  }} />
+                </div>
+              </div>
+
+              {/* QR Code */}
+              <div>
+                <p className="text-sm font-semibold text-white/70 mb-2">Payment QR Code</p>
+                <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer relative group">
+                  {user.qr_code_url ? (
+                    <div className="relative z-10">
+                      <img src={user.qr_code_url} alt="QR" className="mx-auto h-24 object-contain mb-2 rounded-lg" />
+                      <p className="text-xs text-emerald-400 font-semibold">QR Code Active</p>
+                      <p className="text-[10px] text-white/30">Click to replace</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mx-auto w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <DollarSign className="text-emerald-400" size={20} />
+                      </div>
+                      <p className="text-xs text-white/40">Upload Payment QR (UPI)</p>
+                    </>
+                  )}
+                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={async (e) => {
+                    if (e.target.files?.[0]) {
+                      const url = await api.uploadFile(e.target.files[0]);
+                      onUpdateProfile({ qr_code_url: url });
+                      alert('QR Code Uploaded Successfully!');
+                    }
+                  }} />
+                </div>
+              </div>
+
+              <button onClick={() => setIsEditingProfile(false)} className="w-full py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20">
+                Done
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
   );
 };
 

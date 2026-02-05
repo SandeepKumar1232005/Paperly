@@ -1,5 +1,5 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User, Assignment, AssignmentStatus, SystemLog, Transaction } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { api } from '../services/api';
@@ -7,6 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, PieChart, Pie, ComposedChart, Line
 } from 'recharts';
+import { Activity, Users, DollarSign, Server, Bell, Settings, Terminal, Shield, Search, Trash2, TrendingUp } from 'lucide-react';
 
 interface AdminDashboardProps {
   user: User;
@@ -20,6 +21,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [userFilter, setUserFilter] = useState<'ALL' | 'STUDENT' | 'WRITER'>('ALL');
+  const [userSearch, setUserSearch] = useState('');
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeTab === 'HEALTH') {
@@ -32,15 +35,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
   }, [activeTab, userFilter]);
 
   const loadUsers = async () => {
-    // If filter changes, we might want to refetch or just filter client side if small dataset
-    // For now, let's fetch based on filter if api supports it, or just all.
-    // The api.getUsers supports role.
     const users = await api.getUsers(userFilter);
     setAllUsers(users);
   };
 
-  // Delete Modal State
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const filteredUsers = useMemo(() => {
+    return allUsers.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase()));
+  }, [allUsers, userSearch]);
 
   const handleDeleteUser = (userId: string) => {
     setUserToDelete(userId);
@@ -54,13 +55,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
     }
   };
 
-  // Aggregate stats
   const totalRevenue = assignments.reduce((sum, a) => sum + a.budget, 0);
+  const totalStudents = users.filter(u => u.role === 'STUDENT').length;
   const totalWriters = users.filter(u => u.role === 'WRITER').length;
-  const completedOrders = assignments.filter(a => a.status === AssignmentStatus.COMPLETED).length;
-  const conversionRate = assignments.length > 0 ? ((completedOrders / assignments.length) * 100).toFixed(1) : 0;
 
-  // Monthly Trends
   const monthlyTrends = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const data: Record<string, { name: string, orders: number, revenue: number }> = {};
@@ -94,340 +92,281 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
       .slice(0, 5);
   }, [users, assignments]);
 
+  const NavButton = ({ tab, icon: Icon, label }: { tab: string, icon: any, label: string }) => (
+    <button
+      onClick={() => setActiveTab(tab as any)}
+      className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all font-medium ${activeTab === tab ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-lg shadow-rose-500/30' : 'text-white/50 hover:bg-white/5 hover:text-white'}`}
+    >
+      <Icon size={18} />
+      <span>{label}</span>
+    </button>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Admin Control Center</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Simulated Backend Architecture Monitor</p>
+    <div className="flex min-h-screen bg-[#0a0a1a]">
+      {/* Background Effects */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[150px]" />
+        <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[120px]" />
+      </div>
+
+      {/* Sidebar */}
+      <div className="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col fixed h-full z-10 hidden lg:flex">
+        <div className="mb-10 px-2">
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-pink-600 flex items-center justify-center">
+              <Shield className="text-white" size={20} />
+            </div>
+            Admin
+          </h1>
         </div>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-          <button onClick={() => setActiveTab('OVERVIEW')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'OVERVIEW' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>Overview</button>
-          <button onClick={() => setActiveTab('USERS')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'USERS' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>Users</button>
-          <button onClick={() => setActiveTab('COMMUNICATION')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'COMMUNICATION' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>Communication</button>
-          <button onClick={() => setActiveTab('SUPPORT')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'SUPPORT' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>Support</button>
-          <button onClick={() => setActiveTab('SETTINGS')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'SETTINGS' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>Settings</button>
-          <button onClick={() => setActiveTab('HEALTH')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'HEALTH' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>System</button>
+        <div className="space-y-2 flex-1">
+          <NavButton tab="OVERVIEW" icon={Activity} label="Overview" />
+          <NavButton tab="USERS" icon={Users} label="User Management" />
+          <NavButton tab="HEALTH" icon={Server} label="System Health" />
+          <NavButton tab="COMMUNICATION" icon={Bell} label="Broadcasts" />
+          <NavButton tab="SETTINGS" icon={Settings} label="Settings" />
+        </div>
+        <div className="text-xs text-white/30 text-center">
+          v2.5.0 (Stable)
         </div>
       </div>
 
-      {activeTab === 'OVERVIEW' && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-            {[
-              { label: 'Revenue (Escrow)', value: `$${totalRevenue.toLocaleString()}`, color: 'text-emerald-600', icon: '💰' },
-              { label: 'System Uptime', value: '99.9%', color: 'text-indigo-600', icon: '⚡' },
-              { label: 'Active Sessions', value: '42', color: 'text-purple-600', icon: '👤' },
-              { label: 'DB Queries/sec', value: '1.2', color: 'text-slate-800', icon: '🗄️' }
-            ].map((kpi, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 flex items-center gap-2">
-                  <span>{kpi.icon}</span> {kpi.label}
-                </p>
-                <p className={`text-3xl font-bold ${kpi.color}`}>{kpi.value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h2 className="font-bold mb-6">Traffic Analysis</h2>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyTrends}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="revenue" stroke="#6366F1" fill="#EEF2FF" strokeWidth={3} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h2 className="font-bold mb-4 text-sm">Top Writers (Revenue Share)</h2>
-              <div className="space-y-4">
-                {topWriters.map(w => (
-                  <div key={w.id} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <img src={w.avatar} className="w-6 h-6 rounded-full" />
-                      <span className="font-bold">{w.name}</span>
-                    </div>
-                    <span className="text-indigo-600 font-bold">${w.earnings.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {activeTab === 'HEALTH' && (
-        <div className="grid lg:grid-cols-2 gap-8 animate-in fade-in duration-500">
-          {/* Server Logs */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col h-[600px]">
-            <div className="p-4 bg-slate-800 flex justify-between items-center border-b border-white/5">
-              <h2 className="text-indigo-400 font-bold text-sm tracking-widest uppercase">Live Server Logs</h2>
-              <div className="flex gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="text-[10px] text-green-500 font-bold">CONNECTED</span>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] space-y-2">
-              {logs.map(log => (
-                <div key={log.id} className="text-slate-400 flex gap-4 border-b border-white/5 pb-2">
-                  <span className="text-slate-600">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                  <span className={`font-bold w-12 ${log.method === 'GET' ? 'text-blue-400' :
-                    log.method === 'POST' ? 'text-green-400' : 'text-yellow-400'
-                    }`}>{log.method}</span>
-                  <span className="flex-1 text-slate-300">{log.endpoint}</span>
-                  <span className={`${log.statusCode >= 400 ? 'text-red-500' : 'text-green-500'}`}>{log.statusCode}</span>
-                  <span className="text-indigo-400">{log.duration}ms</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Transaction History */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-[600px] flex flex-col">
-            <div className="p-4 bg-slate-50 border-b flex justify-between items-center">
-              <h2 className="font-bold text-slate-800 text-sm">Escrow Transaction Ledger</h2>
-              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">STABLE</span>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 text-[10px] text-slate-400 font-bold uppercase sticky top-0">
-                  <tr>
-                    <th className="px-6 py-3">ID</th>
-                    <th className="px-6 py-3">Type</th>
-                    <th className="px-6 py-3">Amount</th>
-                    <th className="px-6 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y text-sm">
-                  {transactions.map(tr => (
-                    <tr key={tr.id} className="hover:bg-slate-50">
-                      <td className="px-6 py-4 font-mono text-[10px] text-slate-400">#{tr.id.slice(-6)}</td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${tr.type === 'PAYMENT' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
-                          }`}>{tr.type}</span>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-slate-700">${tr.amount.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-emerald-600 text-xs font-bold">{tr.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64 p-8 relative z-10">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white capitalize">{activeTab.toLowerCase()}</h2>
+          <p className="text-white/50 text-sm">Real-time platform insights and controls.</p>
         </div>
 
-
-      )}
-
-      {activeTab === 'COMMUNICATION' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 className="font-bold mb-4">Post Announcement</h2>
-            <div className="space-y-4">
-              <input type="text" placeholder="Subject" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" id="announcement-title" />
-              <textarea placeholder="Message to users..." className="w-full px-4 py-2 border rounded-lg h-32 outline-none" id="announcement-content"></textarea>
-              <div className="flex justify-between items-center">
-                <select className="px-4 py-2 border rounded-lg text-sm outline-none" id="announcement-audience">
-                  <option value="ALL">All Users</option>
-                  <option value="STUDENT">Students Only</option>
-                  <option value="WRITER">Writers Only</option>
-                </select>
-                <button
-                  onClick={async () => {
-                    const title = (document.getElementById('announcement-title') as HTMLInputElement).value;
-                    const content = (document.getElementById('announcement-content') as HTMLInputElement).value;
-                    const audience = (document.getElementById('announcement-audience') as HTMLSelectElement).value;
-                    await api.createAnnouncement({ title, content, target_audience: audience });
-                    alert('Announcement Posted!');
-                  }}
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors"
-                >
-                  Post Message
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'SUPPORT' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b flex justify-between items-center">
-            <h2 className="font-bold">Support Tickets</h2>
-            <span className="text-xs text-slate-500">View recent issues</span>
-          </div>
-          <div className="divide-y">
-            {[1, 2].map((i) => (
-              <div key={i} className="p-6 flex justify-between items-start hover:bg-slate-50">
-                <div>
-                  <h3 className="font-bold text-sm">Login Issue #{i}</h3>
-                  <p className="text-sm text-slate-600 mt-1">User cannot access account via Google login.</p>
-                  <div className="flex gap-2 mt-2">
-                    <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-[10px] font-bold">OPEN</span>
-                    <span className="text-[10px] text-slate-400 flex items-center">john@example.com</span>
-                  </div>
-                </div>
-                <button className="text-xs font-bold text-indigo-600 border border-indigo-200 px-3 py-1 rounded hover:bg-indigo-50">Resolve</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'SETTINGS' && (
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 className="font-bold mb-6">Platform Settings</h2>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold">Maintenance Mode</h3>
-                  <p className="text-xs text-slate-500">Disable access for all non-admin users</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                </label>
-              </div>
-              <div className="pt-6 border-t">
-                <label className="block text-sm font-bold mb-2">Platform Fee (%)</label>
-                <div className="flex gap-4">
-                  <input type="number" defaultValue={10} className="w-24 px-3 py-2 border rounded-lg" />
-                  <button className="text-sm font-bold text-indigo-600">Update</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'REPORTS' && (
-        <div className="bg-white p-20 rounded-3xl border text-center">
-          <h2 className="text-2xl font-bold mb-4">Export Reports</h2>
-          <p className="text-slate-500">Select a report type to generate a simulated download link.</p>
-        </div>
-      )}
-      {activeTab === 'USERS' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-            <h2 className="font-bold text-slate-800">User Management</h2>
-            <div className="flex gap-2">
-              <select
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value as any)}
-                className="px-3 py-2 border rounded-lg text-xs font-bold text-slate-600 outline-none"
-              >
-                <option value="ALL">All Users</option>
-                <option value="STUDENT">Students</option>
-                <option value="WRITER">Writers</option>
-              </select>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 text-[10px] text-slate-400 font-bold uppercase">
-                <tr>
-                  <th className="px-6 py-4">User</th>
-                  <th className="px-6 py-4">Role</th>
-                  <th className="px-6 py-4">Email</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y text-sm">
-                {allUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <img src={u.avatar} className="w-8 h-8 rounded-full bg-slate-200" />
-                        <span className="font-bold text-slate-700">{u.name}</span>
+        <AnimatePresence mode='wait'>
+          {activeTab === 'OVERVIEW' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                {[
+                  { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, color: 'from-rose-500 to-pink-500', icon: DollarSign },
+                  { label: 'Active Students', value: totalStudents, color: 'from-blue-500 to-cyan-500', icon: Users },
+                  { label: 'Writers Online', value: totalWriters, color: 'from-violet-500 to-purple-500', icon: Activity },
+                  { label: 'Server Load', value: '12%', color: 'from-emerald-500 to-green-500', icon: Server }
+                ].map((kpi, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${kpi.color} flex items-center justify-center`}>
+                        <kpi.icon className="text-white" size={24} />
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-[10px] font-bold ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                        u.role === 'WRITER' ? 'bg-indigo-100 text-indigo-700' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                        {u.role}
+                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full flex items-center gap-1">
+                        <TrendingUp size={12} /> +4.5%
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">{u.email}</td>
-                    <td className="px-6 py-4">
-                      {u.is_verified ? (
-                        <span className="text-emerald-600 font-bold text-[10px] flex items-center gap-1">
-                          ✓ VERIFIED
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-bold text-[10px]">UNVERIFIED</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {!u.is_verified && (
-                        <button
-                          onClick={async () => {
-                            await api.verifyUser(u.id);
-                            setAllUsers(prev => prev.map(user =>
-                              user.id === u.id ? { ...user, is_verified: true } : user
-                            ));
-                          }}
-                          className="text-emerald-500 hover:text-emerald-700 font-bold text-xs mr-3"
-                        >
-                          Verify
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteUser(u.id)}
-                        className="text-red-500 hover:text-red-700 font-bold text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
+                    </div>
+                    <p className="text-white/50 text-sm font-medium">{kpi.label}</p>
+                    <h3 className="text-3xl font-bold text-white mt-1">{kpi.value}</h3>
+                  </motion.div>
                 ))}
-              </tbody>
-            </table>
-            {allUsers.length === 0 && (
-              <div className="p-10 text-center text-slate-400">No users found.</div>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Delete Confirmation Modal */}
-      {userToDelete && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
-            <div className="p-6 text-center">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
               </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-2">Delete User?</h3>
-              <p className="text-sm text-slate-500 mb-6">
-                Are you sure you want to delete this user? This action cannot be undone and will remove all their data permanently.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setUserToDelete(null)}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDeleteUser}
-                  className="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 shadow-md shadow-red-100 transition-colors"
-                >
-                  Delete
-                </button>
+
+              {/* Charts */}
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white/5 backdrop-blur-sm border border-white/10 p-6 rounded-2xl">
+                  <h3 className="font-bold text-white mb-6">Financial Performance</h3>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={monthlyTrends}>
+                        <defs>
+                          <linearGradient id="colorRevAdmin" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)' }} />
+                        <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
+                        <Area type="monotone" dataKey="revenue" stroke="#f43f5e" fillOpacity={1} fill="url(#colorRevAdmin)" strokeWidth={3} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-6 rounded-2xl">
+                  <h3 className="font-bold text-white mb-6">Top Performers</h3>
+                  <div className="space-y-4">
+                    {topWriters.map((w, i) => (
+                      <div key={w.id} className="flex items-center gap-3 pb-3 border-b border-white/5 last:border-0 last:pb-0">
+                        <span className="font-bold text-white/30 w-4">{i + 1}</span>
+                        <img src={w.avatar} className="w-10 h-10 rounded-full" />
+                        <div className="flex-1">
+                          <p className="font-bold text-white text-sm">{w.name}</p>
+                          <p className="text-xs text-white/40">{w.completed} orders</p>
+                        </div>
+                        <span className="font-bold text-rose-400 text-sm">₹{w.earnings}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'HEALTH' && (
+            <div className="grid lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]">
+              {/* Console */}
+              <div className="bg-[#0d0d1a] rounded-2xl border border-white/10 overflow-hidden flex flex-col font-mono text-sm">
+                <div className="bg-white/5 p-3 flex justify-between items-center border-b border-white/10">
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                  <span className="text-white/40 text-xs flex items-center gap-2"><Terminal size={12} /> server.log</span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-2 text-white/70">
+                  {logs.map((log, i) => (
+                    <div key={i} className="flex gap-3 hover:bg-white/5 p-1 rounded">
+                      <span className="text-white/30 shrink-0">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                      <span className={`font-bold ${log.method === 'GET' ? 'text-cyan-400' : 'text-emerald-400'}`}>{log.method}</span>
+                      <span className="break-all">{log.endpoint}</span>
+                      <span className={`ml-auto font-bold ${log.statusCode >= 400 ? 'text-red-500' : 'text-emerald-400'}`}>{log.statusCode}</span>
+                      <span className="text-white/30 w-16 text-right">{log.duration}ms</span>
+                    </div>
+                  ))}
+                  <div className="animate-pulse text-rose-500">_</div>
+                </div>
+              </div>
+
+              {/* Transactions */}
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-white/10 bg-white/5">
+                  <h3 className="font-bold text-white">Escrow Ledger</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-white/5 text-xs uppercase text-white/40 sticky top-0">
+                      <tr>
+                        <th className="px-6 py-3">ID</th>
+                        <th className="px-6 py-3">Type</th>
+                        <th className="px-6 py-3">Amount</th>
+                        <th className="px-6 py-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-sm">
+                      {transactions.map(tr => (
+                        <tr key={tr.id} className="hover:bg-white/5">
+                          <td className="px-6 py-3 font-mono text-white/40">#{tr.id.slice(-6)}</td>
+                          <td className="px-6 py-3"><span className={`px-2 py-1 rounded text-xs font-bold ${tr.type === 'PAYMENT' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>{tr.type}</span></td>
+                          <td className="px-6 py-3 font-bold text-white">₹{tr.amount}</td>
+                          <td className="px-6 py-3 text-emerald-400 font-bold text-xs">{tr.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {activeTab === 'USERS' && (
+            <div className="space-y-4">
+              <div className="flex gap-4 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-rose-500"
+                  />
+                </div>
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value as any)}
+                  className="px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white outline-none"
+                >
+                  <option value="ALL" className="bg-slate-900">All Roles</option>
+                  <option value="STUDENT" className="bg-slate-900">Students</option>
+                  <option value="WRITER" className="bg-slate-900">Writers</option>
+                </select>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-white/5 text-xs font-bold text-white/40 uppercase">
+                    <tr>
+                      <th className="px-6 py-4">User</th>
+                      <th className="px-6 py-4">Role</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredUsers.map(u => (
+                      <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <img src={u.avatar} className="w-10 h-10 rounded-full" />
+                            <div>
+                              <p className="font-bold text-white">{u.name}</p>
+                              <p className="text-xs text-white/40">{u.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2.5 py-1 rounded text-xs font-bold ${u.role === 'ADMIN' ? 'bg-rose-500/10 text-rose-400' :
+                            u.role === 'WRITER' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'
+                            }`}>{u.role}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {u.is_verified ? <span className="text-emerald-400 font-bold text-xs">Verified</span> : <span className="text-white/30 font-bold text-xs">Unverified</span>}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button onClick={() => handleDeleteUser(u.id)} className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredUsers.length === 0 && <div className="p-8 text-center text-white/30">No users found.</div>}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'COMMUNICATION' && (
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-8 rounded-2xl text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-600 to-pink-600 flex items-center justify-center mx-auto mb-4">
+                <Bell size={32} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Broadcast Center</h3>
+              <p className="text-white/50 mt-2">Send announcements and notifications to all users.</p>
+              <div className="mt-6 max-w-lg mx-auto space-y-4">
+                <input type="text" placeholder="Subject" className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 outline-none focus:border-rose-500" />
+                <textarea placeholder="Message..." className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl h-32 text-white placeholder-white/30 outline-none focus:border-rose-500 resize-none"></textarea>
+                <button className="w-full bg-gradient-to-r from-rose-600 to-pink-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-rose-500/30">Send Broadcast</button>
+              </div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Delete Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#12122a] border border-white/10 p-6 rounded-2xl max-w-sm w-full text-center">
+            <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="text-red-400" size={28} />
+            </div>
+            <h3 className="font-bold text-lg text-white mb-2">Confirm Deletion</h3>
+            <p className="text-white/50 mb-6">Permanently remove this user?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setUserToDelete(null)} className="flex-1 py-3 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20">Cancel</button>
+              <button onClick={confirmDeleteUser} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700">Delete</button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

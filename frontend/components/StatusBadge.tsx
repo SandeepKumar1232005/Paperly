@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { AssignmentStatus } from '../types';
 
@@ -8,20 +7,20 @@ interface StatusBadgeProps {
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const styles: Record<AssignmentStatus, string> = {
-    [AssignmentStatus.PENDING]: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    [AssignmentStatus.PENDING_REVIEW]: 'bg-amber-100 text-amber-700 border-amber-200',
-    [AssignmentStatus.QUOTED]: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-    [AssignmentStatus.CONFIRMED]: 'bg-sky-100 text-sky-700 border-sky-200',
-    [AssignmentStatus.ASSIGNED]: 'bg-blue-100 text-blue-700 border-blue-200',
-    [AssignmentStatus.IN_PROGRESS]: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    [AssignmentStatus.SUBMITTED]: 'bg-purple-100 text-purple-700 border-purple-200',
-    [AssignmentStatus.COMPLETED]: 'bg-green-100 text-green-700 border-green-200',
-    [AssignmentStatus.REVISION]: 'bg-red-100 text-red-700 border-red-200',
-    [AssignmentStatus.CANCELLED]: 'bg-slate-100 text-slate-700 border-slate-200',
+    [AssignmentStatus.PENDING]: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    [AssignmentStatus.PENDING_REVIEW]: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    [AssignmentStatus.QUOTED]: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    [AssignmentStatus.CONFIRMED]: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+    [AssignmentStatus.ASSIGNED]: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    [AssignmentStatus.IN_PROGRESS]: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+    [AssignmentStatus.SUBMITTED]: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+    [AssignmentStatus.COMPLETED]: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    [AssignmentStatus.REVISION]: 'bg-red-500/10 text-red-400 border-red-500/20',
+    [AssignmentStatus.CANCELLED]: 'bg-white/10 text-white/40 border-white/20',
   };
 
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status]}`}>
+    <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${styles[status]}`}>
       {status.replace('_', ' ')}
     </span>
   );
