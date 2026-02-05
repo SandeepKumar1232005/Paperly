@@ -1,9 +1,8 @@
-
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, UserPlus, BookOpen, PenTool } from 'lucide-react';
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { motion } from 'framer-motion';
 import { UserRole, User } from '../types';
-import Logo from '../components/Logo';
 import { api } from '../services/api';
 
 interface RegisterProps {
@@ -14,7 +13,7 @@ interface RegisterProps {
 
 const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, onNavigate }) => {
   const [name, setName] = useState('');
-  const [username, setUsername] = useState(''); // New state
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,19 +25,11 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
     onSuccess: async (tokenResponse) => {
       setIsLoading('google');
       try {
-        console.log("Google Token:", tokenResponse.access_token);
-        // Call backend to verify token and get user
-        // Note: For registration, we might want to pass the selected ROLE to backend if possible.
-        // However, standard Google Login usually just creates user. 
-        // We will login first, then update role if it's new/default. 
-        // But api.socialLogin returns the user.
         const user = await api.socialLogin('google', tokenResponse.access_token);
-
         if (onSocialLoginSuccess) {
           await onSocialLoginSuccess(user);
         }
       } catch (err: any) {
-        console.error(err);
         setError(err.message || 'Google signup failed');
       } finally {
         setIsLoading(null);
@@ -66,88 +57,97 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden transition-colors duration-300">
-        <div className="p-8">
-          <div className="text-center mb-8 flex flex-col items-center">
-            <div className="p-2 cursor-pointer hover:scale-105 transition-transform" onClick={() => onNavigate('LANDING')}>
-              <Logo className="w-24 h-24" />
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a] relative overflow-hidden px-4 py-8">
+      {/* Background Effects */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a]" />
+        <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[150px]" />
+        <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/15 rounded-full blur-[120px]" />
+      </div>
+
+      {/* Back Button */}
+      <button
+        onClick={() => onNavigate('LANDING')}
+        className="absolute top-6 left-6 z-20 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+      >
+        <ArrowLeft className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
+      </button>
+
+      {/* Register Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl mx-auto mb-6 shadow-lg shadow-violet-500/30">
+              <UserPlus size={28} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-4">Join Paperly</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Select your account type to get started</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Join Paperly</h1>
+            <p className="text-white/50">Create your account to get started</p>
           </div>
 
-          {/* 
-          <div className="space-y-3 mb-6">
+          {/* Role Selector */}
+          <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl gap-1 mb-6">
             <button
-              onClick={() => loginWithGoogle()}
-              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
+              type="button"
+              onClick={() => setRole('STUDENT')}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${role === 'STUDENT' ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg' : 'text-white/50 hover:text-white'}`}
             >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-              {isLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
+              <BookOpen size={16} /> Student
             </button>
             <button
-              onClick={() => { }} // Placeholder logic
-              className="w-full flex items-center justify-center gap-3 bg-black text-white py-3 rounded-xl hover:bg-gray-900 transition-colors font-medium"
+              type="button"
+              onClick={() => setRole('WRITER')}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${role === 'WRITER' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-white/50 hover:text-white'}`}
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06.35C2.79 20.18 0 14.83 0 10.5c0-4.08 2.65-6.61 5.37-6.61 1.09 0 2.2.5 2.87.97.74.5 1.5.5 2.22 0 .91-.56 2.05-1.06 3.41-1.06 1.09 0 2.25.31 3.03.88-1.55 1.02-2.3 2.86-2.12 4.9.23 2.5 2.45 4.31 4.98 4.31.06 0 .12 0 .18-.01-.39 2.53-1.63 4.98-3.32 6.4h.42zM12.03 3.75c-.24-1.7 1.1-3.27 2.62-3.75.31 1.77-1.15 3.52-2.62 3.75z" />
-              </svg>
-              Continue with Apple
+              <PenTool size={16} /> Writer
             </button>
           </div>
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-px bg-slate-100 dark:bg-slate-800 flex-1"></div>
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Or register with email</span>
-            <div className="h-px bg-slate-100 dark:bg-slate-800 flex-1"></div>
-          </div> 
-          */}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-medium border border-red-100">{error}</div>}
-
-            <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1 transition-colors">
-              <button
-                type="button"
-                onClick={() => setRole('STUDENT')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'STUDENT' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm font-medium flex items-center gap-2"
               >
-                I'm a Student
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('WRITER')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'WRITER' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
-              >
-                I'm a Writer
-              </button>
-            </div>
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                {error}
+              </motion.div>
+            )}
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
+              <label className="block text-sm font-semibold text-white/70 mb-2">Full Name</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
+                className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
                 placeholder="John Doe"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
+              <label className="block text-sm font-semibold text-white/70 mb-2">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
+                className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
                 placeholder="john@example.com"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Username</label>
+              <label className="block text-sm font-semibold text-white/70 mb-2">Username</label>
               <input
                 type="text"
                 required
@@ -155,22 +155,18 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                 onChange={(e) => {
                   setUsername(e.target.value);
                   if (/[A-Z]/.test(e.target.value)) {
-                    setError('Username must be in lowercase. It will be converted automatically.');
+                    setError('Username will be converted to lowercase automatically.');
                   } else {
                     setError('');
                   }
                 }}
-                className={`w-full px-4 py-3 rounded-xl border ${/[A-Z]/.test(username) ? 'border-amber-300 focus:ring-amber-200' : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500'} bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 outline-none transition-colors`}
-                placeholder="sandeep123"
+                className={`w-full px-4 py-3.5 rounded-xl bg-white/5 border ${/[A-Z]/.test(username) ? 'border-amber-500/50' : 'border-white/10'} text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all`}
+                placeholder="johndoe123"
               />
-              {/[A-Z]/.test(username) && (
-                <p className="text-xs text-amber-500 mt-1 font-bold animate-pulse">
-                  ⚠️ Uppercase letters will be converted to lowercase.
-                </p>
-              )}
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Password</label>
+              <label className="block text-sm font-semibold text-white/70 mb-2">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -178,35 +174,50 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                   minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors pr-12"
-                  placeholder="Must be at least 8 characters"
+                  className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all pr-12"
+                  placeholder="Min 8 characters"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
-            <button
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={!!isLoading}
-              className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+              className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all disabled:opacity-70 flex items-center justify-center gap-2 ${role === 'WRITER'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/30'
+                  : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-violet-500/30'
+                }`}
             >
-              {isLoading === 'email' ? 'Creating Account...' : 'Create Account'}
-            </button>
+              {isLoading === 'email' ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating Account...
+                </>
+              ) : 'Create Account'}
+            </motion.button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Already have an account?{' '}
-              <button onClick={() => onNavigate('LOGIN')} className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Sign in instead</button>
-            </p>
-          </div>
+          {/* Login Link */}
+          <p className="text-center text-white/50 mt-6">
+            Already have an account?{' '}
+            <button
+              onClick={() => onNavigate('LOGIN')}
+              className="font-bold text-violet-400 hover:text-violet-300 transition-colors"
+            >
+              Sign In
+            </button>
+          </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

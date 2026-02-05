@@ -152,37 +152,11 @@ export const api = {
 
       await logger('POST', '/auth/login', start);
     } catch (e) {
-      console.warn("Backend login failed, checking local mock fallback...");
-
-      // If explicit invalid credentials, do not fall back to mock
-      if (e.message === 'Invalid credentials') {
-        throw e;
-      }
-
-      // Generic fallback: Generate user from email
-      const namePart = email.split('@')[0];
-      const name = namePart
-        .split(/[._-]/)
-        .map(s => s.charAt(0).toUpperCase() + s.slice(1))
-        .join(' ');
-
-      let role = 'STUDENT';
-      if (email.toLowerCase().includes('admin')) role = 'ADMIN';
-      else if (email.toLowerCase().includes('writer') || email.toLowerCase().includes('provider')) role = 'WRITER';
-
-      console.log(`Generated mock user: ${name} (${role})`);
-
-      return {
-        id: `mock-${namePart}`,
-        name: name,
-        email: email,
-        role: role as any,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${namePart}`,
-        lastActive: new Date().toISOString(),
-        is_verified: true,
-        username: namePart
-      };
+      console.error("Backend login failed:", e.message);
+      // Don't fallback to mock - throw the actual error
+      throw e;
     }
+
 
     if (backendUser) {
       // Sync with local DB to ensure hybrid app works
@@ -520,17 +494,22 @@ export const api = {
   async deleteUser(userId: string): Promise<void> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      await fetch(`http://localhost:8000/api/users/${userId}/`, {
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
         method: 'DELETE',
         headers: {
-          'Authorization': token ? `Bearer ${token} ` : ''
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
         }
       });
+      if (!response.ok && response.status !== 204) {
+        throw new Error(`Failed to delete user: ${response.status}`);
+      }
     } catch (e) {
-      console.warn("Backend delete user failed");
+      console.error("Backend delete user failed:", e);
       throw e;
     }
   },
+
 
   async verifyUser(userId: string): Promise<User> {
     const start = Date.now();
