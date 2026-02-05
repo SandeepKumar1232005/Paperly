@@ -179,6 +179,7 @@ class UserDetailsView(APIView):
             'handwriting_confidence': user.get('handwriting_confidence'),
             'handwriting_sample_url': user.get('handwriting_sample_url'),
             'handwriting_samples': user.get('handwriting_samples', []),
+            'qr_code_url': user.get('qr_code_url'),
         })
 
     def patch(self, request):
@@ -196,6 +197,7 @@ class UserDetailsView(APIView):
         if 'availability_status' in updates: valid_updates['availability_status'] = updates['availability_status']
         if 'coordinates' in updates: valid_updates['coordinates'] = updates['coordinates']
         if 'handwriting_samples' in updates: valid_updates['handwriting_samples'] = updates['handwriting_samples']
+        if 'qr_code_url' in updates: valid_updates['qr_code_url'] = updates['qr_code_url']
         
         if valid_updates:
             db.users.update_one({'id': user['id']}, {'$set': valid_updates})
@@ -216,6 +218,7 @@ class UserDetailsView(APIView):
             'handwriting_confidence': updated_user.get('handwriting_confidence'),
             'handwriting_sample_url': updated_user.get('handwriting_sample_url'),
             'handwriting_samples': updated_user.get('handwriting_samples', []),
+            'qr_code_url': updated_user.get('qr_code_url'),
         })
 
 class RequestPasswordResetView(APIView):
@@ -339,6 +342,7 @@ class UserListView(APIView):
                 'handwriting_confidence': u.get('handwriting_confidence'),
                 'availability_status': u.get('availability_status', 'ONLINE'),
                 'handwriting_samples': u.get('handwriting_samples', []),
+                'qr_code_url': u.get('qr_code_url'),
             }
             
             # Calculate distance if coords provided

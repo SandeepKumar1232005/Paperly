@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, X } from 'lucide-react';
 
 interface LocationPromptProps {
     onLocationGranted: (coords: { lat: number; lon: number }) => void;
@@ -38,19 +38,19 @@ const LocationPrompt: React.FC<LocationPromptProps> = ({ onLocationGranted, onSk
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center">
-                <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MapPin className="w-8 h-8" />
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
+                    <MapPin className="w-8 h-8 text-white" />
                 </div>
 
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Enable Location?</h2>
-                <p className="text-sm text-gray-600 mb-6">
+                <h2 className="text-xl font-bold text-white mb-2">Enable Location?</h2>
+                <p className="text-sm text-white/50 mb-6">
                     We use your location to suggest nearby writers and show relevant local results.
                 </p>
 
                 {error && (
-                    <div className="bg-red-50 text-red-600 text-xs p-3 rounded-lg mb-4 text-left border border-red-100">
+                    <div className="bg-red-500/10 text-red-400 text-xs p-3 rounded-xl mb-4 text-left border border-red-500/20">
                         {error}
                     </div>
                 )}
@@ -58,14 +58,14 @@ const LocationPrompt: React.FC<LocationPromptProps> = ({ onLocationGranted, onSk
                 <div className="flex gap-3 flex-col sm:flex-row">
                     <button
                         onClick={onSkip}
-                        className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                        className="flex-1 px-4 py-3 bg-white/5 border border-white/10 text-white/60 font-semibold rounded-xl hover:bg-white/10 transition-colors"
                         disabled={loading}
                     >
                         Skip
                     </button>
                     <button
                         onClick={handleGrantLocation}
-                        className="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold rounded-xl shadow-lg shadow-violet-500/30 transition-colors flex items-center justify-center gap-2"
                         disabled={loading}
                     >
                         {loading ? (
