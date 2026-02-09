@@ -249,7 +249,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     Profile changes will be reflected across all your active assignments and chat windows.
                   </div>
 
-                  {user.role !== 'ADMIN' && (
+                  {user.role === 'WRITER' && (
                     <HandwritingUpload
                       onAnalysisComplete={(style, confidence) => {
                         setHandwritingStyle(style);

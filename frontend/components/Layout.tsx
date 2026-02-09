@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Notification } from '../types';
 import ProfileModal from './ProfileModal';
 import Logo from './Logo';
-import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, Bell, LogOut, Settings, UserCircle, ArrowLeftRight } from 'lucide-react';
+import { Bell, LogOut, Settings, UserCircle, ArrowLeftRight } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 
 import LocationPrompt from './LocationPrompt';
@@ -33,7 +32,6 @@ const Layout: React.FC<LayoutProps> = ({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const { theme, toggleTheme } = useTheme();
 
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -105,14 +103,6 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleTheme}
-                className="p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white/50 hover:text-white"
-                aria-label="Toggle Theme"
-              >
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              </button>
-
               {user && (
                 <>
                   <div className="relative" ref={notifDropdownRef}>

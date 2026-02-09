@@ -2,7 +2,169 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Additional global styles if needed */
+/* ========== SMOOTH SCROLLING & PERFORMANCE ========== */
+
+/* Enable smooth scrolling globally */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimize rendering performance */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* GPU acceleration for smoother animations */
+*,
+*::before,
+*::after {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: auto;
+}
+
+/* ========== GLOBAL STYLES ========== */
+
 body {
   font-family: 'Outfit', sans-serif;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Smooth momentum scrolling on iOS */
+}
+
+/* ========== SMOOTH TRANSITIONS FOR ALL INTERACTIVE ELEMENTS ========== */
+
+/* Buttons */
+button,
+[role="button"],
+.btn,
+input[type="button"],
+input[type="submit"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active,
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* Links */
+a {
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Form inputs */
+input,
+textarea,
+select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Cards and containers */
+.card,
+[class*="rounded"],
+[class*="shadow"] {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease;
+}
+
+/* Images */
+img {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* ========== SMOOTH SCROLL CONTAINERS ========== */
+
+/* Scrollable containers */
+[class*="overflow-auto"],
+[class*="overflow-y-auto"],
+[class*="overflow-x-auto"],
+[class*="overflow-scroll"] {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar for smoother feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.8);
+}
+
+/* ========== HOVER EFFECTS ========== */
+
+/* Subtle lift effect on hover for cards */
+.hover-lift:hover,
+[class*="hover:shadow"]:hover {
+  transform: translateY(-2px);
+}
+
+/* ========== MODAL & OVERLAY TRANSITIONS ========== */
+
+/* Smooth modal/overlay appearance */
+[class*="fixed"][class*="inset"],
+[class*="absolute"][class*="inset"] {
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+/* ========== LOADING & SKELETON STATES ========== */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+}
+
+/* ========== REDUCE MOTION FOR ACCESSIBILITY ========== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
