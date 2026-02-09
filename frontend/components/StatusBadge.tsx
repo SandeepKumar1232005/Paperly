@@ -12,7 +12,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
     [AssignmentStatus.QUOTED]: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
     [AssignmentStatus.CONFIRMED]: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
     [AssignmentStatus.ASSIGNED]: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    [AssignmentStatus.IN_PROGRESS]: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+    [AssignmentStatus.IN_PROGRESS]: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
     [AssignmentStatus.SUBMITTED]: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     [AssignmentStatus.COMPLETED]: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     [AssignmentStatus.REVISION]: 'bg-red-500/10 text-red-400 border-red-500/20',
@@ -27,3 +27,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 };
 
 export default StatusBadge;
+
+
+

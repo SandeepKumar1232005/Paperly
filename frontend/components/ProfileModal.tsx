@@ -75,8 +75,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-      <div className="bg-[#12122a] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-300 shadow-2xl">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-start justify-center p-4 pt-16 overflow-y-auto">
+      <div className="bg-[#0a0a12] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-300 shadow-2xl">
         <div className="p-6 border-b border-white/10 flex justify-between items-center flex-none">
           <h2 className="text-xl font-bold text-white">{isCropping ? 'Adjust Photo' : 'Edit Profile'}</h2>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors">
@@ -86,8 +86,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
 
         <div className="flex flex-col overflow-hidden h-full">
           {isCropping ? (
-            <div className="flex-1 relative bg-slate-900 w-full h-full flex flex-col">
-              <div className="relative flex-1 w-full h-[500px] bg-slate-900">
+            <div className="flex-1 relative bg-slate-900 w-full flex flex-col">
+              <div className="relative w-full" style={{ height: '320px' }}>
                 <Cropper
                   image={tempImg!}
                   crop={crop}
@@ -98,15 +98,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                   onCropComplete={onCropComplete}
                   onZoomChange={setZoom}
                   onRotationChange={setRotation}
-                  classes={{
-                    containerClassName: "h-full"
-                  }}
                 />
               </div>
 
-              <div className="flex-none p-6 bg-[#12122a] space-y-4 border-t border-white/10">
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Zoom</span>
+              <div className="flex-none p-4 bg-[#0a0a12] space-y-3 border-t border-white/10">
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-white/40 uppercase tracking-widest w-14">Zoom</span>
                   <input
                     type="range"
                     value={zoom}
@@ -114,12 +111,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     max={3}
                     step={0.1}
                     onChange={(e) => setZoom(Number(e.target.value))}
-                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                    className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Rotate</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-white/40 uppercase tracking-widest w-14">Rotate</span>
                   <input
                     type="range"
                     value={rotation}
@@ -127,11 +124,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     max={360}
                     step={1}
                     onChange={(e) => setRotation(Number(e.target.value))}
-                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                    className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
                   />
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={handleCropCancel}
                     className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 font-semibold text-sm transition-colors"
@@ -153,7 +150,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
               <div className="p-8 overflow-y-auto">
                 <div className="flex flex-col items-center mb-8">
                   <div className="relative group">
-                    <div className={`w-32 h-32 rounded-2xl overflow-hidden border-2 border-white/10 bg-white/5 ${isUploading ? 'opacity-50' : ''}`}>
+                    <div className={`w-32 h-32 rounded-full overflow-hidden border-2 border-white/10 bg-white/5 ${isUploading ? 'opacity-50' : ''}`}>
                       <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
                       {isUploading && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -164,7 +161,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-1 right-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2.5 rounded-xl shadow-lg hover:scale-105 transition-all border-2 border-[#12122a]"
+                      className="absolute bottom-0 right-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2.5 rounded-full shadow-lg hover:scale-105 transition-all border-2 border-[#0a0a12]"
                     >
                       <Camera size={16} />
                     </button>
@@ -289,3 +286,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
 };
 
 export default ProfileModal;
+
+
+
+

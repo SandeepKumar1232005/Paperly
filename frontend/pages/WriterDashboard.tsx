@@ -30,12 +30,18 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'ACTIVE'>('MARKETPLACE');
 
+  // Profile completion check - Writers must have handwriting sample AND QR code
+  const hasHandwritingSample = user.handwriting_style || (user.handwriting_samples && user.handwriting_samples.length > 0);
+  const hasQRCode = !!user.qr_code_url;
+  const isProfileComplete = hasHandwritingSample && hasQRCode;
+
   const myAssignments = assignments.filter(a => a.writerId === user.id);
   const availableAssignments = assignments.filter(a =>
     (a.status === AssignmentStatus.PENDING || a.status === AssignmentStatus.PENDING_REVIEW) &&
     !a.writerId &&
     (!a.rejectedBy || !a.rejectedBy.includes(user.id))
   );
+
 
   const revenueData = useMemo(() => {
     const data = [
@@ -71,7 +77,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a]">
+    <div className="min-h-screen bg-[#050508]">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
         <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[150px]" />
@@ -165,6 +171,43 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                     </div>
                   </div>
 
+                  {/* Profile Incomplete Warning */}
+                  {!isProfileComplete && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-gradient-to-r from-fuchsia-600/20 to-orange-600/20 border border-fuchsia-500/30 rounded-2xl p-5 mb-6"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-fuchsia-500/20 rounded-xl flex-shrink-0">
+                          <AlertCircle className="w-6 h-6 text-fuchsia-400" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-white text-lg mb-1">Complete Your Profile</h3>
+                          <p className="text-white/60 text-sm mb-3">
+                            You must upload your handwriting sample and payment QR code before you can accept orders from students.
+                          </p>
+                          <div className="flex flex-wrap gap-3 mb-4">
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${hasHandwritingSample ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40'}`}>
+                              {hasHandwritingSample ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                              Handwriting Sample
+                            </div>
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${hasQRCode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40'}`}>
+                              {hasQRCode ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                              Payment QR Code
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setIsEditingProfile(true)}
+                            className="px-5 py-2.5 bg-gradient-to-r from-fuchsia-500 to-orange-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-fuchsia-500/30 hover:shadow-fuchsia-500/50 transition-all"
+                          >
+                            Complete Profile Now
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {availableAssignments.length === 0 ? (
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-12 text-center">
                       <Search className="w-12 h-12 text-white/20 mx-auto mb-4" />
@@ -212,12 +255,22 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                             </div>
                           ) : (
                             <button
-                              onClick={() => setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' })}
-                              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all"
+                              onClick={() => {
+                                if (!isProfileComplete) {
+                                  setIsEditingProfile(true);
+                                } else {
+                                  setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' });
+                                }
+                              }}
+                              className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20 hover:shadow-emerald-500/30'
+                                : 'bg-white/10 border border-white/20 text-white/50 cursor-not-allowed'
+                                }`}
                             >
-                              Submit Quote
+                              {isProfileComplete ? 'Submit Quote' : 'Complete Profile to Quote'}
                             </button>
                           )}
+
                         </motion.div>
                       ))}
                     </div>
@@ -307,8 +360,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                       key={status}
                       onClick={() => onUpdateProfile({ availability_status: status as any })}
                       className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${user.availability_status === status
-                          ? (status === 'ONLINE' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : status === 'BUSY' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/10 border-white/20 text-white/60')
-                          : 'border-transparent text-white/30 hover:bg-white/5'
+                        ? (status === 'ONLINE' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : status === 'BUSY' ? 'bg-fuchsia-500/20 border-fuchsia-500/30 text-fuchsia-400' : 'bg-white/10 border-white/20 text-white/60')
+                        : 'border-transparent text-white/30 hover:bg-white/5'
                         }`}
                     >
                       {status}
@@ -335,7 +388,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
       <AnimatePresence>
         {selectedAsgn && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#0a0a12] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
               <div className="p-5 border-b border-white/10 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-white">Submitting: {selectedAsgn.title}</h2>
                 <button onClick={() => setSelectedAsgn(null)} className="p-2 hover:bg-white/10 rounded-xl text-white/60">
@@ -389,7 +442,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
       {/* Profile Edit Modal */}
       {isEditingProfile && (
         <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsEditingProfile(false); }}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#12122a] border border-white/10 p-6 rounded-2xl max-w-lg w-full shadow-2xl">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#0a0a12] border border-white/10 p-6 rounded-2xl max-w-lg w-full shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-bold text-xl text-white">Edit Profile</h2>
               <button onClick={() => setIsEditingProfile(false)} className="p-2 hover:bg-white/10 rounded-xl text-white/60">
@@ -398,13 +451,41 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
             </div>
 
             <div className="space-y-6">
-              {/* Handwriting Sample */}
+              {/* Handwriting Samples - Multiple allowed */}
               <div>
-                <p className="text-sm font-semibold text-white/70 mb-2">Handwriting Sample</p>
-                <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer relative group">
-                  <Upload className="mx-auto text-emerald-400 mb-2 group-hover:scale-110 transition-transform" size={24} />
-                  <p className="text-xs text-white/40">Upload sample image</p>
-                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={async (e) => {
+                <p className="text-sm font-semibold text-white/70 mb-2">
+                  Handwriting Samples {user.handwriting_samples && user.handwriting_samples.length > 0 && (
+                    <span className="text-emerald-400 ml-2">({user.handwriting_samples.length} uploaded)</span>
+                  )}
+                </p>
+
+                {/* Gallery of uploaded samples */}
+                {user.handwriting_samples && user.handwriting_samples.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {user.handwriting_samples.map((sample, idx) => (
+                      <div key={idx} className="relative group/sample">
+                        <img
+                          src={sample}
+                          alt={`Sample ${idx + 1}`}
+                          className="w-16 h-16 object-cover rounded-lg border border-white/20"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/sample:opacity-100 rounded-lg flex items-center justify-center transition-opacity">
+                          <span className="text-white text-xs font-bold">#{idx + 1}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload button */}
+                <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative group">
+                  <div className="flex items-center justify-center gap-2">
+                    <Upload className="text-emerald-400 group-hover:scale-110 transition-transform" size={20} />
+                    <p className="text-xs text-white/60">
+                      {user.handwriting_samples && user.handwriting_samples.length > 0 ? 'Add more samples' : 'Upload sample image'}
+                    </p>
+                  </div>
+                  <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={async (e) => {
                     if (e.target.files?.[0]) {
                       const url = await api.uploadFile(e.target.files[0]);
                       onUpdateProfile({ handwriting_samples: [...(user.handwriting_samples || []), url] });
@@ -413,6 +494,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                   }} />
                 </div>
               </div>
+
+
 
               {/* QR Code */}
               <div>
@@ -454,3 +537,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
 };
 
 export default WriterDashboard;
+
+
+
+

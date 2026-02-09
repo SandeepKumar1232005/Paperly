@@ -46,11 +46,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a] relative overflow-hidden px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#050508] relative overflow-hidden px-4">
 
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#050508] via-[#1a1a3a] to-[#050508]" />
         <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[150px]" />
         <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-fuchsia-500/15 rounded-full blur-[120px]" />
       </div>
@@ -87,7 +87,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
             whileTap={{ scale: 0.98 }}
             onClick={() => loginWithGoogle()}
             disabled={!!isLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white text-slate-800 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all mb-6"
+            className="w-full flex items-center justify-center gap-3 bg-white text-white/80 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all mb-6"
           >
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
             <span>{isLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
@@ -204,3 +204,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
 };
 
 export default Login;
+
+
+
+
