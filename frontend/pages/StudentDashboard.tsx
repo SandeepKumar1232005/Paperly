@@ -75,7 +75,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a]">
+    <div className="min-h-screen bg-[#050508]">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
         <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[150px]" />
@@ -120,7 +120,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Total Assignments', value: assignments.length, icon: FileText, color: 'from-blue-500 to-cyan-500' },
-            { label: 'In Progress', value: assignments.filter(a => a.status === AssignmentStatus.IN_PROGRESS).length, icon: Clock, color: 'from-amber-500 to-orange-500' },
+            { label: 'In Progress', value: assignments.filter(a => a.status === AssignmentStatus.IN_PROGRESS).length, icon: Clock, color: 'from-fuchsia-500 to-orange-500' },
             { label: 'Awaiting Review', value: assignments.filter(a => a.status === AssignmentStatus.QUOTED || a.status === AssignmentStatus.SUBMITTED).length, icon: AlertCircle, color: 'from-violet-500 to-purple-500' },
             { label: 'Completed', value: assignments.filter(a => a.status === AssignmentStatus.COMPLETED).length, icon: CheckCircle, color: 'from-emerald-500 to-green-500' }
           ].map((stat, i) => (
@@ -291,7 +291,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#12122a] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-[#0a0a12] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
               <div className="p-6 border-b border-white/10 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -374,7 +374,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* View Assignment Modal */}
       {viewingAssignment && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#0a0a12] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-white/10 flex justify-between items-center">
               <h2 className="text-xl font-bold text-white">{viewingAssignment.title}</h2>
               <button onClick={() => setViewingAssignment(null)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20">×</button>
@@ -416,7 +416,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       <button onClick={() => {
                         const reason = prompt("Revision feedback:");
                         if (reason) onUpdateStatus(viewingAssignment.id, AssignmentStatus.REVISION, reason);
-                      }} className="flex-1 bg-amber-500/20 text-amber-400 py-3 rounded-xl font-bold hover:bg-amber-500/30">Request Revision</button>
+                      }} className="flex-1 bg-fuchsia-500/20 text-fuchsia-400 py-3 rounded-xl font-bold hover:bg-fuchsia-500/30">Request Revision</button>
                     </div>
                   )}
                 </div>
@@ -432,7 +432,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-black/80 z-[120] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#12122a] border border-white/10 p-6 rounded-2xl max-w-sm w-full text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#0a0a12] border border-white/10 p-6 rounded-2xl max-w-sm w-full text-center">
             <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-400">
               <AlertCircle size={28} />
             </div>
@@ -450,3 +450,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 };
 
 export default StudentDashboard;
+
+
+
+

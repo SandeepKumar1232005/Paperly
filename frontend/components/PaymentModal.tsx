@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Assignment } from '../types';
+import { X, QrCode, CheckCircle, Wallet, Smartphone, Shield } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PaymentModalProps {
     assignment: Assignment;
@@ -10,76 +12,146 @@ interface PaymentModalProps {
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, onClose, onSuccess }) => {
     const [isConfirming, setIsConfirming] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     if (!isOpen) return null;
 
-    // Simulate Writer UPI / QR
-    // In real app, this comes from assignment.provider?.qr_code_url or similar
-    // using a placeholder for demo
     const writerName = assignment.provider?.name || "Writer";
     const qrUrl = assignment.provider?.qr_code_url || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=writer@bank&pn=${encodeURIComponent(writerName)}&am=${assignment.budget}&cu=INR`;
 
     const handlePaymentConfirm = () => {
         setIsConfirming(true);
-        // Simulate network delay
         setTimeout(() => {
-            onSuccess();
             setIsConfirming(false);
-            onClose();
+            setShowSuccess(true);
+            setTimeout(() => {
+                onSuccess();
+                onClose();
+            }, 2000);
         }, 1500);
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 border border-slate-200">
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-800">Scan to Pay</h3>
-                        <p className="text-xs text-indigo-600 font-semibold">Direct Payment to Writer</p>
-                    </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-white rounded-full transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-
-                <div className="p-8 flex flex-col items-center text-center">
-                    <div className="bg-white p-2 rounded-xl border shadow-sm mb-4">
-                        <img src={qrUrl} alt="Payment QR" className="w-48 h-48 object-contain" />
-                    </div>
-
-                    <div className="mb-6">
-                        <p className="text-sm text-slate-500 mb-1">Total Amount</p>
-                        <div className="text-3xl font-bold text-slate-900">₹{assignment.budget}</div>
-                    </div>
-
-                    <div className="text-xs text-slate-400 bg-slate-50 p-3 rounded-lg w-full mb-6 border border-slate-100">
-                        Scan this QR code with any UPI app (GPay, PhonePe, Paytm) to pay <strong>{writerName}</strong> directly.
-                    </div>
-
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-[#0a0a12] border border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+                {/* Header */}
+                <div className="relative p-6 bg-gradient-to-r from-emerald-600 to-teal-600">
                     <button
-                        onClick={handlePaymentConfirm}
-                        disabled={isConfirming}
-                        className="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
                     >
-                        {isConfirming ? (
-                            <>
-                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Verifying Payment...
-                            </>
-                        ) : (
-                            "I have made the payment"
-                        )}
+                        <X size={18} />
                     </button>
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white/20 rounded-2xl">
+                            <Wallet className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white">Secure Payment</h3>
+                            <p className="text-sm text-white/70">Direct to {writerName}</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
-                    <p className="text-[10px] text-slate-400">
-                        Platform Fee will be deducted from writer's account automatically.
-                    </p>
+
+                {/* Content */}
+                <div className="p-6">
+                    <AnimatePresence mode="wait">
+                        {showSuccess ? (
+                            <motion.div
+                                key="success"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="py-12 flex flex-col items-center text-center"
+                            >
+                                <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
+                                    <CheckCircle className="w-10 h-10 text-emerald-400" />
+                                </div>
+                                <h4 className="text-xl font-bold text-white mb-2">Payment Verified!</h4>
+                                <p className="text-white/50 text-sm">Your payment has been confirmed successfully.</p>
+                            </motion.div>
+                        ) : (
+                            <motion.div key="payment" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                {/* Amount Card */}
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-white/40 text-sm">Total Amount</span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-bold text-white">₹{assignment.budget}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* QR Code */}
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="bg-white p-3 rounded-2xl shadow-lg mb-3">
+                                        <img src={qrUrl} alt="Payment QR" className="w-40 h-40 object-contain" />
+                                    </div>
+                                    <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
+                                        <QrCode size={16} />
+                                        Scan with any UPI App
+                                    </div>
+                                </div>
+
+                                {/* UPI Apps */}
+                                <div className="flex justify-center gap-4 mb-6">
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                                            <Smartphone size={18} className="text-white/60" />
+                                        </div>
+                                        <span className="text-[10px] text-white/40">GPay</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                                            <Smartphone size={18} className="text-white/60" />
+                                        </div>
+                                        <span className="text-[10px] text-white/40">PhonePe</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                                            <Smartphone size={18} className="text-white/60" />
+                                        </div>
+                                        <span className="text-[10px] text-white/40">Paytm</span>
+                                    </div>
+                                </div>
+
+                                {/* Confirm Button */}
+                                <button
+                                    onClick={handlePaymentConfirm}
+                                    disabled={isConfirming}
+                                    className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                                >
+                                    {isConfirming ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Verifying Payment...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle size={18} />
+                                            I have made the payment
+                                        </>
+                                    )}
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-            </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-white/5 border-t border-white/10 flex items-center justify-center gap-2 text-white/30 text-xs">
+                    <Shield size={12} />
+                    Platform fee deducted from writer's earnings
+                </div>
+            </motion.div>
         </div>
     );
 };
+
+
+
+

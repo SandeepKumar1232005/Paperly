@@ -55,14 +55,14 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
   }, []);
 
   return (
-    <div className="relative overflow-hidden bg-[#0a0a1a] min-h-screen font-sans">
+    <div className="relative overflow-hidden bg-[#050508] min-h-screen font-sans">
 
       {/* Animated Gradient Background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#050508] via-[#0a0a12] to-[#050508]" />
         <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-violet-600/20 rounded-full blur-[150px] animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-indigo-600/15 rounded-full blur-[120px] animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-fuchsia-600/15 rounded-full blur-[120px] animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px]" />
       </div>
 
       {/* Floating Nav */}
@@ -90,6 +90,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         </div>
       </nav>
 
+
       {/* Hero Section */}
       <motion.section style={{ opacity: opacity1 }} className="relative z-10 pt-32 pb-16 px-4 min-h-screen flex items-center">
         <div className="max-w-6xl mx-auto w-full">
@@ -110,7 +111,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               <h1 className="text-5xl lg:text-7xl font-black text-white leading-[1.05] mb-8 tracking-tight">
                 Ace Every
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-purple-400">
                   Assignment
                 </span>
               </h1>
@@ -182,8 +183,8 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                           <CheckCircle className="w-5 h-5 text-green-600" />
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 font-medium">Project Status</p>
-                          <p className="text-sm font-bold text-slate-900">Completed ✓</p>
+                          <p className="text-xs text-white/50 font-medium">Project Status</p>
+                          <p className="text-sm font-bold text-white">Completed ✓</p>
                         </div>
                       </div>
                     </motion.div>
@@ -197,12 +198,12 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   transition={{ delay: 1.5 }}
                   className="absolute -top-4 -left-4 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3"
                 >
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-pink-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-purple-500 rounded-xl flex items-center justify-center">
                     <Star className="w-6 h-6 text-white fill-white" />
                   </div>
                   <div>
-                    <p className="text-2xl font-black text-slate-900">4.9</p>
-                    <p className="text-xs text-slate-500">10K+ Reviews</p>
+                    <p className="text-2xl font-black text-white">4.9</p>
+                    <p className="text-xs text-white/50">10K+ Reviews</p>
                   </div>
                 </motion.div>
               </div>
@@ -257,7 +258,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             {[
               { icon: Clock, title: 'Post Your Request', desc: 'Upload requirements, set deadline, receive instant quotes from verified writers.', color: 'from-blue-500 to-cyan-500' },
               { icon: Shield, title: 'Secure Payment', desc: 'Pay safely with escrow protection. Funds released only when you approve.', color: 'from-violet-500 to-purple-500' },
-              { icon: TrendingUp, title: 'Get A+ Results', desc: 'Receive plagiarism-free work, request revisions, and excel in your courses.', color: 'from-fuchsia-500 to-pink-500' },
+              { icon: TrendingUp, title: 'Get A+ Results', desc: 'Receive plagiarism-free work, request revisions, and excel in your courses.', color: 'from-fuchsia-500 to-purple-500' },
             ].map((feature, i) => (
               <motion.div
                 key={i}
@@ -363,7 +364,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         <div className="max-w-4xl mx-auto">
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="relative bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-600 rounded-[3rem] p-12 lg:p-16 text-center overflow-hidden"
+            className="relative bg-gradient-to-br from-violet-600 via-fuchsia-600 to-purple-600 rounded-[3rem] p-12 lg:p-16 text-center overflow-hidden"
           >
             <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-10" />
             <div className="absolute -top-20 -right-20 w-60 h-60 bg-white/10 rounded-full blur-3xl" />
@@ -407,3 +408,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 };
 
 export default Landing;
+
+
+
+

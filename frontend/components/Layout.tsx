@@ -91,9 +91,9 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a1a]">
+    <div className="min-h-screen flex flex-col bg-[#050508]">
       {user && (
-        <header className="bg-[#0a0a1a]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
+        <header className="bg-[#050508]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 group cursor-pointer">
@@ -112,14 +112,14 @@ const Layout: React.FC<LayoutProps> = ({
                     >
                       <Bell size={20} className={showNotifDropdown ? 'text-violet-400' : ''} />
                       {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#0a0a1a]">
+                        <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#050508]">
                           {unreadCount}
                         </span>
                       )}
                     </button>
 
                     {showNotifDropdown && (
-                      <div className="absolute right-0 mt-2 w-80 bg-[#12122a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="absolute right-0 mt-2 w-80 bg-[#0a0a12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="p-4 border-b border-white/10 flex justify-between items-center">
                           <h3 className="font-bold text-sm text-white">Notifications</h3>
                           <span className="text-[10px] bg-violet-500/10 text-violet-400 px-2 py-0.5 rounded-full font-bold">
@@ -162,7 +162,7 @@ const Layout: React.FC<LayoutProps> = ({
                     </button>
 
                     {showUserDropdown && (
-                      <div className="absolute right-0 mt-2 w-56 bg-[#12122a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="absolute right-0 mt-2 w-56 bg-[#0a0a12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="p-4 border-b border-white/10 flex items-center gap-3">
                           <img src={user.avatar} className="w-10 h-10 rounded-xl border border-white/10" alt="" />
                           <div className="overflow-hidden">
@@ -214,7 +214,7 @@ const Layout: React.FC<LayoutProps> = ({
         position="top-right"
         toastOptions={{
           style: {
-            background: '#12122a',
+            background: '#0a0a12',
             color: '#fff',
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '12px',
@@ -222,7 +222,7 @@ const Layout: React.FC<LayoutProps> = ({
         }}
       />
 
-      <footer className="bg-[#0a0a1a] border-t border-white/10 py-8 mt-auto">
+      <footer className="bg-[#050508] border-t border-white/10 py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-white/40">
           <p>© 2024 Paperly. Digitalizing academic assistance.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
@@ -253,3 +253,7 @@ const Layout: React.FC<LayoutProps> = ({
 };
 
 export default Layout;
+
+
+
+

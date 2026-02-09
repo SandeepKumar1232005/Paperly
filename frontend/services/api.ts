@@ -153,9 +153,13 @@ export const api = {
       await logger('POST', '/auth/login', start);
     } catch (e) {
       console.error("Backend login failed:", e.message);
-      // Don't fallback to mock - throw the actual error
+      // Give user-friendly error messages
+      if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
+        throw new Error('Unable to connect to server. Please check if the backend is running.');
+      }
       throw e;
     }
+
 
 
     if (backendUser) {
@@ -412,17 +416,20 @@ export const api = {
 
           const backendUser = {
             ...users[idx],
-            ...updates,
-            name: data.name,
-            email: data.email,
-            avatar: data.avatar || users[idx].avatar,
+            ...updates, // Keep all updates including qr_code_url
+            name: data.name || updates.name || users[idx].name,
+            email: data.email || users[idx].email,
+            avatar: updates.avatar || data.avatar || users[idx].avatar,
             role: roleMap[data.role] || users[idx].role,
-            username: data.username,
-            address: data.address
+            username: data.username || users[idx].username,
+            address: updates.address ?? data.address ?? users[idx].address,
+            qr_code_url: updates.qr_code_url || data.qr_code_url || users[idx].qr_code_url,
+            handwriting_samples: updates.handwriting_samples || users[idx].handwriting_samples,
           };
           users[idx] = backendUser;
           db.saveUsers(users);
           return backendUser;
+
         }
       }
     } catch (e) {

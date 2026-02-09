@@ -57,6 +57,8 @@ const AppContent: React.FC = () => {
   // Persist view changes
   useEffect(() => {
     sessionStorage.setItem('app_view', view);
+    // Scroll to top when view changes
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [view]);
 
   // Restore Session
@@ -81,7 +83,7 @@ const AppContent: React.FC = () => {
   }, []); // Run once on mount
 
 
-  // Initialize data on mount or user change
+  // Initialize data on mount or user login (not on profile updates)
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
@@ -113,7 +115,7 @@ const AppContent: React.FC = () => {
       }
     };
     fetchData();
-  }, [user]);
+  }, [user?.id]); // Only refetch when user ID changes, not on profile updates
 
   // Heartbeat / Simulated presence
   useEffect(() => {
@@ -212,12 +214,12 @@ const AppContent: React.FC = () => {
     try {
       const newUser = await api.updateUserById(user.id, updatedUser);
       setUser(newUser);
-      await addNotification('Your profile has been updated successfully.');
+      setIsSyncing(false);
+      addNotification('Your profile has been updated successfully.');
     } catch (err) {
       console.error(err);
-      await addNotification('Failed to update profile.');
-    } finally {
       setIsSyncing(false);
+      addNotification('Failed to update profile.');
     }
   };
 
@@ -514,7 +516,7 @@ const AppContent: React.FC = () => {
   return (
     <Layout
       user={user}
-      unreadCount={unreadMsgCount + unreadNotifCount}
+      unreadCount={unreadNotifCount}
       notifications={notifications}
       onLogout={handleLogout}
       onMarkRead={markNotificationsRead}
@@ -522,17 +524,38 @@ const AppContent: React.FC = () => {
       onNavigate={(view) => setView(view as any)}
     >
       {isSyncing && (
-        <div className="fixed top-20 right-4 z-[9999] animate-in fade-in slide-in-from-right-4">
-          <div className="bg-indigo-600 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 border-2 border-white/20">
-            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Saving to Cloud...</span>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center">
+          <div className="relative">
+            {/* Outer glow */}
+            <div className={`absolute -inset-4 rounded-full blur-xl opacity-50 animate-pulse ${user?.role === 'WRITER' ? 'bg-emerald-500' :
+              user?.role === 'ADMIN' ? 'bg-red-500' :
+                'bg-violet-500'
+              }`}></div>
+
+            {/* Outer ring */}
+            <div className={`w-16 h-16 border-4 border-white/10 rounded-full animate-spin ${user?.role === 'WRITER' ? 'border-t-emerald-500 border-r-emerald-300' :
+              user?.role === 'ADMIN' ? 'border-t-red-500 border-r-red-300' :
+                'border-t-violet-500 border-r-fuchsia-400'
+              }`}></div>
+
+            {/* Inner ring - spins in opposite direction */}
+            <div className={`absolute top-2 left-2 w-12 h-12 border-4 border-white/5 rounded-full ${user?.role === 'WRITER' ? 'border-b-emerald-400' :
+              user?.role === 'ADMIN' ? 'border-b-red-400' :
+                'border-b-fuchsia-500'
+              }`} style={{ animation: 'spin 0.6s linear infinite reverse' }}></div>
+
+            {/* Center pulsing dot */}
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full animate-pulse ${user?.role === 'WRITER' ? 'bg-emerald-400' :
+              user?.role === 'ADMIN' ? 'bg-red-400' :
+                'bg-violet-400'
+              }`}></div>
           </div>
         </div>
       )}
 
       {isRestoringSession ? (
         <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
       ) : (
         renderView()
@@ -557,3 +580,7 @@ const AppContent: React.FC = () => {
 };
 
 export default App;
+
+
+
+
