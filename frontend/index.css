@@ -16,10 +16,8 @@ html {
   text-rendering: optimizeLegibility;
 }
 
-/* GPU acceleration for smoother animations */
-*,
-*::before,
-*::after {
+/* GPU acceleration for smoother animations - applied only to animated elements */
+.animate-gpu {
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: auto;
@@ -28,7 +26,7 @@ html {
 /* ========== GLOBAL STYLES ========== */
 
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   /* Smooth momentum scrolling on iOS */

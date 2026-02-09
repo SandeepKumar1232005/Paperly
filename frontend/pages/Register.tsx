@@ -57,10 +57,10 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a] relative overflow-hidden px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#050508] relative overflow-hidden px-4 py-8">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#050508] via-[#1a1a3a] to-[#050508]" />
         <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[150px]" />
         <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/15 rounded-full blur-[120px]" />
       </div>
@@ -160,7 +160,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                     setError('');
                   }
                 }}
-                className={`w-full px-4 py-3.5 rounded-xl bg-white/5 border ${/[A-Z]/.test(username) ? 'border-amber-500/50' : 'border-white/10'} text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all`}
+                className={`w-full px-4 py-3.5 rounded-xl bg-white/5 border ${/[A-Z]/.test(username) ? 'border-fuchsia-500/50' : 'border-white/10'} text-white placeholder-white/30 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all`}
                 placeholder="johndoe123"
               />
             </div>
@@ -223,3 +223,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
 };
 
 export default Register;
+
+
+
+

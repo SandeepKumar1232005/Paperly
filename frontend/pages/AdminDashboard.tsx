@@ -95,7 +95,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
   const NavButton = ({ tab, icon: Icon, label }: { tab: string, icon: any, label: string }) => (
     <button
       onClick={() => setActiveTab(tab as any)}
-      className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all font-medium ${activeTab === tab ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-lg shadow-rose-500/30' : 'text-white/50 hover:bg-white/5 hover:text-white'}`}
+      className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all font-medium ${activeTab === tab ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30' : 'text-white/50 hover:bg-white/5 hover:text-white'}`}
     >
       <Icon size={18} />
       <span>{label}</span>
@@ -103,18 +103,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
   );
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a1a]">
+    <div className="flex min-h-screen bg-[#050508]">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[150px]" />
-        <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[120px]" />
+        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[150px]" />
+        <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[120px]" />
       </div>
 
       {/* Sidebar */}
       <div className="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col fixed h-full z-10 hidden lg:flex">
         <div className="mb-10 px-2">
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-pink-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
               <Shield className="text-white" size={20} />
             </div>
             Admin
@@ -145,7 +145,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
-                  { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, color: 'from-rose-500 to-pink-500', icon: DollarSign },
+                  { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, color: 'from-violet-500 to-purple-500', icon: DollarSign },
                   { label: 'Active Students', value: totalStudents, color: 'from-blue-500 to-cyan-500', icon: Users },
                   { label: 'Writers Online', value: totalWriters, color: 'from-violet-500 to-purple-500', icon: Activity },
                   { label: 'Server Load', value: '12%', color: 'from-emerald-500 to-green-500', icon: Server }
@@ -204,7 +204,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                           <p className="font-bold text-white text-sm">{w.name}</p>
                           <p className="text-xs text-white/40">{w.completed} orders</p>
                         </div>
-                        <span className="font-bold text-rose-400 text-sm">₹{w.earnings}</span>
+                        <span className="font-bold text-violet-400 text-sm">₹{w.earnings}</span>
                       </div>
                     ))}
                   </div>
@@ -235,7 +235,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                       <span className="text-white/30 w-16 text-right">{log.duration}ms</span>
                     </div>
                   ))}
-                  <div className="animate-pulse text-rose-500">_</div>
+                  <div className="animate-pulse text-violet-500">_</div>
                 </div>
               </div>
 
@@ -280,7 +280,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                     placeholder="Search users..."
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-rose-500"
+                    className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-violet-500"
                   />
                 </div>
                 <select
@@ -317,7 +317,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded text-xs font-bold ${u.role === 'ADMIN' ? 'bg-rose-500/10 text-rose-400' :
+                          <span className={`px-2.5 py-1 rounded text-xs font-bold ${u.role === 'ADMIN' ? 'bg-violet-500/10 text-violet-400' :
                             u.role === 'WRITER' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'
                             }`}>{u.role}</span>
                         </td>
@@ -338,15 +338,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
 
           {activeTab === 'COMMUNICATION' && (
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-8 rounded-2xl text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-600 to-pink-600 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center mx-auto mb-4">
                 <Bell size={32} className="text-white" />
               </div>
               <h3 className="text-xl font-bold text-white">Broadcast Center</h3>
               <p className="text-white/50 mt-2">Send announcements and notifications to all users.</p>
               <div className="mt-6 max-w-lg mx-auto space-y-4">
-                <input type="text" placeholder="Subject" className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 outline-none focus:border-rose-500" />
-                <textarea placeholder="Message..." className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl h-32 text-white placeholder-white/30 outline-none focus:border-rose-500 resize-none"></textarea>
-                <button className="w-full bg-gradient-to-r from-rose-600 to-pink-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-rose-500/30">Send Broadcast</button>
+                <input type="text" placeholder="Subject" className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 outline-none focus:border-violet-500" />
+                <textarea placeholder="Message..." className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl h-32 text-white placeholder-white/30 outline-none focus:border-violet-500 resize-none"></textarea>
+                <button className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-violet-500/30">Send Broadcast</button>
               </div>
             </div>
           )}
@@ -356,7 +356,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
       {/* Delete Modal */}
       {userToDelete && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#12122a] border border-white/10 p-6 rounded-2xl max-w-sm w-full text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#0a0a12] border border-white/10 p-6 rounded-2xl max-w-sm w-full text-center">
             <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Trash2 className="text-red-400" size={28} />
             </div>
@@ -374,3 +374,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
 };
 
 export default AdminDashboard;
+
+
+
+
