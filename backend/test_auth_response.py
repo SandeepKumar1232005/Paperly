@@ -1,35 +1,50 @@
-import os
-import django
+import requests
 import json
+import sys
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "paperly_project.settings")
-django.setup()
+# Base URL
+BASE_URL = 'http://localhost:8000/api/auth'
 
-from rest_framework.test import APIClient
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import get_user_model
-
-def test_user_response():
-    User = get_user_model()
-    user = User.objects.order_by('-date_joined').first()
+def test_auth_flow():
+    email = 'charlie@admin.com'
+    password = 'adminpassword'
     
-    if not user:
-        print("No users found.")
+    print(f"1. Attempting login as {email}...")
+    
+    login_url = f'{BASE_URL}/login/'
+    try:
+        response = requests.post(login_url, json={'email': email, 'password': password, 'username': email})
+    except requests.exceptions.ConnectionError:
+        print("Error: Could not connect to server. Is it running?")
         return
 
-    print(f"Testing for user: {user.username} (ID: {user.id})")
+    print(f"Login Status: {response.status_code}")
     
-    refresh = RefreshToken.for_user(user)
-    access_token = str(refresh.access_token)
+    if response.status_code != 200:
+        print("Login Failed:", response.text)
+        # Try registering if login fails? No, keep it simple first.
+        return
+
+    data = response.json()
+    token = data.get('key') or data.get('access') or data.get('token')
     
-    client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+    if not token:
+        print("Error: No token found in response:", data)
+        return
+
+    print("Login Successful. Token received.")
     
-    response = client.get('/api/auth/user/')
+    print("\n2. Fetching User Details...")
+    user_url = f'{BASE_URL}/user/'
+    headers = {'Authorization': f'Bearer {token}'}
     
-    print("\nAPI Response Status:", response.status_code)
-    print("API Response Body:")
-    print(json.dumps(response.json(), indent=2))
+    try:
+        user_response = requests.get(user_url, headers=headers)
+        print(f"User Response Status: {user_response.status_code}")
+        print("User Response Body:")
+        print(json.dumps(user_response.json(), indent=2))
+    except Exception as e:
+        print(f"Error fetching user details: {e}")
 
 if __name__ == "__main__":
-    test_user_response()
+    test_auth_flow()

@@ -5,6 +5,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "paperly_project.settings")
 django.setup()
 
 from django.contrib.auth import get_user_model
+from utils.mongo import db
+
+if db is None:
+  print("DB not connected")
+  import sys
+  sys.exit(1)
 
 def list_detailed_admins():
     User = get_user_model()
