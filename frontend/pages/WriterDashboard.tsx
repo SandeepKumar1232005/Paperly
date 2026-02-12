@@ -216,63 +216,70 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                     </div>
                   ) : (
                     <div className="grid md:grid-cols-2 gap-5">
-                      {availableAssignments.map(asgn => (
-                        <motion.div
-                          key={asgn.id}
-                          whileHover={{ y: -5 }}
-                          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 hover:border-emerald-500/30 transition-all"
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <span className="px-3 py-1 bg-white/10 text-white/60 text-xs font-semibold rounded-lg uppercase">{asgn.subject}</span>
-                            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-lg text-sm">₹{asgn.budget}</span>
-                          </div>
-                          <h3 className="font-bold text-lg text-white mb-2 line-clamp-1">{asgn.title}</h3>
-                          <p className="text-sm text-white/50 mb-4 line-clamp-2">{asgn.description}</p>
-                          <div className="flex items-center text-xs text-white/30 mb-4 gap-4">
-                            <span className="flex items-center gap-1"><Clock size={14} /> {new Date(asgn.deadline).toLocaleDateString()}</span>
-                            <span className="flex items-center gap-1"><FileText size={14} /> {asgn.pages || 1} Pages</span>
-                          </div>
-
-                          {quoteData?.id === asgn.id ? (
-                            <div className="space-y-2 bg-white/5 p-4 rounded-xl border border-white/10">
-                              <input
-                                type="number"
-                                className="w-full text-sm p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-emerald-500"
-                                placeholder="Your Offer (₹)"
-                                value={quoteData.amount}
-                                onChange={e => setQuoteData({ ...quoteData, amount: e.target.value })}
-                              />
-                              <textarea
-                                className="w-full text-sm p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-emerald-500 resize-none h-16"
-                                placeholder="Pitch yourself..."
-                                value={quoteData.comment}
-                                onChange={e => setQuoteData({ ...quoteData, comment: e.target.value })}
-                              />
-                              <div className="flex gap-2">
-                                <button onClick={submitQuote} className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm py-2.5 rounded-lg font-bold">Send Quote</button>
-                                <button onClick={() => setQuoteData(null)} className="flex-1 bg-white/5 border border-white/10 text-white/60 text-sm py-2.5 rounded-lg font-semibold">Cancel</button>
-                              </div>
+                      <AnimatePresence>
+                        {availableAssignments.map((asgn, i) => (
+                          <motion.div
+                            layout
+                            key={asgn.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ delay: i * 0.05 }}
+                            whileHover={{ y: -5 }}
+                            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 hover:border-emerald-500/30 transition-all"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <span className="px-3 py-1 bg-white/10 text-white/60 text-xs font-semibold rounded-lg uppercase">{asgn.subject}</span>
+                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-lg text-sm">₹{asgn.budget}</span>
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                if (!isProfileComplete) {
-                                  setIsEditingProfile(true);
-                                } else {
-                                  setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' });
-                                }
-                              }}
-                              className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
-                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20 hover:shadow-emerald-500/30'
-                                : 'bg-white/10 border border-white/20 text-white/50 cursor-not-allowed'
-                                }`}
-                            >
-                              {isProfileComplete ? 'Submit Quote' : 'Complete Profile to Quote'}
-                            </button>
-                          )}
+                            <h3 className="font-bold text-lg text-white mb-2 line-clamp-1">{asgn.title}</h3>
+                            <p className="text-sm text-white/50 mb-4 line-clamp-2">{asgn.description}</p>
+                            <div className="flex items-center text-xs text-white/30 mb-4 gap-4">
+                              <span className="flex items-center gap-1"><Clock size={14} /> {new Date(asgn.deadline).toLocaleDateString()}</span>
+                              <span className="flex items-center gap-1"><FileText size={14} /> {asgn.pages || 1} Pages</span>
+                            </div>
 
-                        </motion.div>
-                      ))}
+                            {quoteData?.id === asgn.id ? (
+                              <div className="space-y-2 bg-white/5 p-4 rounded-xl border border-white/10">
+                                <input
+                                  type="number"
+                                  className="w-full text-sm p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                                  placeholder="Your Offer (₹)"
+                                  value={quoteData.amount}
+                                  onChange={e => setQuoteData({ ...quoteData, amount: e.target.value })}
+                                />
+                                <textarea
+                                  className="w-full text-sm p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-emerald-500 resize-none h-16"
+                                  placeholder="Pitch yourself..."
+                                  value={quoteData.comment}
+                                  onChange={e => setQuoteData({ ...quoteData, comment: e.target.value })}
+                                />
+                                <div className="flex gap-2">
+                                  <button onClick={submitQuote} className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm py-2.5 rounded-lg font-bold">Send Quote</button>
+                                  <button onClick={() => setQuoteData(null)} className="flex-1 bg-white/5 border border-white/10 text-white/60 text-sm py-2.5 rounded-lg font-semibold">Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  if (!isProfileComplete) {
+                                    setIsEditingProfile(true);
+                                  } else {
+                                    setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' });
+                                  }
+                                }}
+                                className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
+                                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20 hover:shadow-emerald-500/30'
+                                  : 'bg-white/10 border border-white/20 text-white/50 cursor-not-allowed'
+                                  }`}
+                              >
+                                {isProfileComplete ? 'Submit Quote' : 'Complete Profile to Quote'}
+                              </button>
+                            )}
+
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     </div>
                   )}
                 </motion.div>
@@ -298,38 +305,45 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {myAssignments.map(asgn => (
-                        <motion.div
-                          key={asgn.id}
-                          whileHover={{ scale: 1.01 }}
-                          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-start md:items-center hover:border-violet-500/30 transition-all"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-bold text-lg text-white">{asgn.title}</h3>
-                              <StatusBadge status={asgn.status} />
-                            </div>
-                            <p className="text-sm text-white/40 mb-2">Deadline: {new Date(asgn.deadline).toLocaleDateString()}</p>
-                            {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
-                              <div className="flex gap-4 text-xs font-mono text-white/40 mt-2">
-                                <span>Budget: ₹{asgn.budget}</span>
-                                <span className="text-red-400">Fee: -₹{asgn.platform_fee || (asgn.budget * 0.1).toFixed(0)}</span>
-                                <span className="text-emerald-400 font-bold">Net: ₹{asgn.net_earnings || (asgn.budget * 0.9).toFixed(0)}</span>
+                      <AnimatePresence>
+                        {myAssignments.map((asgn, i) => (
+                          <motion.div
+                            layout
+                            key={asgn.id}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ delay: i * 0.05 }}
+                            whileHover={{ scale: 1.01 }}
+                            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-start md:items-center hover:border-violet-500/30 transition-all"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="font-bold text-lg text-white">{asgn.title}</h3>
+                                <StatusBadge status={asgn.status} />
                               </div>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <button onClick={() => onOpenChat(asgn)} className="px-4 py-2.5 bg-violet-500/10 text-violet-400 rounded-xl font-semibold text-sm flex items-center gap-2">
-                              <MessageSquare size={16} /> Chat
-                            </button>
-                            {asgn.status !== AssignmentStatus.COMPLETED && (
-                              <button onClick={() => setSelectedAsgn(asgn)} className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-500/20">
-                                Submit Work
+                              <p className="text-sm text-white/40 mb-2">Deadline: {new Date(asgn.deadline).toLocaleDateString()}</p>
+                              {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
+                                <div className="flex gap-4 text-xs font-mono text-white/40 mt-2">
+                                  <span>Budget: ₹{asgn.budget}</span>
+                                  <span className="text-red-400">Fee: -₹{asgn.platform_fee || (asgn.budget * 0.1).toFixed(0)}</span>
+                                  <span className="text-emerald-400 font-bold">Net: ₹{asgn.net_earnings || (asgn.budget * 0.9).toFixed(0)}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button onClick={() => onOpenChat(asgn)} className="px-4 py-2.5 bg-violet-500/10 text-violet-400 rounded-xl font-semibold text-sm flex items-center gap-2">
+                                <MessageSquare size={16} /> Chat
                               </button>
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
+                              {asgn.status !== AssignmentStatus.COMPLETED && (
+                                <button onClick={() => setSelectedAsgn(asgn)} className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-500/20">
+                                  Submit Work
+                                </button>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     </div>
                   )}
                 </motion.div>

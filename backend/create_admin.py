@@ -12,16 +12,11 @@ sys.path.append('.')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'paperly_project.settings')
 django.setup()
 
-# Direct Mongo connection to avoid import issues if utils.mongo depends on other things
-from django.conf import settings
-# Assuming settings.py has MONGO config or we use default
-# In utils/mongo.py: MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017')
-try:
-    client = MongoClient('mongodb://localhost:27017')
-    db = client['paperly_db']
-    print(f"Connected to MongoDB: {db.name}")
-except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
+# Import shared DB connection
+from utils.mongo import db
+
+if db is None:
+    print("Error: Could not connect to database (from utils.mongo)")
     sys.exit(1)
 
 admin_email = 'charlie@admin.com'

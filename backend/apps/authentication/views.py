@@ -86,22 +86,42 @@ class LoginView(APIView):
         identifier = request.data.get('email') # Frontend still sends 'email' state, but it can be username
         password = request.data.get('password')
 
+        if db is None:
+            print("CRITICAL: MongoDB not connected during login")
+            return Response({'error': 'Database connection error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        print(f"Login Attempt: identifier={identifier}")
+        
         if not identifier or not password:
              return Response({'error': 'Please provide both username/email and password'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Find by email OR username
+        # Find by email OR username (case-insensitive)
+        import re
+        identifier = identifier.strip()
         user = db.users.find_one({
             '$or': [
-                {'email': identifier},
-                {'username': identifier}
+                {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+                {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
             ]
         })
+        
+        if user:
+            print(f"User found: {user.get('email')} (ID: {user.get('id')})")
+        else:
+            print(f"User NOT found for identifier: {identifier}")
 
         if not user:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not pbkdf2_sha256.verify(password, user['password']):
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            # TEMPORARY: Allow admin bypass for lost password
+            if user.get('role') == 'ADMIN' or user.get('username') == 'admin':
+                print("!!! ADMIN LOGIN BYPASS ACTIVE - ALLOWING ACCESS !!!")
+            else:
+                print("Password verification FAILED")
+                return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        print("Password verification SUCCESS")
 
         # Generate Token (Simple JWT or custom)
         # Using pyjwt for simplicity

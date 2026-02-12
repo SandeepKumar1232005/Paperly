@@ -281,6 +281,30 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         Professional academic writer with over 5 years of experience in Thesis, Essay, and Research writing. Committed to delivering high-quality work on time. Specializes in clear, concise structured writing.
                                     </p>
                                 </div>
+
+                                {((selectedWriter.handwriting_samples && selectedWriter.handwriting_samples.length > 0) || selectedWriter.handwriting_sample_url) && (
+                                    <div className="mt-6">
+                                        <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Handwriting Samples</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {selectedWriter.handwriting_samples?.map((sample, index) => (
+                                                <div key={index} className="rounded-xl overflow-hidden border border-white/10 bg-white/5 h-32 relative group cursor-pointer w-full" onClick={() => window.open(sample, '_blank')}>
+                                                    <img src={sample} alt={`Sample ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <span className="text-white text-xs font-bold">Zoom</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {(!selectedWriter.handwriting_samples || selectedWriter.handwriting_samples.length === 0) && selectedWriter.handwriting_sample_url && (
+                                                <div className="rounded-xl overflow-hidden border border-white/10 bg-white/5 h-32 relative group cursor-pointer w-full" onClick={() => window.open(selectedWriter.handwriting_sample_url, '_blank')}>
+                                                    <img src={selectedWriter.handwriting_sample_url} alt="Sample" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <span className="text-white text-xs font-bold">Zoom</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="p-6 border-t border-white/10 bg-white/5 flex gap-3 flex-shrink-0 sticky bottom-0">
@@ -302,8 +326,9 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             </div>
                         </motion.div>
                     </div>
-                )}
-            </AnimatePresence>
-        </div>
+                )
+                }
+            </AnimatePresence >
+        </div >
     );
 }

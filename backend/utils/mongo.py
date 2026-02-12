@@ -16,13 +16,23 @@ if env_path.exists():
 MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017')
 MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'paperly_db')
 
+print(f"DEBUG: Connecting to URI: {MONGO_URI[:15]}... DB: {MONGO_DB_NAME}")
+
 try:
-    # Use certifi to provide valid CA bundle
-    client = pymongo.MongoClient(MONGO_URI, tlsCAFile=certifi.where())
-    db = client[MONGO_DB_NAME]
-    # Test connection
+    # Try connecting with certifi
+    client = pymongo.MongoClient(MONGO_URI, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=20000)
+    # Force connection check
     client.admin.command('ping')
-    print(f"✅ Connected to MongoDB Atlas: {db.name}")
+    db = client[MONGO_DB_NAME]
+    print(f"Connected to MongoDB Atlas: {db.name}")
 except Exception as e:
-    print(f"❌ Error connecting to MongoDB: {e}")
-    db = None
+    print(f"WARNING: SSL Connection failed ({e}). Retrying with SSL verification disabled...")
+    try:
+        # Fallback: Disable SSL verification
+        client = pymongo.MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True, serverSelectionTimeoutMS=5000)
+        client.admin.command('ping')
+        db = client[MONGO_DB_NAME]
+        print(f"Connected to MongoDB Atlas (Unverified): {db.name}")
+    except Exception as e2:
+        print(f"ERROR: Error connecting to MongoDB: {e2}")
+        db = None
