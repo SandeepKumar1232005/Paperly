@@ -103,7 +103,11 @@ export const api = {
       });
 
       if (!response.ok) {
-        throw new Error('Invalid credentials');
+        if (response.status === 500) {
+          throw new Error('Database connection error. Please try again later.');
+        }
+        const errData = await response.json();
+        throw new Error(errData.error || 'Invalid credentials');
       }
 
       const data = await response.json();
@@ -394,14 +398,14 @@ export const api = {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token} `
         },
         body: JSON.stringify(updates)
       });
 
       if (response.ok) {
         const data = await response.json();
-        await logger('PATCH', `/users/${id}`, start);
+        await logger('PATCH', `/ users / ${id} `, start);
 
         // Update local mock DB to stay in sync
         const users = db.getUsers();
@@ -444,7 +448,7 @@ export const api = {
       db.saveUsers(users);
     }
 
-    await logger('PATCH', `/users/${id}`, start);
+    await logger('PATCH', `/ users / ${id} `, start);
     return users[idx];
   },
 

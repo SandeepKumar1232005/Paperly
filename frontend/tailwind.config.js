@@ -10,6 +10,9 @@ export default {
     darkMode: 'class',
     theme: {
         extend: {
+            fontFamily: {
+                sans: ['Outfit', 'sans-serif'],
+            },
             // Smooth transition timing functions
             transitionTimingFunction: {
                 'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -33,6 +36,7 @@ export default {
                 'scale-in': 'scaleIn 0.2s ease-out',
                 'slide-in-right': 'slideInRight 0.3s ease-out',
                 'slide-in-left': 'slideInLeft 0.3s ease-out',
+                'text': 'text 5s ease infinite',
             },
             keyframes: {
                 scroll: {
@@ -69,9 +73,18 @@ export default {
                     '0%': { opacity: '0', transform: 'translateX(-20px)' },
                     '100%': { opacity: '1', transform: 'translateX(0)' },
                 },
+                text: {
+                    '0%, 100%': {
+                        'background-size': '200% 200%',
+                        'background-position': 'left center'
+                    },
+                    '50%': {
+                        'background-size': '200% 200%',
+                        'background-position': 'right center'
+                    },
+                },
             },
         },
     },
     plugins: [],
 }
-

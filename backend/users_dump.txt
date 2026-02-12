@@ -1,0 +1,7 @@
+Total Users: 1
+User FOUND: charlie@admin.com
+ID: admin-1
+Role: ADMIN
+--------------------
+All Users:
+Email: charlie@admin.com, Username: admin, Role: ADMIN
