@@ -1,29 +1,35 @@
+import os
+import sys
+from pathlib import Path
+
+env_path = Path(__file__).resolve().parent / '.env'
+if env_path.exists():
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ.setdefault(key.strip(), value.strip())
 
 import pymongo
-import os
 import certifi
-import dns.resolver
 
-MONGO_URI = "mongodb+srv://paperly:paperly123@cluster0.mongodb.net/?retryWrites=true&w=majority"
-# Reading env var if possible, but hardcoding for test based on previous context if available. 
-# Wait, I don't know the exact URI user has. I should read .env.
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017')
+MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'paperly_db')
 
-from dotenv import load_dotenv
-load_dotenv()
-
-uri = os.environ.get('MONGO_URI')
-print(f"Testing connection to: {uri}")
+print(f"Testing URI: {MONGO_URI}")
 
 try:
-    client = pymongo.MongoClient(uri, tlsCAFile=certifi.where())
+    client = pymongo.MongoClient(MONGO_URI, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=5000)
     client.admin.command('ping')
-    print("✅ Connected successfully with certifi!")
+    print("SUCCESS 1")
 except Exception as e:
-    print(f"Initial connection failed: {e}")
+    import traceback
+    traceback.print_exc()
+    print("Attempting with tlsAllowInvalidCertificates=True")
     try:
-        print("Retrying with SSL disabled...")
-        client = pymongo.MongoClient(uri, tls=True, tlsAllowInvalidCertificates=True)
+        client = pymongo.MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True, serverSelectionTimeoutMS=5000)
         client.admin.command('ping')
-        print("Connected successfully with SSL disabled!")
+        print("SUCCESS 2")
     except Exception as e2:
-        print(f"Retry failed: {e2}")
+        traceback.print_exc()
