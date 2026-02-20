@@ -155,16 +155,21 @@ export const api = {
       }
 
       await logger('POST', '/auth/login', start);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Backend login failed:", e.message);
-      // Give user-friendly error messages
-      if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
-        throw new Error('Unable to connect to server. Please check if the backend is running.');
+
+      // If the backend refuses connection or DB is down, we fallback to local mock mode
+      if (
+        e.message === 'Failed to fetch' ||
+        e.name === 'TypeError' ||
+        e.message.includes('Database connection error')
+      ) {
+        console.warn('Backend unavailable or DB failed, falling back to local mock data.');
+      } else {
+        // Only throw actual credential or validation errors
+        throw e;
       }
-      throw e;
     }
-
-
 
     if (backendUser) {
       // Sync with local DB to ensure hybrid app works
