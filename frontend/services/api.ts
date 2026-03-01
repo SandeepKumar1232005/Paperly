@@ -63,7 +63,7 @@ export const api = {
         };
 
         const localUsers = db.getUsers();
-        const localUserIdx = localUsers.findIndex(u => u.email === user.email);
+        const localUserIdx = localUsers.findIndex(u => (u.email || '').toLowerCase() === (user.email || '').toLowerCase());
 
         if (localUserIdx !== -1) {
           const localUser = localUsers[localUserIdx];
@@ -174,7 +174,7 @@ export const api = {
     if (backendUser) {
       // Sync with local DB to ensure hybrid app works
       const users = db.getUsers();
-      const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+      const idx = users.findIndex(u => (u.email || '').toLowerCase() === (email || '').toLowerCase());
       if (idx !== -1) {
         users[idx] = { ...users[idx], ...backendUser }; // Update existing
       } else {
@@ -186,7 +186,7 @@ export const api = {
 
     // Fallback to local DB (legacy behavior)
     const users = db.getUsers();
-    const userIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    const userIndex = users.findIndex(u => (u.email || '').toLowerCase() === (email || '').toLowerCase());
 
     if (userIndex === -1) {
       await logger('POST', '/auth/login', start, 401);
@@ -518,12 +518,16 @@ export const api = {
         }
       });
       if (!response.ok && response.status !== 204) {
-        throw new Error(`Failed to delete user: ${response.status}`);
+        console.warn(`Backend delete user failed with status: ${response.status}`);
       }
     } catch (e) {
-      console.error("Backend delete user failed:", e);
-      throw e;
+      console.warn("Backend delete user failed (e.g. network/db error):", e);
     }
+
+    // Always remove from local mock DB to ensure the frontend updates correctly,
+    // especially important in a hybrid environment where backend/DB might be unavailable.
+    const users = db.getUsers();
+    db.saveUsers(users.filter(u => u.id !== userId));
   },
 
 

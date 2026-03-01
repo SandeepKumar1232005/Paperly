@@ -19,10 +19,12 @@ class RegisterView(APIView):
     def post(self, request):
         try:
             data = request.data
-            email = data.get('email')
+            email = data.get('email', '').strip()
+            if email: email = email.lower()
             password = data.get('password')
             name = data.get('name')
-            username = data.get('username') # New field
+            username = data.get('username', '').strip()
+            if username: username = username.lower()
             role = data.get('role', 'STUDENT')
             avatar = data.get('avatar', '') # New field
             address = data.get('address', '') # New field
@@ -385,6 +387,21 @@ class UserListView(APIView):
 
 class UserManagementView(APIView):
     def delete(self, request, user_id):
+        if db is None:
+            return Response({'error': 'Database error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Prevent self deletion by checking the token
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            try:
+                token = auth_header.split(' ')[1]
+                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                request_user_id = payload.get('user_id')
+                if request_user_id == user_id:
+                    return Response({'error': 'Admins cannot delete their own account'}, status=status.HTTP_403_FORBIDDEN)
+            except Exception as e:
+                print("Token parsing error during deletion check:", e)
+        
         # In a real app, verify admin permissions here
         result = db.users.delete_one({'id': user_id})
         if result.deleted_count > 0:
