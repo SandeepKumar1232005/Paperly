@@ -325,7 +325,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                           {u.is_verified ? <span className="text-emerald-400 font-bold text-xs">Verified</span> : <span className="text-white/30 font-bold text-xs">Unverified</span>}
                         </td>
                         <td className="px-6 py-4">
-                          <button onClick={() => handleDeleteUser(u.id)} className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                          {u.id !== user.id && (
+                            <button onClick={() => handleDeleteUser(u.id)} className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                          )}
                         </td>
                       </tr>
                     ))}
