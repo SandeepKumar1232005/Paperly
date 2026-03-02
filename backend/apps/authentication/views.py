@@ -116,12 +116,8 @@ class LoginView(APIView):
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not pbkdf2_sha256.verify(password, user['password']):
-            # TEMPORARY: Allow admin bypass for lost password
-            if user.get('role') == 'ADMIN' or user.get('username') == 'admin':
-                print("!!! ADMIN LOGIN BYPASS ACTIVE - ALLOWING ACCESS !!!")
-            else:
-                print("Password verification FAILED")
-                return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            print("Password verification FAILED")
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
             
         print("Password verification SUCCESS")
 

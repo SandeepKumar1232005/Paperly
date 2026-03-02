@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Notification } from '../types';
 import ProfileModal from './ProfileModal';
 import Logo from './Logo';
-import { Bell, LogOut, Settings, UserCircle, ArrowLeftRight } from 'lucide-react';
+import { Bell, LogOut, UserCircle, ArrowLeftRight, Sun, Moon, Menu, X, ChevronRight } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
-
+import { useTheme } from '../context/ThemeContext';
 import LocationPrompt from './LocationPrompt';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface LayoutProps {
   user: User | null;
@@ -32,6 +33,8 @@ const Layout: React.FC<LayoutProps> = ({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -90,119 +93,223 @@ const Layout: React.FC<LayoutProps> = ({
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const roleColors: Record<string, string> = {
+    STUDENT: 'from-violet-500 to-fuchsia-500',
+    WRITER: 'from-emerald-500 to-teal-500',
+    ADMIN: 'from-rose-500 to-orange-500',
+  };
+
+  const roleColor = user ? roleColors[user.role] || 'from-violet-500 to-fuchsia-500' : '';
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#050508]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)] transition-colors duration-300">
       {user && (
-        <header className="bg-[#050508]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
+        <header className="bg-[var(--bg-secondary)]/80 backdrop-blur-xl border-b border-[var(--border)] sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 group cursor-pointer">
-                <Logo className="h-10 w-10 transition-transform group-hover:scale-110" />
-                <span className="text-xl font-bold tracking-tight text-white">Paperly</span>
+            {/* Left: Logo */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5 group cursor-pointer">
+                <div className={`w-9 h-9 bg-gradient-to-br ${roleColor} rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3`}>
+                  P
+                </div>
+                <span className="text-lg font-bold tracking-tight text-[var(--text-primary)] font-display hidden sm:block">Paperly</span>
+              </div>
+
+              {/* Role Badge */}
+              <div className={`hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r ${roleColor} bg-opacity-10 text-xs font-bold uppercase tracking-widest`}>
+                <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                <span className="text-white/90">{user.role}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {user && (
-                <>
-                  <div className="relative" ref={notifDropdownRef}>
-                    <button
-                      onClick={handleToggleNotifs}
-                      className="relative p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <motion.button
+                whileTap={{ scale: 0.9, rotate: 180 }}
+                onClick={toggleTheme}
+                className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                <AnimatePresence mode="wait">
+                  {theme === 'dark' ? (
+                    <motion.div key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                      <Sun size={18} />
+                    </motion.div>
+                  ) : (
+                    <motion.div key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                      <Moon size={18} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+
+              {/* Notifications */}
+              <div className="relative" ref={notifDropdownRef}>
+                <button
+                  onClick={handleToggleNotifs}
+                  className="relative p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                >
+                  <Bell size={18} className={showNotifDropdown ? 'text-[var(--accent)]' : ''} />
+                  {unreadCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)]"
                     >
-                      <Bell size={20} className={showNotifDropdown ? 'text-violet-400' : ''} />
-                      {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#050508]">
-                          {unreadCount}
+                      {unreadCount}
+                    </motion.span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {showNotifDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-80 glass-card overflow-hidden z-[100]"
+                    >
+                      <div className="p-4 border-b border-[var(--border)] flex justify-between items-center">
+                        <h3 className="font-bold text-sm text-[var(--text-primary)]">Notifications</h3>
+                        <span className="text-[10px] bg-[var(--accent-muted)] text-[var(--accent)] px-2 py-0.5 rounded-full font-bold">
+                          {notifications.length} Total
                         </span>
-                      )}
-                    </button>
-
-                    {showNotifDropdown && (
-                      <div className="absolute right-0 mt-2 w-80 bg-[#0a0a12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                          <h3 className="font-bold text-sm text-white">Notifications</h3>
-                          <span className="text-[10px] bg-violet-500/10 text-violet-400 px-2 py-0.5 rounded-full font-bold">
-                            {notifications.length} Total
-                          </span>
-                        </div>
-                        <div className="max-h-96 overflow-y-auto">
-                          {notifications.length === 0 ? (
-                            <div className="p-10 text-center">
-                              <p className="text-xs text-white/40 font-medium">No notifications yet</p>
-                            </div>
-                          ) : (
-                            <div className="divide-y divide-white/5">
-                              {notifications.map((n) => (
-                                <div key={n.id} className={`p-4 hover:bg-white/5 transition-colors flex gap-3 ${!n.isRead ? 'bg-violet-500/5' : ''}`}>
-                                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.isRead ? 'bg-violet-500' : 'bg-transparent'}`}></div>
-                                  <div className="flex-1">
-                                    <p className="text-xs text-white/70 leading-normal">{n.message}</p>
-                                    <p className="text-[10px] text-white/30 mt-1 font-medium">{formatTime(n.timestamp)}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="relative" ref={userDropdownRef}>
-                    <button
-                      onClick={handleToggleUserMenu}
-                      className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-white/10 transition-all"
-                    >
-                      <div className="hidden md:flex flex-col items-end px-2">
-                        <span className="text-sm font-bold text-white leading-tight">{user.name}</span>
-                        <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">{user.role}</span>
-                      </div>
-                      <img src={user.avatar} className="w-9 h-9 rounded-xl object-cover border-2 border-white/10" alt="Avatar" />
-                    </button>
-
-                    {showUserDropdown && (
-                      <div className="absolute right-0 mt-2 w-56 bg-[#0a0a12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                          <img src={user.avatar} className="w-10 h-10 rounded-xl border border-white/10" alt="" />
-                          <div className="overflow-hidden">
-                            <p className="text-sm font-bold text-white truncate">{user.name}</p>
-                            <p className="text-xs text-white/50 truncate">{user.email}</p>
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-10 text-center">
+                            <Bell size={24} className="mx-auto mb-2 text-[var(--text-tertiary)]" />
+                            <p className="text-xs text-[var(--text-tertiary)] font-medium">No notifications yet</p>
                           </div>
-                        </div>
-                        <div className="p-2">
-                          <button
-                            onClick={() => { setShowProfileModal(true); setShowUserDropdown(false); }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors"
-                          >
-                            <UserCircle size={18} />
-                            Profile Settings
-                          </button>
-                          <button
-                            onClick={onLogout}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            <LogOut size={18} />
-                            Logout
-                          </button>
-                          <button
-                            onClick={() => {
-                              onLogout();
-                              onNavigate?.('LOGIN');
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors"
-                          >
-                            <ArrowLeftRight size={18} />
-                            Switch Account
-                          </button>
+                        ) : (
+                          <div className="divide-y divide-[var(--border)]">
+                            {notifications.map((n) => (
+                              <div key={n.id} className={`p-4 hover:bg-[var(--surface-hover)] transition-colors flex gap-3 ${!n.isRead ? 'bg-[var(--accent-muted)]' : ''}`}>
+                                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.isRead ? 'bg-[var(--accent)]' : 'bg-transparent'}`}></div>
+                                <div className="flex-1">
+                                  <p className="text-xs text-[var(--text-secondary)] leading-normal">{n.message}</p>
+                                  <p className="text-[10px] text-[var(--text-tertiary)] mt-1 font-medium">{formatTime(n.timestamp)}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* User Menu */}
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  onClick={handleToggleUserMenu}
+                  className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all"
+                >
+                  <div className="hidden md:flex flex-col items-end px-1">
+                    <span className="text-sm font-semibold text-[var(--text-primary)] leading-tight">{user.name}</span>
+                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-widest font-bold">{user.role}</span>
+                  </div>
+                  <div className={`w-9 h-9 rounded-xl overflow-hidden border-2 border-[var(--border)] ring-2 ring-transparent hover:ring-[var(--accent-muted)] transition-all`}>
+                    <img src={user.avatar} className="w-full h-full object-cover" alt="Avatar" />
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {showUserDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-56 glass-card overflow-hidden z-[100]"
+                    >
+                      <div className="p-4 border-b border-[var(--border)] flex items-center gap-3">
+                        <img src={user.avatar} className="w-10 h-10 rounded-xl border border-[var(--border)]" alt="" />
+                        <div className="overflow-hidden">
+                          <p className="text-sm font-bold text-[var(--text-primary)] truncate">{user.name}</p>
+                          <p className="text-xs text-[var(--text-tertiary)] truncate">{user.email}</p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </>
-              )}
+                      <div className="p-2">
+                        <button
+                          onClick={() => { setShowProfileModal(true); setShowUserDropdown(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors group"
+                        >
+                          <UserCircle size={18} />
+                          Profile Settings
+                          <ChevronRight size={14} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            onLogout();
+                            onNavigate?.('LOGIN');
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors group"
+                        >
+                          <ArrowLeftRight size={18} />
+                          Switch Account
+                          <ChevronRight size={14} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                        <div className="my-1 border-t border-[var(--border)]" />
+                        <button
+                          onClick={onLogout}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          <LogOut size={18} />
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Mobile Menu Toggle */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-secondary)]"
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
             </div>
           </div>
+
+          {/* Mobile Menu */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="md:hidden border-t border-[var(--border)] overflow-hidden"
+              >
+                <div className="p-4 space-y-2">
+                  <div className="flex items-center gap-3 p-3 glass-card">
+                    <img src={user.avatar} className="w-10 h-10 rounded-xl" alt="" />
+                    <div>
+                      <p className="font-bold text-sm text-[var(--text-primary)]">{user.name}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">{user.role}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setShowProfileModal(true); setMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors"
+                  >
+                    <UserCircle size={18} /> Profile Settings
+                  </button>
+                  <button
+                    onClick={onLogout}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut size={18} /> Logout
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </header>
       )}
 
@@ -214,21 +321,22 @@ const Layout: React.FC<LayoutProps> = ({
         position="top-right"
         toastOptions={{
           style: {
-            background: '#0a0a12',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
+            backdropFilter: 'blur(16px)',
           },
         }}
       />
 
-      <footer className="bg-[#050508] border-t border-white/10 py-8 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-white/40">
-          <p>© 2024 Paperly. Digitalizing academic assistance.</p>
+      <footer className="bg-[var(--bg-secondary)] border-t border-[var(--border)] py-8 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-[var(--text-tertiary)]">
+          <p>© {new Date().getFullYear()} Paperly. Digitalizing academic assistance.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-violet-400 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-violet-400 transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-violet-400 transition-colors">Contact Support</a>
+            <a href="#" className="hover:text-[var(--accent)] transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-[var(--accent)] transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-[var(--accent)] transition-colors">Contact Support</a>
           </div>
         </div>
       </footer>
@@ -253,7 +361,3 @@ const Layout: React.FC<LayoutProps> = ({
 };
 
 export default Layout;
-
-
-
-

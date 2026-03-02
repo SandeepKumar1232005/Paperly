@@ -193,10 +193,16 @@ export const api = {
       throw new Error('User not found');
     }
 
-    users[userIndex].lastActive = new Date().toISOString();
+    const localUser = users[userIndex];
+    if (password && (localUser as any).password && (localUser as any).password !== password) {
+      await logger('POST', '/auth/login', start, 401);
+      throw new Error('Invalid credentials');
+    }
+
+    localUser.lastActive = new Date().toISOString();
     db.saveUsers(users);
 
-    return users[userIndex];
+    return localUser;
   },
 
   async register(user: User & { password?: string }): Promise<User> {
@@ -223,10 +229,11 @@ export const api = {
       if (!response.ok) {
         const err = await response.json();
         console.warn("Backend registration failed", err);
-        // If validation error (e.g. email exists), we should probably throw
         if (err.email) throw new Error(err.email[0]);
         if (err.username) throw new Error("A user with this email already exists.");
         if (err.password) throw new Error(err.password[0]);
+        if (err.error) throw new Error(err.error);
+        throw new Error(err.detail || "Registration failed");
       } else {
         const data = await response.json();
         const token = data.key || data.access_token;
@@ -245,6 +252,11 @@ export const api = {
     const newUser = { ...user, lastActive: new Date().toISOString() };
     // In a real app, this would be hashed. For mock:
     (newUser as any).password = user.password; // Keep simple persistence for local mock
+
+    const existingUsers = db.getUsers();
+    if (existingUsers.some(u => (u.email || '').toLowerCase() === (newUser.email || '').toLowerCase())) {
+      throw new Error("A user with this email already exists.");
+    }
 
     db.addUser(newUser);
     await logger('POST', '/auth/register', start);

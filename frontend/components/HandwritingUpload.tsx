@@ -46,36 +46,36 @@ const HandwritingUpload: React.FC<HandwritingUploadProps> = ({ onAnalysisComplet
     };
 
     return (
-        <div className="bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/10 space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+        <div className="glass-card p-6 space-y-4">
+            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide flex items-center gap-2">
                 <span>✍️</span> Handwriting Analysis
             </h3>
 
             <div className="flex gap-6 items-start">
                 <div className="flex-1 space-y-3">
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center justify-center min-h-[100px] text-center">
+                    <div className="glass rounded-xl p-4 flex flex-col items-center justify-center min-h-[100px] text-center">
                         {loading ? (
                             <div className="flex flex-col items-center gap-2">
                                 <div className="w-6 h-6 border-3 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-                                <span className="text-xs font-semibold text-white/40">Analyzing strokes...</span>
+                                <span className="text-xs font-semibold text-[var(--text-tertiary)]">Analyzing strokes...</span>
                             </div>
                         ) : currentStyle ? (
                             <>
-                                <span className="text-xs text-white/40 font-medium mb-2">Detected Style</span>
+                                <span className="text-xs text-[var(--text-tertiary)] font-medium mb-2">Detected Style</span>
                                 <StyleBadge style={currentStyle} confidence={currentConfidence} className="text-sm px-3 py-1.5" />
                             </>
                         ) : (
-                            <span className="text-xs text-white/40 italic">No handwriting sample analyzed yet</span>
+                            <span className="text-xs text-[var(--text-tertiary)] italic">No handwriting sample analyzed yet</span>
                         )}
                     </div>
 
-                    {error && <p className="text-xs text-red-400 font-medium text-center">{error}</p>}
+                    {error && <p className="text-xs text-red-500 dark:text-red-400 font-medium text-center">{error}</p>}
                 </div>
 
                 <div className="flex-1 flex flex-col items-center">
                     <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full aspect-video rounded-xl border-2 border-dashed border-white/20 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer flex flex-col items-center justify-center overflow-hidden group relative"
+                        className="w-full aspect-video rounded-xl border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-all cursor-pointer flex flex-col items-center justify-center overflow-hidden group relative"
                     >
                         {preview ? (
                             <>
@@ -86,10 +86,10 @@ const HandwritingUpload: React.FC<HandwritingUploadProps> = ({ onAnalysisComplet
                             </>
                         ) : (
                             <>
-                                <div className="w-8 h-8 rounded-full bg-white/10 text-white/40 flex items-center justify-center mb-2 group-hover:bg-violet-500/20 group-hover:text-violet-400 transition-colors">
+                                <div className="w-8 h-8 rounded-full bg-[var(--surface)] text-[var(--text-tertiary)] flex items-center justify-center mb-2 group-hover:bg-[var(--accent-muted)] group-hover:text-[var(--accent)] transition-colors">
                                     <Upload size={16} />
                                 </div>
-                                <span className="text-xs font-semibold text-white/40">Upload Sample</span>
+                                <span className="text-xs font-semibold text-[var(--text-tertiary)]">Upload Sample</span>
                             </>
                         )}
                     </div>
@@ -97,7 +97,7 @@ const HandwritingUpload: React.FC<HandwritingUploadProps> = ({ onAnalysisComplet
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
             </div>
 
-            <div className="text-[10px] text-white/30 leading-relaxed text-center">
+            <div className="text-[10px] text-[var(--text-tertiary)] leading-relaxed text-center">
                 Upload a clear photo of your handwriting to automatically detect its style (Neat, Cursive, Bold, etc.).
             </div>
         </div>
