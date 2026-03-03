@@ -11,13 +11,22 @@ const WriterFilter: React.FC<WriterFilterProps> = ({ currentFilter, onFilterChan
 
     return (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+<<<<<<< HEAD
             <span className="text-sm font-bold text-white/40 uppercase tracking-wider">Filter by Style</span>
             <div className="flex p-1 bg-white/5 rounded-xl border border-white/10 overflow-x-auto max-w-full no-scrollbar">
+=======
+            <span className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Filter by Style</span>
+            <div className="flex p-1 glass rounded-xl overflow-x-auto max-w-full no-scrollbar">
+>>>>>>> master
                 {filters.map((filter) => (
                     <button
                         key={filter}
                         onClick={() => onFilterChange(filter)}
+<<<<<<< HEAD
                         className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap z-10 ${currentFilter === filter ? 'text-white' : 'text-white/50 hover:text-white'
+=======
+                        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap z-10 ${currentFilter === filter ? 'text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+>>>>>>> master
                             }`}
                         style={{ WebkitTapHighlightColor: 'transparent' }}
                     >

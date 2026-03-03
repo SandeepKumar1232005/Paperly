@@ -4,6 +4,10 @@ import getCroppedImg from '../utils/cropImage';
 import { User } from '../types';
 import HandwritingUpload from './HandwritingUpload';
 import { X, Camera, Info } from 'lucide-react';
+<<<<<<< HEAD
+=======
+import { motion } from 'framer-motion';
+>>>>>>> master
 
 interface ProfileModalProps {
   user: User;
@@ -75,18 +79,35 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   };
 
   return (
+<<<<<<< HEAD
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-start justify-center p-4 pt-16 overflow-y-auto">
       <div className="bg-[#0a0a12] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-300 shadow-2xl">
         <div className="p-6 border-b border-white/10 flex justify-between items-center flex-none">
           <h2 className="text-xl font-bold text-white">{isCropping ? 'Adjust Photo' : 'Edit Profile'}</h2>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors">
+=======
+    <div className="fixed inset-0 bg-[var(--overlay)] backdrop-blur-sm z-[200] flex items-start justify-center p-4 pt-16 overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="glass-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
+        style={{ background: 'var(--bg-secondary)' }}
+      >
+        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center flex-none">
+          <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">{isCropping ? 'Adjust Photo' : 'Edit Profile'}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-[var(--surface)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+>>>>>>> master
             <X size={20} />
           </button>
         </div>
 
         <div className="flex flex-col overflow-hidden h-full">
           {isCropping ? (
+<<<<<<< HEAD
             <div className="flex-1 relative bg-slate-900 w-full flex flex-col">
+=======
+            <div className="flex-1 relative bg-[var(--bg-primary)] w-full flex flex-col">
+>>>>>>> master
               <div className="relative w-full" style={{ height: '320px' }}>
                 <Cropper
                   image={tempImg!}
@@ -101,6 +122,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                 />
               </div>
 
+<<<<<<< HEAD
               <div className="flex-none p-4 bg-[#0a0a12] space-y-3 border-t border-white/10">
                 <div className="flex items-center gap-4">
                   <span className="text-xs font-bold text-white/40 uppercase tracking-widest w-14">Zoom</span>
@@ -112,10 +134,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     step={0.1}
                     onChange={(e) => setZoom(Number(e.target.value))}
                     className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+=======
+              <div className="flex-none p-4 bg-[var(--bg-secondary)] space-y-3 border-t border-[var(--border)]">
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest w-14">Zoom</span>
+                  <input
+                    type="range" value={zoom} min={1} max={3} step={0.1}
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="flex-1 h-2 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer accent-violet-500"
+>>>>>>> master
                   />
                 </div>
 
                 <div className="flex items-center gap-4">
+<<<<<<< HEAD
                   <span className="text-xs font-bold text-white/40 uppercase tracking-widest w-14">Rotate</span>
                   <input
                     type="range"
@@ -125,10 +157,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     step={1}
                     onChange={(e) => setRotation(Number(e.target.value))}
                     className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+=======
+                  <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest w-14">Rotate</span>
+                  <input
+                    type="range" value={rotation} min={0} max={360} step={1}
+                    onChange={(e) => setRotation(Number(e.target.value))}
+                    className="flex-1 h-2 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer accent-violet-500"
+>>>>>>> master
                   />
                 </div>
 
                 <div className="flex gap-3 pt-2">
+<<<<<<< HEAD
                   <button
                     onClick={handleCropCancel}
                     className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 font-semibold text-sm transition-colors"
@@ -139,6 +179,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     onClick={handleCropSave}
                     className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 transition-all"
                   >
+=======
+                  <button onClick={handleCropCancel}
+                    className="flex-1 px-4 py-2.5 rounded-xl glass text-[var(--text-secondary)] font-semibold text-sm hover:bg-[var(--surface-hover)] transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={handleCropSave}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 transition-all">
+>>>>>>> master
                     Apply Crop
                   </button>
                 </div>
@@ -150,7 +198,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
               <div className="p-8 overflow-y-auto">
                 <div className="flex flex-col items-center mb-8">
                   <div className="relative group">
+<<<<<<< HEAD
                     <div className={`w-32 h-32 rounded-full overflow-hidden border-2 border-white/10 bg-white/5 ${isUploading ? 'opacity-50' : ''}`}>
+=======
+                    <div className={`w-32 h-32 rounded-full overflow-hidden border-2 border-[var(--border)] bg-[var(--surface)] ${isUploading ? 'opacity-50' : ''}`}>
+>>>>>>> master
                       <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
                       {isUploading && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -161,11 +213,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
+<<<<<<< HEAD
                       className="absolute bottom-0 right-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2.5 rounded-full shadow-lg hover:scale-105 transition-all border-2 border-[#0a0a12]"
+=======
+                      className="absolute bottom-0 right-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2.5 rounded-full shadow-lg hover:scale-105 transition-all border-2 border-[var(--bg-secondary)]"
+>>>>>>> master
                     >
                       <Camera size={16} />
                     </button>
                   </div>
+<<<<<<< HEAD
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-4">Profile Picture</p>
                   <input
                     type="file"
@@ -177,15 +234,31 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
 
                   <div className="mt-6 w-full">
                     <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3 text-center">Or Choose an Avatar</p>
+=======
+                  <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest mt-4">Profile Picture</p>
+                  <input
+                    type="file" ref={fileInputRef} onChange={handleFileChange}
+                    className="hidden" accept="image/*"
+                  />
+
+                  <div className="mt-6 w-full">
+                    <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Or Choose an Avatar</p>
+>>>>>>> master
                     <div className="flex gap-3 justify-center">
                       {['Felix', 'Aneka', 'Zoro', 'Luffy', 'Naruto'].map((seed) => {
                         const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
                         return (
                           <button
+<<<<<<< HEAD
                             key={seed}
                             type="button"
                             onClick={() => setAvatar(url)}
                             className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-transform hover:scale-110 ${avatar === url ? 'border-violet-500 ring-2 ring-violet-500/20 scale-110' : 'border-white/10'}`}
+=======
+                            key={seed} type="button"
+                            onClick={() => setAvatar(url)}
+                            className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-transform hover:scale-110 ${avatar === url ? 'border-violet-500 ring-2 ring-violet-500/20 scale-110' : 'border-[var(--border)]'}`}
+>>>>>>> master
                           >
                             <img src={url} alt={seed} className="w-full h-full object-cover" />
                           </button>
@@ -197,6 +270,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
 
                 <div className="space-y-6">
                   <div>
+<<<<<<< HEAD
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2 ml-1">Full Name</label>
                     <input
                       type="text"
@@ -215,10 +289,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                       value={user.email}
                       className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white/40 cursor-not-allowed outline-none"
                     />
+=======
+                    <label className="block text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                      className="w-full px-4 py-3.5 rounded-xl glass-input" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-2 ml-1">Email (Read Only)</label>
+                    <input type="email" disabled value={user.email}
+                      className="w-full px-4 py-3.5 rounded-xl glass-input opacity-60 cursor-not-allowed" />
+>>>>>>> master
                   </div>
 
                   {user.username && (
                     <div>
+<<<<<<< HEAD
                       <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2 ml-1">Username (Read Only)</label>
                       <input
                         type="text"
@@ -226,11 +312,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                         value={user.username}
                         className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white/40 cursor-not-allowed outline-none"
                       />
+=======
+                      <label className="block text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-2 ml-1">Username (Read Only)</label>
+                      <input type="text" disabled value={user.username}
+                        className="w-full px-4 py-3.5 rounded-xl glass-input opacity-60 cursor-not-allowed" />
+>>>>>>> master
                     </div>
                   )}
 
                   {user.role !== 'ADMIN' && (
                     <div>
+<<<<<<< HEAD
                       <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2 ml-1">Address (For Courier)</label>
                       <textarea
                         value={address}
@@ -243,6 +335,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
 
                   <div className="flex items-center gap-3 p-4 bg-violet-500/10 rounded-2xl border border-violet-500/20 text-xs text-violet-300 leading-relaxed">
                     <Info size={18} className="flex-shrink-0 text-violet-400" />
+=======
+                      <label className="block text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-2 ml-1">Address (For Courier)</label>
+                      <textarea value={address} onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter your full physical address..."
+                        className="w-full px-4 py-3.5 rounded-xl glass-input min-h-[80px] resize-none" />
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 p-4 bg-[var(--accent-muted)] rounded-2xl border border-[var(--accent)]/20 text-xs text-[var(--text-secondary)] leading-relaxed">
+                    <Info size={18} className="flex-shrink-0 text-[var(--accent)]" />
+>>>>>>> master
                     Profile changes will be reflected across all your active assignments and chat windows.
                   </div>
 
@@ -260,6 +363,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                 </div>
               </div>
 
+<<<<<<< HEAD
               <div className="p-6 border-t border-white/10 flex gap-3 flex-none mt-auto">
                 <button
                   type="button"
@@ -276,17 +380,36 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                 >
                   Save Changes
                 </button>
+=======
+              <div className="p-6 border-t border-[var(--border)] flex gap-3 flex-none mt-auto">
+                <button type="button" onClick={onClose}
+                  className="flex-1 px-6 py-3.5 rounded-xl text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--surface)] transition-colors">
+                  Cancel
+                </button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  type="button" onClick={handleSave} disabled={isUploading}
+                  className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-violet-500/30 disabled:opacity-50 ripple">
+                  Save Changes
+                </motion.button>
+>>>>>>> master
               </div>
             </>
           )}
         </div>
+<<<<<<< HEAD
       </div>
+=======
+      </motion.div>
+>>>>>>> master
     </div>
   );
 };
 
 export default ProfileModal;
+<<<<<<< HEAD
 
 
 
 
+=======
+>>>>>>> master

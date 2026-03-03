@@ -58,7 +58,21 @@ class LocalDB {
     }
   }
 
-  getUsers(): User[] { return this.get<User>(STORAGE_KEYS.USERS); }
+  getUsers(): User[] {
+    const users = this.get<User>(STORAGE_KEYS.USERS);
+    // Deduplicate by email to fix older bugs having multiple user ids for the same email
+    const uniqueUsers: Record<string, User> = {};
+    for (const u of users) {
+      if (u.email) {
+        uniqueUsers[u.email.toLowerCase()] = u;
+      } else if (u.username) {
+        uniqueUsers[u.username.toLowerCase()] = u;
+      } else {
+        uniqueUsers[u.id] = u;
+      }
+    }
+    return Object.values(uniqueUsers);
+  }
   saveUsers(data: User[]) { this.save(STORAGE_KEYS.USERS, data); }
   addUser(user: User) {
     const users = this.getUsers();

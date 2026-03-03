@@ -46,9 +46,13 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
+<<<<<<< HEAD
             transition: {
                 staggerChildren: 0.1
             }
+=======
+            transition: { staggerChildren: 0.1 }
+>>>>>>> master
         }
     };
 
@@ -62,11 +66,24 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
     };
 
     return (
+<<<<<<< HEAD
         <div className="min-h-screen bg-[#0a0a1a]">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0">
                 <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[150px]" />
                 <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[120px]" />
+=======
+        <div className="min-h-screen bg-[var(--bg-primary)]">
+            {/* Background Effects */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="dark:block hidden">
+                    <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[150px]" />
+                    <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[120px]" />
+                </div>
+                <div className="dark:hidden block">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-fuchsia-50/20 to-blue-50/50" />
+                </div>
+>>>>>>> master
             </div>
 
             <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
@@ -74,7 +91,11 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                 <div className="mb-10">
                     <button
                         onClick={() => onNavigate('DASHBOARD')}
+<<<<<<< HEAD
                         className="group flex items-center text-white/50 hover:text-violet-400 mb-6 transition-colors"
+=======
+                        className="group flex items-center text-[var(--text-secondary)] hover:text-[var(--accent)] mb-6 transition-colors"
+>>>>>>> master
                     >
                         <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
                         Back to Dashboard
@@ -84,8 +105,13 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
+<<<<<<< HEAD
                         <h1 className="text-4xl font-bold text-white tracking-tight">Find a Writer</h1>
                         <p className="mt-3 text-lg text-white/50 max-w-2xl">Connect with top-rated academic experts. Filter by handwriting style to find your perfect match.</p>
+=======
+                        <h1 className="text-4xl font-bold text-[var(--text-primary)] tracking-tight font-display">Find a Writer</h1>
+                        <p className="mt-3 text-lg text-[var(--text-secondary)] max-w-2xl">Connect with top-rated academic experts. Filter by handwriting style to find your perfect match.</p>
+>>>>>>> master
                     </motion.div>
                 </div>
 
@@ -97,9 +123,15 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                 {loading ? (
                     <div className="flex justify-center py-20">
                         <div className="relative">
+<<<<<<< HEAD
                             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-violet-500"></div>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <span className="h-2 w-2 bg-violet-500 rounded-full"></span>
+=======
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[var(--accent)]"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="h-2 w-2 bg-[var(--accent)] rounded-full"></span>
+>>>>>>> master
                             </div>
                         </div>
                     </div>
@@ -115,7 +147,11 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                 key={writer.id}
                                 variants={itemVariants}
                                 whileHover={{ y: -5 }}
+<<<<<<< HEAD
                                 className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden hover:border-violet-500/30 transition-all"
+=======
+                                className="glass-card overflow-hidden group"
+>>>>>>> master
                             >
                                 <div className="p-6">
                                     <div className="flex items-start justify-between">
@@ -124,15 +160,24 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                                 <img
                                                     src={writer.avatar}
                                                     alt={writer.name}
+<<<<<<< HEAD
                                                     className="h-16 w-16 rounded-2xl bg-white/5 object-cover border-2 border-white/10"
                                                 />
                                                 <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#0a0a1a] ${writer.availability_status === 'ONLINE' ? 'bg-emerald-500' :
                                                     writer.availability_status === 'BUSY' ? 'bg-amber-500' :
                                                         'bg-white/30'
+=======
+                                                    className="h-16 w-16 rounded-2xl bg-[var(--surface)] object-cover border-2 border-[var(--border)]"
+                                                />
+                                                <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[var(--bg-secondary)] ${writer.availability_status === 'ONLINE' ? 'bg-emerald-500' :
+                                                    writer.availability_status === 'BUSY' ? 'bg-amber-500' :
+                                                        'bg-gray-400 dark:bg-white/30'
+>>>>>>> master
                                                     }`}></span>
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-1.5">
+<<<<<<< HEAD
                                                     <h3 className="text-lg font-bold text-white">{writer.name}</h3>
                                                     {writer.is_verified && <CheckCircle className="w-4 h-4 text-violet-400 fill-violet-400/20" />}
                                                 </div>
@@ -140,6 +185,15 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                                     <Star className="h-3.5 w-3.5 fill-current" />
                                                     <span className="ml-1">4.9</span>
                                                     <span className="text-white/30 ml-1 font-normal">(120+ reviews)</span>
+=======
+                                                    <h3 className="text-lg font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{writer.name}</h3>
+                                                    {writer.is_verified && <CheckCircle className="w-4 h-4 text-[var(--accent)] fill-[var(--accent-muted)]" />}
+                                                </div>
+                                                <div className="flex items-center text-sm font-medium text-amber-500 dark:text-amber-400 mt-0.5">
+                                                    <Star className="h-3.5 w-3.5 fill-current" />
+                                                    <span className="ml-1">4.9</span>
+                                                    <span className="text-[var(--text-tertiary)] ml-1 font-normal">(120+ reviews)</span>
+>>>>>>> master
                                                 </div>
                                             </div>
                                         </div>
@@ -147,20 +201,34 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
 
                                     <div className="mt-6 space-y-3">
                                         <div className="flex items-center justify-between text-sm">
+<<<<<<< HEAD
                                             <div className="flex items-center text-white/50">
                                                 <MapPin className="h-4 w-4 mr-2 text-white/30" />
+=======
+                                            <div className="flex items-center text-[var(--text-secondary)]">
+                                                <MapPin className="h-4 w-4 mr-2 text-[var(--text-tertiary)]" />
+>>>>>>> master
                                                 <span className="truncate max-w-[140px]">{writer.address || 'Global'}</span>
                                             </div>
                                             {/* @ts-ignore */}
                                             {writer.distance_km !== undefined && (
+<<<<<<< HEAD
                                                 <span className="bg-violet-500/10 text-violet-400 px-2 py-0.5 rounded text-xs font-semibold">
+=======
+                                                <span className="bg-[var(--accent-muted)] text-[var(--accent)] px-2 py-0.5 rounded text-xs font-semibold">
+>>>>>>> master
                                                     {writer.distance_km}km
                                                 </span>
                                             )}
                                         </div>
 
+<<<<<<< HEAD
                                         <div className="flex items-center text-sm text-white/50">
                                             <Award className="h-4 w-4 mr-2 text-white/30" />
+=======
+                                        <div className="flex items-center text-sm text-[var(--text-secondary)]">
+                                            <Award className="h-4 w-4 mr-2 text-[var(--text-tertiary)]" />
+>>>>>>> master
                                             <span>98% Make It Right Guarantee</span>
                                         </div>
 
@@ -171,6 +239,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         </div>
                                     </div>
 
+<<<<<<< HEAD
                                     <div className="mt-6 pt-6 border-t border-white/10 flex gap-3">
                                         <button
                                             onClick={() => onHire(writer.id)}
@@ -181,6 +250,20 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         <button
                                             onClick={() => setSelectedWriter(writer)}
                                             className="px-4 py-3 bg-white/5 border border-white/10 text-white/70 rounded-xl text-sm font-bold hover:bg-white/10 transition-colors"
+=======
+                                    <div className="mt-6 pt-6 border-t border-[var(--border)] flex gap-3">
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => onHire(writer.id)}
+                                            className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-4 py-3 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-violet-500/30 transition-all ripple"
+                                        >
+                                            Hire Now
+                                        </motion.button>
+                                        <button
+                                            onClick={() => setSelectedWriter(writer)}
+                                            className="px-4 py-3 glass text-[var(--text-secondary)] rounded-xl text-sm font-bold hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors"
+>>>>>>> master
                                         >
                                             Profile
                                         </button>
@@ -200,7 +283,11 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
+<<<<<<< HEAD
                             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+=======
+                            className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm"
+>>>>>>> master
                             onClick={() => setSelectedWriter(null)}
                         />
 
@@ -208,7 +295,12 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 10 }}
+<<<<<<< HEAD
                             className="bg-[#12122a] border border-white/10 rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl relative z-10 flex flex-col"
+=======
+                            className="glass-card w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl relative z-10 flex flex-col"
+                            style={{ background: 'var(--bg-secondary)' }}
+>>>>>>> master
                         >
                             {/* Header */}
                             <div className="relative h-32 bg-gradient-to-r from-violet-600 to-fuchsia-600 p-6 flex-shrink-0">
@@ -223,6 +315,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             <div className="px-8 pb-8 overflow-y-auto flex-1">
                                 <div className="relative -mt-12 mb-6 flex justify-between items-end">
                                     <div className="relative">
+<<<<<<< HEAD
                                         <div className="w-24 h-24 rounded-2xl border-4 border-[#12122a] shadow-xl bg-white/10 overflow-hidden p-0.5">
                                             <img src={selectedWriter.avatar} alt={selectedWriter.name} className="w-full h-full rounded-xl object-cover" />
                                         </div>
@@ -232,21 +325,41 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                     </div>
                                     <div className="mb-1 bg-violet-500/10 px-3 py-1 rounded-full border border-violet-500/20">
                                         <span className="text-xs font-bold text-violet-400 uppercase tracking-wide">
+=======
+                                        <div className="w-24 h-24 rounded-2xl border-4 border-[var(--bg-secondary)] shadow-xl bg-[var(--surface)] overflow-hidden p-0.5">
+                                            <img src={selectedWriter.avatar} alt={selectedWriter.name} className="w-full h-full rounded-xl object-cover" />
+                                        </div>
+                                        <span className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-[var(--bg-secondary)] ${selectedWriter.availability_status === 'ONLINE' ? 'bg-emerald-500' :
+                                            selectedWriter.availability_status === 'BUSY' ? 'bg-amber-500' : 'bg-gray-400 dark:bg-white/30'
+                                            }`}></span>
+                                    </div>
+                                    <div className="mb-1 bg-[var(--accent-muted)] px-3 py-1 rounded-full border border-[var(--accent)]/20">
+                                        <span className="text-xs font-bold text-[var(--accent)] uppercase tracking-wide">
+>>>>>>> master
                                             {selectedWriter.availability_status || 'ONLINE'}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div>
+<<<<<<< HEAD
                                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                                         {selectedWriter.name}
                                         {selectedWriter.is_verified && <CheckCircle className="w-5 h-5 text-violet-400" />}
                                     </h2>
                                     <p className="text-white/50 font-medium text-sm mt-1 flex items-center gap-2">
+=======
+                                    <h2 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2 font-display">
+                                        {selectedWriter.name}
+                                        {selectedWriter.is_verified && <CheckCircle className="w-5 h-5 text-[var(--accent)]" />}
+                                    </h2>
+                                    <p className="text-[var(--text-secondary)] font-medium text-sm mt-1 flex items-center gap-2">
+>>>>>>> master
                                         <Briefcase className="w-4 h-4" /> Academic Writing Specialist
                                     </p>
                                 </div>
 
+<<<<<<< HEAD
                                 <div className="flex flex-wrap items-center gap-4 mt-6 py-4 border-y border-white/10">
                                     <div className="flex items-center gap-1.5">
                                         <Star className="w-5 h-5 text-amber-400 fill-current" />
@@ -260,15 +373,37 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                     <div className="h-8 w-px bg-white/10"></div>
                                     <div className="flex items-center gap-1.5 text-white/50">
                                         <MapPin className="w-5 h-5 text-white/30" />
+=======
+                                <div className="flex flex-wrap items-center gap-4 mt-6 py-4 border-y border-[var(--border)]">
+                                    <div className="flex items-center gap-1.5">
+                                        <Star className="w-5 h-5 text-amber-500 dark:text-amber-400 fill-current" />
+                                        <span className="font-bold text-[var(--text-primary)] text-lg">4.9</span>
+                                    </div>
+                                    <div className="h-8 w-px bg-[var(--border)]"></div>
+                                    <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                                        <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                                        <span className="font-semibold text-sm">98% Success</span>
+                                    </div>
+                                    <div className="h-8 w-px bg-[var(--border)]"></div>
+                                    <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                                        <MapPin className="w-5 h-5 text-[var(--text-tertiary)]" />
+>>>>>>> master
                                         <span className="font-semibold text-sm truncate max-w-[120px]">{selectedWriter.address || 'Unknown'}</span>
                                     </div>
                                 </div>
 
                                 <div className="mt-6">
+<<<<<<< HEAD
                                     <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Expertise</h4>
                                     <div className="flex gap-2 flex-wrap">
                                         {['History', 'Literature', 'Psychology', 'Sociology', 'Research'].map(tag => (
                                             <span key={tag} className="px-3 py-1.5 bg-white/5 text-white/60 text-xs font-semibold rounded-lg border border-white/10 hover:border-violet-500/30 hover:text-violet-400 transition-colors">
+=======
+                                    <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">Expertise</h4>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {['History', 'Literature', 'Psychology', 'Sociology', 'Research'].map(tag => (
+                                            <span key={tag} className="px-3 py-1.5 glass text-[var(--text-secondary)] text-xs font-semibold rounded-lg hover:border-[var(--accent)]/30 hover:text-[var(--accent)] transition-colors">
+>>>>>>> master
                                                 {tag}
                                             </span>
                                         ))}
@@ -276,18 +411,30 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                 </div>
 
                                 <div className="mt-6">
+<<<<<<< HEAD
                                     <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">About</h4>
                                     <p className="text-sm text-white/60 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/10">
+=======
+                                    <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">About</h4>
+                                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed glass p-4 rounded-xl">
+>>>>>>> master
                                         Professional academic writer with over 5 years of experience in Thesis, Essay, and Research writing. Committed to delivering high-quality work on time. Specializes in clear, concise structured writing.
                                     </p>
                                 </div>
 
                                 {((selectedWriter.handwriting_samples && selectedWriter.handwriting_samples.length > 0) || selectedWriter.handwriting_sample_url) && (
                                     <div className="mt-6">
+<<<<<<< HEAD
                                         <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Handwriting Samples</h4>
                                         <div className="grid grid-cols-2 gap-3">
                                             {selectedWriter.handwriting_samples?.map((sample, index) => (
                                                 <div key={index} className="rounded-xl overflow-hidden border border-white/10 bg-white/5 h-32 relative group cursor-pointer w-full" onClick={() => window.open(sample, '_blank')}>
+=======
+                                        <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">Handwriting Samples</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {selectedWriter.handwriting_samples?.map((sample, index) => (
+                                                <div key={index} className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--surface)] h-32 relative group cursor-pointer w-full" onClick={() => window.open(sample, '_blank')}>
+>>>>>>> master
                                                     <img src={sample} alt={`Sample ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                         <span className="text-white text-xs font-bold">Zoom</span>
@@ -295,7 +442,11 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                                 </div>
                                             ))}
                                             {(!selectedWriter.handwriting_samples || selectedWriter.handwriting_samples.length === 0) && selectedWriter.handwriting_sample_url && (
+<<<<<<< HEAD
                                                 <div className="rounded-xl overflow-hidden border border-white/10 bg-white/5 h-32 relative group cursor-pointer w-full" onClick={() => window.open(selectedWriter.handwriting_sample_url, '_blank')}>
+=======
+                                                <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--surface)] h-32 relative group cursor-pointer w-full" onClick={() => window.open(selectedWriter.handwriting_sample_url, '_blank')}>
+>>>>>>> master
                                                     <img src={selectedWriter.handwriting_sample_url} alt="Sample" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                         <span className="text-white text-xs font-bold">Zoom</span>
@@ -307,12 +458,20 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                 )}
                             </div>
 
+<<<<<<< HEAD
                             <div className="p-6 border-t border-white/10 bg-white/5 flex gap-3 flex-shrink-0 sticky bottom-0">
                                 <button
+=======
+                            <div className="p-6 border-t border-[var(--border)] bg-[var(--surface-elevated)] flex gap-3 flex-shrink-0 sticky bottom-0">
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+>>>>>>> master
                                     onClick={() => {
                                         onHire(selectedWriter.id);
                                         setSelectedWriter(null);
                                     }}
+<<<<<<< HEAD
                                     className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-violet-500/30 transition-all"
                                 >
                                     Hire Now
@@ -320,6 +479,15 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                 <button
                                     onClick={() => setSelectedWriter(null)}
                                     className="px-6 py-3.5 bg-white/5 border border-white/10 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors"
+=======
+                                    className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-violet-500/30 transition-all ripple"
+                                >
+                                    Hire Now
+                                </motion.button>
+                                <button
+                                    onClick={() => setSelectedWriter(null)}
+                                    className="px-6 py-3.5 glass text-[var(--text-secondary)] font-bold rounded-xl hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors"
+>>>>>>> master
                                 >
                                     Close
                                 </button>

@@ -32,12 +32,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
     };
 
     return (
+<<<<<<< HEAD
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+=======
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--overlay)] backdrop-blur-sm p-4">
+>>>>>>> master
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
+<<<<<<< HEAD
                 className="bg-[#0a0a12] border border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+=======
+                className="glass-card shadow-2xl w-full max-w-md overflow-hidden"
+                style={{ background: 'var(--bg-secondary)' }}
+>>>>>>> master
             >
                 {/* Header */}
                 <div className="relative p-6 bg-gradient-to-r from-emerald-600 to-teal-600">
@@ -48,11 +57,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                         <X size={18} />
                     </button>
                     <div className="flex items-center gap-3">
+<<<<<<< HEAD
                         <div className="p-3 bg-white/20 rounded-2xl">
                             <Wallet className="w-6 h-6 text-white" />
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-white">Secure Payment</h3>
+=======
+                        <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                            <Wallet className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white font-display">Secure Payment</h3>
+>>>>>>> master
                             <p className="text-sm text-white/70">Direct to {writerName}</p>
                         </div>
                     </div>
@@ -69,19 +86,34 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                                 className="py-12 flex flex-col items-center text-center"
                             >
                                 <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
+<<<<<<< HEAD
                                     <CheckCircle className="w-10 h-10 text-emerald-400" />
                                 </div>
                                 <h4 className="text-xl font-bold text-white mb-2">Payment Verified!</h4>
                                 <p className="text-white/50 text-sm">Your payment has been confirmed successfully.</p>
+=======
+                                    <CheckCircle className="w-10 h-10 text-emerald-500 dark:text-emerald-400" />
+                                </div>
+                                <h4 className="text-xl font-bold text-[var(--text-primary)] mb-2 font-display">Payment Verified!</h4>
+                                <p className="text-[var(--text-secondary)] text-sm">Your payment has been confirmed successfully.</p>
+>>>>>>> master
                             </motion.div>
                         ) : (
                             <motion.div key="payment" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                 {/* Amount Card */}
+<<<<<<< HEAD
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
                                     <div className="flex items-center justify-between">
                                         <span className="text-white/40 text-sm">Total Amount</span>
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-3xl font-bold text-white">₹{assignment.budget}</span>
+=======
+                                <div className="glass p-4 rounded-2xl mb-6">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[var(--text-tertiary)] text-sm">Total Amount</span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-bold text-[var(--text-primary)]">₹{assignment.budget}</span>
+>>>>>>> master
                                         </div>
                                     </div>
                                 </div>
@@ -91,7 +123,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                                     <div className="bg-white p-3 rounded-2xl shadow-lg mb-3">
                                         <img src={qrUrl} alt="Payment QR" className="w-40 h-40 object-contain" />
                                     </div>
+<<<<<<< HEAD
                                     <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
+=======
+                                    <div className="flex items-center gap-2 text-emerald-500 dark:text-emerald-400 text-sm font-semibold">
+>>>>>>> master
                                         <QrCode size={16} />
                                         Scan with any UPI App
                                     </div>
@@ -99,6 +135,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
 
                                 {/* UPI Apps */}
                                 <div className="flex justify-center gap-4 mb-6">
+<<<<<<< HEAD
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
                                             <Smartphone size={18} className="text-white/60" />
@@ -124,6 +161,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                                     onClick={handlePaymentConfirm}
                                     disabled={isConfirming}
                                     className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+=======
+                                    {['GPay', 'PhonePe', 'Paytm'].map((app) => (
+                                        <div key={app} className="flex flex-col items-center gap-1">
+                                            <div className="w-10 h-10 glass rounded-xl flex items-center justify-center">
+                                                <Smartphone size={18} className="text-[var(--text-secondary)]" />
+                                            </div>
+                                            <span className="text-[10px] text-[var(--text-tertiary)]">{app}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Confirm Button */}
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handlePaymentConfirm}
+                                    disabled={isConfirming}
+                                    className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 ripple"
+>>>>>>> master
                                 >
                                     {isConfirming ? (
                                         <>
@@ -136,14 +192,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                                             I have made the payment
                                         </>
                                     )}
+<<<<<<< HEAD
                                 </button>
+=======
+                                </motion.button>
+>>>>>>> master
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
 
                 {/* Footer */}
+<<<<<<< HEAD
                 <div className="px-6 py-4 bg-white/5 border-t border-white/10 flex items-center justify-center gap-2 text-white/30 text-xs">
+=======
+                <div className="px-6 py-4 bg-[var(--surface)] border-t border-[var(--border)] flex items-center justify-center gap-2 text-[var(--text-tertiary)] text-xs">
+>>>>>>> master
                     <Shield size={12} />
                     Platform fee deducted from writer's earnings
                 </div>
@@ -151,7 +215,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
         </div>
     );
 };
+<<<<<<< HEAD
 
 
 
 
+=======
+>>>>>>> master
