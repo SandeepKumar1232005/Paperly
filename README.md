@@ -1,4 +1,4 @@
-# 📚 PAPERLY
+# 📚 PAPERLY 
 
 **Study Smarter, Not Harder** ⭐
 
@@ -14,23 +14,33 @@ Paperly is a comprehensive platform connecting students with professional writer
 - **Styling**: Tailwind CSS
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
-- **Authentication**: Google OAuth (@react-oauth/google)
+- **Authentication**: JWT & Role-Based Access Control
 - **Payments**: Stripe Integration
 
 ### Backend
 - **Framework**: Django & Django REST Framework (DRF)
-- **Database**: SQLite (Development) / MongoDB (Supported)
-- **Authentication**: JWT (JSON Web Tokens) with Role-Based Access Control (RBAC)
+- **Database**: MongoDB (via PyMongo)
+- **Authentication**: JWT (JSON Web Tokens)
 - **AI Integration**: Google Generative AI (Gemini)
+
+---
+
+## ✨ Key Features
+- **User Roles**: Distinct flows for Students, Writers, and Admins.
+- **Assignment Management**: Post, track, and manage assignment requests instantly.
+- **Find Writers**: Browse available writers, filter by their handwriting styles, and view sample work.
+- **Real-Time Dashboards**: Beautiful glassmorphism UI for monitoring all requests.
+- **Location-Based Connections**: See how far writers are from your location.
+- **Secure Payments**: Integrated Stripe payment gateway for seamless transactions.
+- **Social Login**: One-click sign-in with Google.
+- **Admin Control**: Comprehensive control over users and system data.
 
 ---
 
 ## 📂 Project Structure
 
-The project is organized into two main distinct folders:
-
-- **`frontend/`**: Contains the client-side React application.
-- **`backend/`**: Contains the server-side Django application and API logic.
+- **`frontend/`**: Contains the client-side React + Vite application.
+- **`backend/`**: Contains the server-side Django API, linking PyMongo to MongoDB Atlas.
 
 ---
 
@@ -56,27 +66,20 @@ Navigate to the backend directory and set up the Python environment.
 cd backend
 
 # Create a virtual environment
-python -m venv venv
+python -m venv .venv
 
 # Activate the virtual environment
 # On Windows:
-venv\Scripts\activate
+.venv\Scripts\activate
 # On macOS/Linux:
-source venv/bin/activate
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run migrations (default is SQLite)
-python manage.py migrate
-
-# Create a superuser (for Admin access)
-python manage.py createsuperuser
-
-# Start the development server
+# Start the Django development server
 python manage.py runserver
 ```
-The backend API will run at `http://127.0.0.1:8000/`.
 
 ### 3. Frontend Setup
 Open a new terminal, navigate to the frontend directory, and start the client.
@@ -87,10 +90,9 @@ cd frontend
 # Install dependencies
 npm install
 
-# Start the development server
+# Start the Vite development server
 npm run dev
 ```
-The application will run at `http://localhost:3000/` (or the port shown in your terminal).
 
 ---
 
@@ -105,21 +107,13 @@ VITE_API_URL=http://localhost:8000
 ```
 
 ### Backend (`backend/.env`)
-Create a `.env` file in the `backend` directory (if not using default settings):
+Create a `.env` file in the `backend` directory:
 ```env
 SECRET_KEY=your_django_secret_key
 DEBUG=True
-GOOGLE_API_KEY=your_gemini_api_key
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/
 ```
-
----
-
-## ✨ Key Features
-- **User Roles**: Distinct flows for Students, Writers, and Admins.
-- **Assignment Management**: Post, track, and manage assignment requests.
-- **Secure Payments**: Integrated Stripe payment gateway.
-- **Social Login**: One-click sign-in with Google.
-- **Admin Dashboard**: Comprehensive control over users and system data.
+*(Please do not commit your `.env` file!)*
 
 ---
 
