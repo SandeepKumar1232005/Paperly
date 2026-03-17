@@ -169,15 +169,15 @@ const Layout: React.FC<LayoutProps> = ({
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-80 glass-card overflow-hidden z-[100]"
+                      className="absolute right-0 mt-2 w-80 bg-[var(--bg-secondary)] backdrop-blur-3xl shadow-2xl ring-1 ring-[var(--border)] rounded-2xl overflow-hidden z-[9999]"
                     >
-                      <div className="p-4 border-b border-[var(--border)] flex justify-between items-center">
+                      <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-secondary)]">
                         <h3 className="font-bold text-sm text-[var(--text-primary)]">Notifications</h3>
                         <span className="text-[10px] bg-[var(--accent-muted)] text-[var(--accent)] px-2 py-0.5 rounded-full font-bold">
                           {notifications.length} Total
                         </span>
                       </div>
-                      <div className="max-h-80 overflow-y-auto">
+                      <div className="max-h-80 overflow-y-auto bg-[var(--bg-secondary)]">
                         {notifications.length === 0 ? (
                           <div className="p-10 text-center">
                             <Bell size={24} className="mx-auto mb-2 text-[var(--text-tertiary)]" />
@@ -224,16 +224,16 @@ const Layout: React.FC<LayoutProps> = ({
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-56 glass-card overflow-hidden z-[100]"
+                      className="absolute right-0 mt-2 w-56 bg-[var(--bg-secondary)] backdrop-blur-3xl shadow-2xl ring-1 ring-[var(--border)] rounded-2xl overflow-hidden z-[9999]"
                     >
-                      <div className="p-4 border-b border-[var(--border)] flex items-center gap-3">
-                        <img src={user.avatar} className="w-10 h-10 rounded-xl border border-[var(--border)]" alt="" />
+                      <div className="p-4 border-b border-[var(--border)] flex items-center gap-3 bg-[var(--bg-secondary)]">
+                        <img src={user.avatar} className="w-10 h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-hover)]" alt="" />
                         <div className="overflow-hidden">
                           <p className="text-sm font-bold text-[var(--text-primary)] truncate">{user.name}</p>
                           <p className="text-xs text-[var(--text-tertiary)] truncate">{user.email}</p>
                         </div>
                       </div>
-                      <div className="p-2">
+                      <div className="p-2 bg-[var(--bg-secondary)]">
                         <button
                           onClick={() => { setShowProfileModal(true); setShowUserDropdown(false); }}
                           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors group"

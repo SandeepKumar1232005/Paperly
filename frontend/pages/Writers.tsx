@@ -106,6 +106,26 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             </div>
                         </div>
                     </div>
+                ) : filteredWriters.length === 0 ? (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }} 
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="glass-card p-12 text-center max-w-2xl mx-auto mt-8"
+                    >
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
+                            <Search className="w-10 h-10 text-[var(--accent)]" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-2 font-display">No Writers Found</h3>
+                        <p className="text-[var(--text-secondary)] mb-6">We couldn't find any writers matching your current handwriting style filter.</p>
+                        <motion.button 
+                            whileHover={{ scale: 1.05 }} 
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setHandwritingFilter('All')}
+                            className="px-6 py-3 glass hover:bg-[var(--surface-hover)] text-[var(--text-primary)] rounded-xl font-bold transition-all border border-[var(--border)]"
+                        >
+                            Clear Filters
+                        </motion.button>
+                    </motion.div>
                 ) : (
                     <motion.div
                         variants={containerVariants}
