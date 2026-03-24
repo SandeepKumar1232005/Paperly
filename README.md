@@ -115,6 +115,10 @@ MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/
 ```
 *(Please do not commit your `.env` file!)*
 
+### Firebase Credentials (`backend/firebase-credentials.json`)
+Create a `firebase-credentials.json` file in the `backend` directory with your Firebase service account keys. This file is required for Firebase services to work correctly.
+*(Do not commit your `firebase-credentials.json` file!)*
+
 ---
 
 ## 🤝 Contributing
