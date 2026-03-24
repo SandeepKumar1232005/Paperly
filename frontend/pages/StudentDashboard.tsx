@@ -7,6 +7,8 @@ import { api } from '../services/api';
 import { mockUsers } from '../mockData';
 import EmptyState from '../components/EmptyState';
 import ProgressBar from '../components/ProgressBar';
+import TiltCard from '../components/TiltCard';
+import GlowButton from '../components/GlowButton';
 import { ClipboardList, Plus, Sparkles, Clock, BookOpen, AlertCircle, MessageSquare, Trash2, CheckCircle, FileText, Users, Zap, ArrowRight, Calendar, Search, Download, Eye } from 'lucide-react';
 import { calculateSuggestedPrice } from '../utils/pricing';
 
@@ -113,7 +115,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
         {/* Welcome Banner */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-8 mb-8 relative overflow-hidden">
+          className="glass-card-premium p-8 mb-8 relative overflow-hidden noise-overlay">
           <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 rounded-full blur-3xl" />
           <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-4">
@@ -128,16 +130,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               </div>
             </div>
             <div className="flex gap-3 w-full md:w-auto">
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={() => onNavigate('WRITERS')}
-                className="flex-1 md:flex-none px-5 py-3 glass text-[var(--text-primary)] rounded-xl font-semibold transition-all flex items-center justify-center gap-2 hover:bg-[var(--surface-hover)]">
-                <Users size={18} /> Browse Writers
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={() => setShowCreateModal(true)}
-                className="flex-1 md:flex-none px-5 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-bold shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-all flex items-center justify-center gap-2 ripple">
-                <Plus size={18} /> New Request
-              </motion.button>
+              <GlowButton onClick={() => onNavigate('WRITERS')} variant="secondary" size="sm" icon={<Users size={18} />}>
+                Browse Writers
+              </GlowButton>
+              <GlowButton onClick={() => setShowCreateModal(true)} size="sm" icon={<Plus size={18} />}>
+                New Request
+              </GlowButton>
             </div>
           </div>
         </motion.div>
@@ -145,17 +143,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {stats.map((stat, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-              className="glass-card p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-3xl font-bold text-[var(--text-primary)] mt-1">{stat.value}</p>
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+              <TiltCard className="glass-card-premium p-5" tiltIntensity={8}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-3xl font-bold text-[var(--text-primary)] mt-1">{stat.value}</p>
+                  </div>
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
+                    <stat.icon className="w-5 h-5 text-white" />
+                  </div>
                 </div>
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                  <stat.icon className="w-5 h-5 text-white" />
-                </div>
-              </div>
+              </TiltCard>
             </motion.div>
           ))}
         </div>
@@ -361,6 +360,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                     <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">Description</label>
                     <textarea required value={newAsgn.description} onChange={e => setNewAsgn({ ...newAsgn, description: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl glass-input h-24 resize-none" placeholder="Detailed instructions..." />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">Optional Attachment (Image / PDF)</label>
+                    <input 
+                      type="file" 
+                      accept="image/*,.pdf"
+                      onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+                      className="w-full px-4 py-3 rounded-xl glass-input text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[var(--accent-muted)] file:text-[var(--accent)] hover:file:bg-[var(--accent)] hover:file:text-white file:transition-colors file:cursor-pointer text-[var(--text-secondary)]" 
+                    />
                   </div>
 
                   {suggestedPrice && (

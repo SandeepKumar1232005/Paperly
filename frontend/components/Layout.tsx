@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { User, Notification } from '../types';
 import ProfileModal from './ProfileModal';
 import Logo from './Logo';
@@ -104,14 +104,16 @@ const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-primary)] transition-colors duration-300">
       {user && (
-        <header className="bg-[var(--bg-secondary)]/80 backdrop-blur-xl border-b border-[var(--border)] sticky top-0 z-50">
+        <header className="bg-[var(--bg-secondary)]/70 backdrop-blur-2xl border-b border-[var(--border)] sticky top-0 z-50 shadow-[0_4px_30px_-10px_rgba(139,92,246,0.08)]">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             {/* Left: Logo */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2.5 group cursor-pointer">
-                <div className={`w-9 h-9 bg-gradient-to-br ${roleColor} rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3`}>
-                  P
-                </div>
+                <Suspense fallback={
+                  <div className={`w-9 h-9 bg-gradient-to-br ${roleColor} rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg`}>P</div>
+                }>
+                  {React.createElement(React.lazy(() => import('./Logo3D')))}
+                </Suspense>
                 <span className="text-lg font-bold tracking-tight text-[var(--text-primary)] font-display hidden sm:block">Paperly</span>
               </div>
 
@@ -330,13 +332,22 @@ const Layout: React.FC<LayoutProps> = ({
         }}
       />
 
-      <footer className="bg-[var(--bg-secondary)] border-t border-[var(--border)] py-8 mt-auto">
+      <footer className="bg-[var(--bg-secondary)]/70 backdrop-blur-xl border-t border-[var(--border)] py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-[var(--text-tertiary)]">
           <p>© {new Date().getFullYear()} Paperly. Digitalizing academic assistance.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-[var(--accent)] transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-[var(--accent)] transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-[var(--accent)] transition-colors">Contact Support</a>
+            <a href="#" className="hover:text-[var(--accent)] transition-colors relative group">
+              Privacy Policy
+              <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-[var(--accent)] group-hover:w-full transition-all duration-300" />
+            </a>
+            <a href="#" className="hover:text-[var(--accent)] transition-colors relative group">
+              Terms of Service
+              <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-[var(--accent)] group-hover:w-full transition-all duration-300" />
+            </a>
+            <a href="#" className="hover:text-[var(--accent)] transition-colors relative group">
+              Contact Support
+              <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-[var(--accent)] group-hover:w-full transition-all duration-300" />
+            </a>
           </div>
         </div>
       </footer>

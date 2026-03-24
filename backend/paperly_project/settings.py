@@ -89,7 +89,8 @@ WSGI_APPLICATION = 'paperly_project.wsgi.application'
 # Use Dummy backend to disable SQL
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.dummy',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

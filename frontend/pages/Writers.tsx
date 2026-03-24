@@ -9,17 +9,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface WritersProps {
     onNavigate: (view: any) => void;
     onHire: (writerId: string) => void;
+    currentUser: User;
 }
 
-export function Writers({ onNavigate, onHire }: WritersProps) {
+export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
     const [writers, setWriters] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedWriter, setSelectedWriter] = useState<User | null>(null);
     const [handwritingFilter, setHandwritingFilter] = useState('All');
 
     const filteredWriters = writers.filter(writer => {
-        if (handwritingFilter === 'All') return true;
-        return writer.handwriting_style === handwritingFilter;
+        if (handwritingFilter !== 'All' && writer.handwriting_style !== handwritingFilter) return false;
+
+        const studentAddr = (currentUser?.address || '').toLowerCase().trim();
+        const writerAddr = (writer.address || '').toLowerCase().trim();
+
+        if (studentAddr) {
+            if (!writerAddr || (!writerAddr.includes(studentAddr) && !studentAddr.includes(writerAddr))) {
+                return false;
+            }
+        }
+
+        return true;
     });
 
     useEffect(() => {
@@ -116,7 +127,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             <Search className="w-10 h-10 text-[var(--accent)]" />
                         </div>
                         <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-2 font-display">No Writers Found</h3>
-                        <p className="text-[var(--text-secondary)] mb-6">We couldn't find any writers matching your current handwriting style filter.</p>
+                        <p className="text-[var(--text-secondary)] mb-6">There are no writers near you matching your criteria.</p>
                         <motion.button 
                             whileHover={{ scale: 1.05 }} 
                             whileTap={{ scale: 0.95 }}
@@ -159,11 +170,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                                     <h3 className="text-lg font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{writer.name}</h3>
                                                     {writer.is_verified && <CheckCircle className="w-4 h-4 text-[var(--accent)] fill-[var(--accent-muted)]" />}
                                                 </div>
-                                                <div className="flex items-center text-sm font-medium text-amber-500 dark:text-amber-400 mt-0.5">
-                                                    <Star className="h-3.5 w-3.5 fill-current" />
-                                                    <span className="ml-1">4.9</span>
-                                                    <span className="text-[var(--text-tertiary)] ml-1 font-normal">(120+ reviews)</span>
-                                                </div>
+
                                             </div>
                                         </div>
                                     </div>
@@ -182,10 +189,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                             )}
                                         </div>
 
-                                        <div className="flex items-center text-sm text-[var(--text-secondary)]">
-                                            <Award className="h-4 w-4 mr-2 text-[var(--text-tertiary)]" />
-                                            <span>98% Make It Right Guarantee</span>
-                                        </div>
+
 
                                         <div className="pt-2">
                                             {writer.handwriting_style && (
@@ -236,18 +240,19 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             className="glass-card w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl relative z-10 flex flex-col"
                             style={{ background: 'var(--bg-secondary)' }}
                         >
-                            {/* Header */}
-                            <div className="relative h-32 bg-gradient-to-r from-violet-600 to-fuchsia-600 p-6 flex-shrink-0">
-                                <button
-                                    onClick={() => setSelectedWriter(null)}
-                                    className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl transition-colors backdrop-blur-md"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
+                            <div className="overflow-y-auto flex-1 w-full">
+                                {/* Header */}
+                                <div className="relative h-32 bg-gradient-to-r from-violet-600 to-fuchsia-600 p-6 flex-shrink-0">
+                                    <button
+                                        onClick={() => setSelectedWriter(null)}
+                                        className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl transition-colors backdrop-blur-md"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
 
-                            <div className="px-8 pb-8 overflow-y-auto flex-1">
-                                <div className="relative -mt-12 mb-6 flex justify-between items-end">
+                                <div className="px-8 pb-8">
+                                    <div className="relative -mt-12 mb-6 flex justify-between items-end">
                                     <div className="relative">
                                         <div className="w-24 h-24 rounded-2xl border-4 border-[var(--bg-secondary)] shadow-xl bg-[var(--surface)] overflow-hidden p-0.5">
                                             <img src={selectedWriter.avatar} alt={selectedWriter.name} className="w-full h-full rounded-xl object-cover" />
@@ -268,45 +273,16 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         {selectedWriter.name}
                                         {selectedWriter.is_verified && <CheckCircle className="w-5 h-5 text-[var(--accent)]" />}
                                     </h2>
-                                    <p className="text-[var(--text-secondary)] font-medium text-sm mt-1 flex items-center gap-2">
-                                        <Briefcase className="w-4 h-4" /> Academic Writing Specialist
-                                    </p>
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-4 mt-6 py-4 border-y border-[var(--border)]">
-                                    <div className="flex items-center gap-1.5">
-                                        <Star className="w-5 h-5 text-amber-500 dark:text-amber-400 fill-current" />
-                                        <span className="font-bold text-[var(--text-primary)] text-lg">4.9</span>
-                                    </div>
-                                    <div className="h-8 w-px bg-[var(--border)]"></div>
-                                    <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                                        <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                                        <span className="font-semibold text-sm">98% Success</span>
-                                    </div>
-                                    <div className="h-8 w-px bg-[var(--border)]"></div>
                                     <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
                                         <MapPin className="w-5 h-5 text-[var(--text-tertiary)]" />
                                         <span className="font-semibold text-sm truncate max-w-[120px]">{selectedWriter.address || 'Unknown'}</span>
                                     </div>
                                 </div>
 
-                                <div className="mt-6">
-                                    <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">Expertise</h4>
-                                    <div className="flex gap-2 flex-wrap">
-                                        {['History', 'Literature', 'Psychology', 'Sociology', 'Research'].map(tag => (
-                                            <span key={tag} className="px-3 py-1.5 glass text-[var(--text-secondary)] text-xs font-semibold rounded-lg hover:border-[var(--accent)]/30 hover:text-[var(--accent)] transition-colors">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
 
-                                <div className="mt-6">
-                                    <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">About</h4>
-                                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed glass p-4 rounded-xl">
-                                        Professional academic writer with over 5 years of experience in Thesis, Essay, and Research writing. Committed to delivering high-quality work on time. Specializes in clear, concise structured writing.
-                                    </p>
-                                </div>
 
                                 {((selectedWriter.handwriting_samples && selectedWriter.handwriting_samples.length > 0) || selectedWriter.handwriting_sample_url) && (
                                     <div className="mt-6">
@@ -332,8 +308,9 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                     </div>
                                 )}
                             </div>
+                        </div>
 
-                            <div className="p-6 border-t border-[var(--border)] bg-[var(--surface-elevated)] flex gap-3 flex-shrink-0 sticky bottom-0">
+                        <div className="p-6 border-t border-[var(--border)] bg-[var(--surface-elevated)] flex gap-3 flex-shrink-0 sticky bottom-0">
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}

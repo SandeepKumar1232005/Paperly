@@ -529,19 +529,19 @@ export const api = {
           'Content-Type': 'application/json'
         }
       });
+      
       if (!response.ok && response.status !== 204) {
-        console.warn(`Backend delete user failed with status: ${response.status}`);
+        throw new Error(`Backend delete user failed with status: ${response.status}`);
       }
-    } catch (e) {
-      console.warn("Backend delete user failed (e.g. network/db error):", e);
+      
+      // Update local mock DB to ensure the frontend updates correctly only on real success
+      const users = db.getUsers();
+      db.saveUsers(users.filter(u => u.id !== userId));
+    } catch (e: any) {
+      console.error("Backend delete user failed (e.g. network/db error):", e);
+      throw new Error(e.message || "Failed to delete user");
     }
-
-    // Always remove from local mock DB to ensure the frontend updates correctly,
-    // especially important in a hybrid environment where backend/DB might be unavailable.
-    const users = db.getUsers();
-    db.saveUsers(users.filter(u => u.id !== userId));
   },
-
 
   async verifyUser(userId: string): Promise<User> {
     const start = Date.now();

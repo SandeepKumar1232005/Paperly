@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { User } from '../types';
 import { api } from '../services/api';
+import GlowButton from '../components/GlowButton';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -46,14 +47,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
   };
 
   return (
-    <div className="min-h-screen flex bg-[var(--bg-primary)] relative overflow-hidden">
+    <div className="min-h-screen flex bg-[var(--bg-primary)] relative overflow-hidden mesh-gradient">
 
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-[var(--bg-primary)]" />
         <div className="dark:block hidden">
-          <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-violet-600/15 rounded-full blur-[150px]" />
-          <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[120px]" />
+          <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-violet-600/15 rounded-full blur-[150px] animate-blob" />
+          <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-indigo-500/8 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '4s' }} />
         </div>
         <div className="dark:hidden block">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-fuchsia-50/30 to-blue-50" />
@@ -108,7 +110,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <div className="glass-card p-8">
+          <div className="glass-card-premium p-8 animated-border">
             {/* Header */}
             <div className="text-center mb-8">
               <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl mx-auto mb-6 shadow-lg shadow-violet-500/30 lg:hidden">
@@ -124,7 +126,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
               whileTap={{ scale: 0.98 }}
               onClick={() => loginWithGoogle()}
               disabled={!!isLoading}
-              className="w-full flex items-center justify-center gap-3 glass-card !rounded-xl py-3.5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all mb-6"
+              className="w-full flex items-center justify-center gap-3 glass-card-premium !rounded-xl py-3.5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all mb-6"
             >
               <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
               <span>{isLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
@@ -176,15 +178,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
                 </div>
               </div>
 
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={!!isLoading}
-                className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-all disabled:opacity-70 flex items-center justify-center gap-2 ripple">
+              <GlowButton type="submit" disabled={!!isLoading} className="w-full" size="lg">
                 {isLoading === 'email' ? (
                   <>
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Signing In...
                   </>
                 ) : 'Sign In'}
-              </motion.button>
+              </GlowButton>
             </form>
 
             {/* Register Link */}
