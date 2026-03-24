@@ -5,6 +5,8 @@ import StatusBadge from '../components/StatusBadge';
 import { checkAssignmentQuality } from '../services/gemini';
 import { api } from '../services/api';
 import EmptyState from '../components/EmptyState';
+import TiltCard from '../components/TiltCard';
+import GlowButton from '../components/GlowButton';
 import { Search, Briefcase, DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, Upload, X, Filter, FileText, Sparkles, Star, Zap, MessageSquare } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -90,7 +92,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              className="glass-card p-8 relative overflow-hidden">
+              className="glass-card-premium p-8 relative overflow-hidden noise-overlay">
               <div className="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-3xl" />
               <div className="relative flex items-center gap-4 mb-4">
                 <img src={user.avatar} alt={user.name} className="w-14 h-14 rounded-2xl border-2 border-[var(--border)] shadow-md" />
@@ -123,8 +125,9 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
           </div>
 
           {/* Earnings Card */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 relative overflow-hidden">
+          <TiltCard tiltIntensity={6}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="glass-card-premium p-6 relative overflow-hidden">
             <div className="absolute top-4 right-4 text-emerald-500/10">
               <DollarSign size={60} />
             </div>
@@ -143,7 +146,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </motion.div>
+            </motion.div>
+          </TiltCard>
         </div>
 
         <div className="grid lg:grid-cols-4 gap-8">

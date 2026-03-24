@@ -501,7 +501,7 @@ const AppContent: React.FC = () => {
         return <ForgotPassword onNavigate={(view) => setView(view as any)} />;
       case 'WRITERS':
         if (!user) return <Login onLogin={handleLoginSubmit} onNavigate={setView} />; // Protect route
-        return <Writers onNavigate={setView} onHire={handleHireWriter} />;
+        return <Writers onNavigate={setView} onHire={handleHireWriter} currentUser={user} />;
       case 'DASHBOARD':
         if (!user) return <Landing onNavigate={setView} />;
         if (user.role === 'STUDENT') return <StudentDashboard user={user} assignments={assignments.filter(a => a.studentId === user.id)} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={setView} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;

@@ -3,10 +3,11 @@ djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
 python-dotenv
-pymongo
+firebase-admin
 pyjwt
 passlib
 bcrypt
 tensorflow
 numpy
 pillow
+certifi

@@ -1,2 +1,0 @@
-﻿Connected to MongoDB: paperly_db
-System check identified no issues (0 silenced).

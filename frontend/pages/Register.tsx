@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole, User as UserType } from '../types';
 >>>>>>> master
 import { api } from '../services/api';
+import GlowButton from '../components/GlowButton';
 
 interface RegisterProps {
   onRegister: (name: string, email: string, username: string, password: string, role: UserRole) => Promise<void>;
@@ -244,13 +245,14 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
   };
 
   return (
-    <div className="min-h-screen flex bg-[var(--bg-primary)] relative overflow-hidden">
+    <div className="min-h-screen flex bg-[var(--bg-primary)] relative overflow-hidden mesh-gradient">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-[var(--bg-primary)]" />
         <div className="dark:block hidden">
-          <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/15 rounded-full blur-[150px]" />
-          <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[120px]" />
+          <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/15 rounded-full blur-[150px] animate-blob" />
+          <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-1/3 right-1/3 w-[300px] h-[300px] bg-indigo-500/8 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '4s' }} />
         </div>
         <div className="dark:hidden block">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-fuchsia-50/30 to-blue-50" />
@@ -303,7 +305,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
       <div className="flex-1 flex items-center justify-center relative z-10 px-4 py-12">
         <motion.div initial={{ opacity: 0, y: 30, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5 }}
           className="w-full max-w-md">
-          <div className="glass-card p-8">
+          <div className="glass-card-premium p-8 animated-border">
             {/* Header */}
             <div className="text-center mb-6">
               <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white mx-auto mb-5 shadow-lg shadow-violet-500/30 lg:hidden">
@@ -412,15 +414,14 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                 )}
               </div>
 
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={!!isLoading}
-                className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all disabled:opacity-70 flex items-center justify-center gap-2 ripple bg-gradient-to-r ${roleConfig[role].gradient} text-white ${roleConfig[role].shadow}`}>
+              <GlowButton type="submit" disabled={!!isLoading} variant={role === 'WRITER' ? 'emerald' : 'primary'} className="w-full" size="lg">
                 {isLoading === 'email' ? (
                   <>
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Creating Account...
                   </>
                 ) : 'Create Account'}
-              </motion.button>
+              </GlowButton>
             </form>
 
             <p className="text-center text-[var(--text-secondary)] mt-6">

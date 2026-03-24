@@ -5,7 +5,8 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 import os
 import jwt
-from utils.mongo import db
+from utils.firebase import db
+from google.cloud import firestore
 from .utils import predict_handwriting_style
 
 class PredictHandwritingView(APIView):
@@ -23,8 +24,8 @@ class PredictHandwritingView(APIView):
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = payload.get('user_id')
             if db is not None:
-                user = db.users.find_one({'id': user_id})
-                return user
+                doc = db.collection('users').document(user_id).get()
+                return doc.to_dict() if doc.exists else None
             return None
         except Exception as e:
             print(f"Token Error: {e}")
@@ -55,16 +56,12 @@ class PredictHandwritingView(APIView):
 
         # 3. Update User (Writer) Profile
         if db is not None:
-            db.users.update_one(
-                {'id': user['id']},
-                {'$set': {
-                    'handwriting_style': style,
-                    'handwriting_confidence': confidence,
-                    'handwriting_sample_url': file_url
-                }, '$addToSet': {
-                    'handwriting_samples': file_url
-                }}
-            )
+            db.collection('users').document(user['id']).update({
+                'handwriting_style': style,
+                'handwriting_confidence': confidence,
+                'handwriting_sample_url': file_url,
+                'handwriting_samples': firestore.ArrayUnion([file_url])
+            })
 
         # 4. Return Result
         return Response({

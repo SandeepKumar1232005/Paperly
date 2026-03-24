@@ -7,10 +7,8 @@ import jwt
 import datetime
 from passlib.hash import pbkdf2_sha256
 import uuid
-from utils.mongo import db
-
-# Helper to get DB
-# db imported above
+from google.cloud.firestore_v1.base_query import FieldFilter, Or
+from utils.firebase import db
 
 class RegisterView(APIView):
     authentication_classes = [] # Disable CSRF check implied by SessionAuth
@@ -34,13 +32,20 @@ class RegisterView(APIView):
             if not email or not password or not username:
                 return Response({'error': 'Email, password, and username required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if user exists (email OR username)
             if db is None:
-                print("CRITICAL: MongoDB not connected")
+                print("CRITICAL: Firebase not connected")
                 return Response({'error': 'Database error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            if db.users.find_one({'$or': [{'email': email}, {'username': username}]}):
-                existing_user = db.users.find_one({'$or': [{'email': email}, {'username': username}]})
+            # Check if user exists (email OR username)
+            users_ref = db.collection('users')
+            or_filter = Or(filters=[
+                FieldFilter('email', '==', email),
+                FieldFilter('username', '==', username)
+            ])
+            docs = list(users_ref.where(filter=or_filter).stream())
+            
+            if docs:
+                existing_user = docs[0].to_dict()
                 if existing_user.get('username') == username:
                      return Response({'error': 'Username already taken'}, status=status.HTTP_400_BAD_REQUEST)
                 return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
@@ -58,10 +63,10 @@ class RegisterView(APIView):
                 'role': role,
                 'avatar': avatar,
                 'address': address,
-                'created_at': datetime.datetime.utcnow()
+                'created_at': datetime.datetime.now(datetime.timezone.utc)
             }
 
-            db.users.insert_one(new_user)
+            db.collection('users').document(user_id).set(new_user)
             print("User inserted successfully")
             
             # Determine redirect/payload
@@ -89,7 +94,7 @@ class LoginView(APIView):
         password = request.data.get('password')
 
         if db is None:
-            print("CRITICAL: MongoDB not connected during login")
+            print("CRITICAL: Firebase not connected during login")
             return Response({'error': 'Database connection error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         print(f"Login Attempt: identifier={identifier}")
@@ -97,15 +102,16 @@ class LoginView(APIView):
         if not identifier or not password:
              return Response({'error': 'Please provide both username/email and password'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Find by email OR username (case-insensitive)
-        import re
-        identifier = identifier.strip()
-        user = db.users.find_one({
-            '$or': [
-                {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
-                {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
-            ]
-        })
+        # Find by email OR username
+        identifier_lower = identifier.strip().lower()
+        users_ref = db.collection('users')
+        or_filter = Or(filters=[
+            FieldFilter('email', '==', identifier_lower),
+            FieldFilter('username', '==', identifier_lower)
+        ])
+        docs = list(users_ref.where(filter=or_filter).stream())
+        
+        user = docs[0].to_dict() if docs else None
         
         if user:
             print(f"User found: {user.get('email')} (ID: {user.get('id')})")
@@ -122,17 +128,16 @@ class LoginView(APIView):
         print("Password verification SUCCESS")
 
         # Generate Token (Simple JWT or custom)
-        # Using pyjwt for simplicity
         token_payload = {
             'user_id': user['id'],
             'email': user['email'],
             'role': user.get('role', 'STUDENT'),
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)
+            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
         }
         token = jwt.encode(token_payload, settings.SECRET_KEY, algorithm='HS256')
 
         return Response({
-            'key': token, # Frontend expects 'key' or 'access' depending on previous dj-rest-auth? dj-rest-auth uses 'key' or 'access_token'
+            'key': token,
             'user': {
                 'id': user['id'],
                 'email': user['email'],
@@ -150,14 +155,6 @@ class LoginView(APIView):
         })
 
 class UserDetailsView(APIView):
-    # Retrieve and Update user details
-    # Expects Authorization: Bearer <token> (or Token ?)
-    # My simple implementation in api.ts uses 'Bearer' or 'Token'.
-    # I need a custom authentication class or manually decode token here because I disabled global auth classes?
-    # Ideally I should use a permission class, but since I am using manual JWT encoding in LoginView...
-    # I need to duplicate the verify logic or use a middleware/DRF auth.
-    # For speed/simplicity in this "Do it yourself" backend, I'll verifying token in the view.
-    
     authentication_classes = [] 
     permission_classes = []
 
@@ -171,8 +168,9 @@ class UserDetailsView(APIView):
             token = auth_header.split(' ')[1]
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = payload.get('user_id')
-            user = db.users.find_one({'id': user_id})
-            return user
+            
+            doc = db.collection('users').document(user_id).get()
+            return doc.to_dict() if doc.exists else None
         except Exception as e:
             print("Token Error:", e)
             return None
@@ -186,7 +184,7 @@ class UserDetailsView(APIView):
             'id': user['id'],
             'username': user.get('username'),
             'email': user['email'],
-            'first_name': user.get('name', '').split(' ')[0], # Adapter for frontend expecting first_name
+            'first_name': user.get('name', '').split(' ')[0],
             'last_name': ' '.join(user.get('name', '').split(' ')[1:]),
             'name': user.get('name'),
             'role': user.get('role'),
@@ -218,10 +216,11 @@ class UserDetailsView(APIView):
         if 'qr_code_url' in updates: valid_updates['qr_code_url'] = updates['qr_code_url']
         
         if valid_updates:
-            db.users.update_one({'id': user['id']}, {'$set': valid_updates})
+            db.collection('users').document(user['id']).update(valid_updates)
             
         # Return updated user
-        updated_user = db.users.find_one({'id': user['id']})
+        updated_doc = db.collection('users').document(user['id']).get()
+        updated_user = updated_doc.to_dict() if updated_doc.exists else user
         
         return Response({
             'id': updated_user['id'],
@@ -248,10 +247,9 @@ class RequestPasswordResetView(APIView):
         if not email:
             return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = db.users.find_one({'email': email})
-        if not user:
-            # For security, don't reveal if user exists. But for UX/Demo, we might return error.
-            # Let's verify user actually exists for this MVP.
+        users_ref = db.collection('users')
+        docs = list(users_ref.where(filter=FieldFilter('email', '==', email)).stream())
+        if not docs:
             return Response({'error': 'User not found with this email'}, status=status.HTTP_404_NOT_FOUND)
 
         # Generate OTP
@@ -259,17 +257,17 @@ class RequestPasswordResetView(APIView):
         otp = str(random.randint(100000, 999999))
         
         # Save to DB (password_resets collection)
-        expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
-        db.password_resets.update_one(
-            {'email': email},
-            {'$set': {'otp': otp, 'created_at': datetime.datetime.utcnow(), 'expires_at': expiry}},
-            upsert=True
-        )
+        expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=10)
+        db.collection('password_resets').document(email).set({
+            'otp': otp, 
+            'created_at': datetime.datetime.now(datetime.timezone.utc), 
+            'expires_at': expiry
+        })
 
-        # Send Email (Console Backend)
+        # Send Email
         from django.core.mail import send_mail
         try:
-            print(f"--- OTP for {email}: {otp} ---") # Explicit print for console visibility
+            print(f"--- OTP for {email}: {otp} ---")
             send_mail(
                 'Password Reset OTP - Paperly',
                 f'Your password reset OTP is: {otp}',
@@ -295,22 +293,34 @@ class PasswordResetVerifyView(APIView):
              return Response({'error': 'Email, OTP, and new password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check OTP
-        record = db.password_resets.find_one({'email': email})
-        if not record:
+        doc = db.collection('password_resets').document(email).get()
+        if not doc.exists:
             return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
 
+        record = doc.to_dict()
         if record['otp'] != otp:
              return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
         
-        if datetime.datetime.utcnow() > record['expires_at']:
+        # Ensure timezone aware comparison
+        now = datetime.datetime.now(datetime.timezone.utc)
+        expires_at = record['expires_at']
+        # if firestore returns a naive datetime we make it aware, else we just use it
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+            
+        if now > expires_at:
              return Response({'error': 'OTP expired'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Update Password
         hashed_password = pbkdf2_sha256.hash(new_password)
-        db.users.update_one({'email': email}, {'$set': {'password': hashed_password}})
+        user_docs = list(db.collection('users').where(filter=FieldFilter('email', '==', email)).stream())
+        if user_docs:
+            user_docs[0].reference.update({'password': hashed_password})
         
         # Delete OTP record
-        db.password_resets.delete_one({'email': email})
+        db.collection('password_resets').document(email).delete()
+        
+        return Response({'message': 'Password reset successfully!'})
 
 # Helper for distance
 import math
@@ -333,20 +343,23 @@ class UserListView(APIView):
         lat = request.query_params.get('lat')
         lon = request.query_params.get('lon')
         
-        query = {}
+        users_ref = db.collection('users')
         if role:
-            # Handle frontend mapping mismatch (api.ts sends 'provider' for writers, or 'WRITER')
             if role == 'provider':
-                query['$or'] = [{'role': 'provider'}, {'role': 'WRITER'}]
+                f1 = FieldFilter('role', '==', 'provider')
+                f2 = FieldFilter('role', '==', 'WRITER')
+                docs = users_ref.where(filter=Or(filters=[f1, f2])).stream()
             else:
-                query['role'] = role
+                docs = users_ref.where(filter=FieldFilter('role', '==', role)).stream()
+        else:
+            docs = users_ref.stream()
             
-        users = list(db.users.find(query))
+        users = [doc.to_dict() for doc in docs]
         
         results = []
         for u in users:
             user_data = {
-                'id': u.get('id', str(u.get('_id'))),
+                'id': u.get('id'),
                 'email': u.get('email'),
                 'name': u.get('name') or u.get('first_name', '') + ' ' + u.get('last_name', ''),
                 'first_name': u.get('first_name'),
@@ -356,7 +369,7 @@ class UserListView(APIView):
                 'avatar': u.get('avatar'),
                 'address': u.get('address'),
                 'is_verified': u.get('is_verified', False),
-                'handwriting_style': u.get('handwriting_style'), # Include new fields
+                'handwriting_style': u.get('handwriting_style'),
                 'handwriting_confidence': u.get('handwriting_confidence'),
                 'availability_status': u.get('availability_status', 'ONLINE'),
                 'handwriting_samples': u.get('handwriting_samples', []),
@@ -398,18 +411,6 @@ class UserManagementView(APIView):
             except Exception as e:
                 print("Token parsing error during deletion check:", e)
         
-        # In a real app, verify admin permissions here
-        result = db.users.delete_one({'id': user_id})
-        if result.deleted_count > 0:
-            return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-        else:
-            # Try by _id just in case
-            try:
-                from bson.objectid import ObjectId
-                result = db.users.delete_one({'_id': ObjectId(user_id)})
-                if result.deleted_count > 0:
-                    return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-            except:
-                pass
-                
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        db.collection('users').document(user_id).delete()
+        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+

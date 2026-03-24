@@ -9,17 +9,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface WritersProps {
     onNavigate: (view: any) => void;
     onHire: (writerId: string) => void;
+    currentUser: User;
 }
 
-export function Writers({ onNavigate, onHire }: WritersProps) {
+export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
     const [writers, setWriters] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedWriter, setSelectedWriter] = useState<User | null>(null);
     const [handwritingFilter, setHandwritingFilter] = useState('All');
 
     const filteredWriters = writers.filter(writer => {
-        if (handwritingFilter === 'All') return true;
-        return writer.handwriting_style === handwritingFilter;
+        if (handwritingFilter !== 'All' && writer.handwriting_style !== handwritingFilter) return false;
+
+        const studentAddr = (currentUser?.address || '').toLowerCase().trim();
+        const writerAddr = (writer.address || '').toLowerCase().trim();
+
+        if (studentAddr) {
+            if (!writerAddr || (!writerAddr.includes(studentAddr) && !studentAddr.includes(writerAddr))) {
+                return false;
+            }
+        }
+
+        return true;
     });
 
     useEffect(() => {
@@ -145,7 +156,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             <Search className="w-10 h-10 text-[var(--accent)]" />
                         </div>
                         <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-2 font-display">No Writers Found</h3>
-                        <p className="text-[var(--text-secondary)] mb-6">We couldn't find any writers matching your current handwriting style filter.</p>
+                        <p className="text-[var(--text-secondary)] mb-6">There are no writers near you matching your criteria.</p>
                         <motion.button 
                             whileHover={{ scale: 1.05 }} 
                             whileTap={{ scale: 0.95 }}
@@ -209,12 +220,16 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                                     <h3 className="text-lg font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{writer.name}</h3>
                                                     {writer.is_verified && <CheckCircle className="w-4 h-4 text-[var(--accent)] fill-[var(--accent-muted)]" />}
                                                 </div>
+<<<<<<< HEAD
                                                 <div className="flex items-center text-sm font-medium text-amber-500 dark:text-amber-400 mt-0.5">
                                                     <Star className="h-3.5 w-3.5 fill-current" />
                                                     <span className="ml-1">4.9</span>
                                                     <span className="text-[var(--text-tertiary)] ml-1 font-normal">(120+ reviews)</span>
 >>>>>>> master
                                                 </div>
+=======
+
+>>>>>>> master
                                             </div>
                                         </div>
                                     </div>
@@ -243,6 +258,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                                         <div className="flex items-center text-sm text-white/50">
                                             <Award className="h-4 w-4 mr-2 text-white/30" />
 =======
@@ -251,6 +267,9 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
 >>>>>>> master
                                             <span>98% Make It Right Guarantee</span>
                                         </div>
+=======
+
+>>>>>>> master
 
                                         <div className="pt-2">
                                             {writer.handwriting_style && (
@@ -322,18 +341,19 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                             style={{ background: 'var(--bg-secondary)' }}
 >>>>>>> master
                         >
-                            {/* Header */}
-                            <div className="relative h-32 bg-gradient-to-r from-violet-600 to-fuchsia-600 p-6 flex-shrink-0">
-                                <button
-                                    onClick={() => setSelectedWriter(null)}
-                                    className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl transition-colors backdrop-blur-md"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
+                            <div className="overflow-y-auto flex-1 w-full">
+                                {/* Header */}
+                                <div className="relative h-32 bg-gradient-to-r from-violet-600 to-fuchsia-600 p-6 flex-shrink-0">
+                                    <button
+                                        onClick={() => setSelectedWriter(null)}
+                                        className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl transition-colors backdrop-blur-md"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
 
-                            <div className="px-8 pb-8 overflow-y-auto flex-1">
-                                <div className="relative -mt-12 mb-6 flex justify-between items-end">
+                                <div className="px-8 pb-8">
+                                    <div className="relative -mt-12 mb-6 flex justify-between items-end">
                                     <div className="relative">
 <<<<<<< HEAD
                                         <div className="w-24 h-24 rounded-2xl border-4 border-[#12122a] shadow-xl bg-white/10 overflow-hidden p-0.5">
@@ -373,10 +393,13 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         {selectedWriter.name}
                                         {selectedWriter.is_verified && <CheckCircle className="w-5 h-5 text-[var(--accent)]" />}
                                     </h2>
+<<<<<<< HEAD
                                     <p className="text-[var(--text-secondary)] font-medium text-sm mt-1 flex items-center gap-2">
 >>>>>>> master
                                         <Briefcase className="w-4 h-4" /> Academic Writing Specialist
                                     </p>
+=======
+>>>>>>> master
                                 </div>
 
 <<<<<<< HEAD
@@ -395,16 +418,6 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         <MapPin className="w-5 h-5 text-white/30" />
 =======
                                 <div className="flex flex-wrap items-center gap-4 mt-6 py-4 border-y border-[var(--border)]">
-                                    <div className="flex items-center gap-1.5">
-                                        <Star className="w-5 h-5 text-amber-500 dark:text-amber-400 fill-current" />
-                                        <span className="font-bold text-[var(--text-primary)] text-lg">4.9</span>
-                                    </div>
-                                    <div className="h-8 w-px bg-[var(--border)]"></div>
-                                    <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                                        <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                                        <span className="font-semibold text-sm">98% Success</span>
-                                    </div>
-                                    <div className="h-8 w-px bg-[var(--border)]"></div>
                                     <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
                                         <MapPin className="w-5 h-5 text-[var(--text-tertiary)]" />
 >>>>>>> master
@@ -412,6 +425,7 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                     </div>
                                 </div>
 
+<<<<<<< HEAD
                                 <div className="mt-6">
 <<<<<<< HEAD
                                     <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Expertise</h4>
@@ -441,6 +455,9 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                         Professional academic writer with over 5 years of experience in Thesis, Essay, and Research writing. Committed to delivering high-quality work on time. Specializes in clear, concise structured writing.
                                     </p>
                                 </div>
+=======
+
+>>>>>>> master
 
                                 {((selectedWriter.handwriting_samples && selectedWriter.handwriting_samples.length > 0) || selectedWriter.handwriting_sample_url) && (
                                     <div className="mt-6">
@@ -477,12 +494,17 @@ export function Writers({ onNavigate, onHire }: WritersProps) {
                                     </div>
                                 )}
                             </div>
+                        </div>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
                             <div className="p-6 border-t border-white/10 bg-white/5 flex gap-3 flex-shrink-0 sticky bottom-0">
                                 <button
 =======
                             <div className="p-6 border-t border-[var(--border)] bg-[var(--surface-elevated)] flex gap-3 flex-shrink-0 sticky bottom-0">
+=======
+                        <div className="p-6 border-t border-[var(--border)] bg-[var(--surface-elevated)] flex gap-3 flex-shrink-0 sticky bottom-0">
+>>>>>>> master
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
