@@ -1,0 +1,9 @@
+Checking for identifier: admin@paperly.com
+Trying direct email query...
+Direct email query results: 1
+Found: admin@paperly.com (ID: 12adc16f-5cb9-4619-b576-228e07dbef29)
+Username: admin
+Role: ADMIN
+Trying Or filter query...
+Or filter query results: 1
+Found via Or: admin@paperly.com (ID: 12adc16f-5cb9-4619-b576-228e07dbef29)
