@@ -264,7 +264,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <Eye size={14} /> Details
                       </button>
 
-                      {(asgn.status === AssignmentStatus.CONFIRMED || asgn.status === AssignmentStatus.PENDING) && asgn.paymentStatus !== 'PAID' ? (
+                      {(asgn.status === AssignmentStatus.CONFIRMED) && asgn.paymentStatus !== 'PAID' ? (
                         <button onClick={() => setPaymentAssignment(asgn)}
                           className="bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-colors">
                           Pay Now
