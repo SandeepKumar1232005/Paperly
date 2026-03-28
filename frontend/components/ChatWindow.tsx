@@ -198,9 +198,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <div className="p-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white flex justify-between items-center shadow-md z-10">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center text-xs font-bold border border-white/10" aria-hidden="true">
-              {otherInitials}
-            </div>
+            {otherUser?.avatar ? (
+              <img 
+                src={otherUser.avatar} 
+                alt={otherUser.name || otherRoleLabel} 
+                className="w-8 h-8 rounded-xl object-cover border border-white/10 shadow-sm"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center text-xs font-bold border border-white/10" aria-hidden="true">
+                {otherInitials}
+              </div>
+            )}
             <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-2 border-violet-600 rounded-full ${statusInfo.color}`} aria-hidden="true"></span>
           </div>
           <div className="overflow-hidden">

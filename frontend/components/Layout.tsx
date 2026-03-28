@@ -109,11 +109,7 @@ const Layout: React.FC<LayoutProps> = ({
             {/* Left: Logo */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2.5 group cursor-pointer">
-                <Suspense fallback={
-                  <div className={`w-9 h-9 bg-gradient-to-br ${roleColor} rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg`}>P</div>
-                }>
-                  {React.createElement(React.lazy(() => import('./Logo3D')))}
-                </Suspense>
+                <Logo className="w-9 h-9" />
                 <span className="text-lg font-bold tracking-tight text-[var(--text-primary)] font-display hidden sm:block">Paperly</span>
               </div>
 
