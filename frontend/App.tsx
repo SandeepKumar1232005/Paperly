@@ -10,7 +10,6 @@ import StudentDashboard from './pages/StudentDashboard';
 import WriterDashboard from './pages/WriterDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ChatWindow from './components/ChatWindow';
-import { generateChatResponse } from './services/gemini';
 import { api } from './services/api';
 import { db } from './services/db';
 
@@ -258,46 +257,7 @@ const AppContent: React.FC = () => {
 
     await api.sendMessage(newMessage);
     setMessages(prev => [...prev, newMessage]);
-
-    // AI Simulation Response
-    setTimeout(async () => {
-      setIsOtherTyping(true);
-      try {
-        const prompt = replyTo
-          ? `User just replied to a message ("${replyTo.text}") with: "${text || "Attachment shared."}". Respond specifically to their point.`
-          : text || (attachment ? "File shared." : "Hi");
-
-        const replyText = await generateChatResponse(
-          activeChatAsgn.title,
-          activeChatAsgn.subject,
-          user.role,
-          prompt
-        );
-
-        setIsOtherTyping(false);
-        const replyMsg: ChatMessage = {
-          id: `msg-${Date.now()}-reply`,
-          assignmentId: activeChatAsgn.id,
-          senderId: user.role === 'STUDENT' ? (activeChatAsgn.writerId || '2') : activeChatAsgn.studentId,
-          text: replyText,
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          replyTo: {
-            id: newMessage.id,
-            text: newMessage.text || "Shared an attachment",
-            senderId: user.id
-          }
-        };
-
-        await api.sendMessage(replyMsg);
-        setMessages(prev => [...prev, replyMsg]);
-        addNotification(`New message regarding "${activeChatAsgn.title}"`);
-      } catch (err) {
-        setIsOtherTyping(false);
-        setChatError("AI connection lost.");
-      }
-    }, 1500);
-  }, [user, activeChatAsgn, addNotification]);
+  }, [user, activeChatAsgn]);
 
   const handleOpenChat = useCallback(async (asgn: Assignment) => {
     setActiveChatAsgn(asgn);

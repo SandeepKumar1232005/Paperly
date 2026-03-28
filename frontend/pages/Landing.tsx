@@ -9,7 +9,7 @@ import ParticleTrail from '../components/ParticleTrail';
 
 const BookScene = React.lazy(() => import('../components/BookScene'));
 const ScrollScene = React.lazy(() => import('../components/ScrollScene'));
-const Logo3D = React.lazy(() => import('../components/Logo3D'));
+import Logo from '../components/Logo';
 const GlowOrbs = React.lazy(() => import('../components/GlowOrbs'));
 
 interface LandingProps {
@@ -63,11 +63,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           >
             <div className="flex items-center gap-2">
               {/* 3D Animated Logo */}
-              <Suspense fallback={
-                <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-violet-500/30">P</div>
-              }>
-                <Logo3D />
-              </Suspense>
+              <Logo className="w-10 h-10" />
               <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
             </div>
             <div className="flex items-center gap-4 md:gap-8">
@@ -288,11 +284,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <Suspense fallback={
-                  <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-violet-500/30">P</div>
-                }>
-                  <Logo3D />
-                </Suspense>
+                  <Logo className="w-9 h-9" />
                 <span className="text-lg font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
               </div>
               <p className="text-sm text-[var(--text-tertiary)] leading-relaxed">Study smarter, not harder. The #1 platform connecting students with expert writers.</p>

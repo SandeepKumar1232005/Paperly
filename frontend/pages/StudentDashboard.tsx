@@ -256,26 +256,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         </div>
                       )}
                     </div>
-
                     {/* Card Footer */}
-                    <div className="p-4 bg-[var(--surface-elevated)] border-t border-[var(--border)] grid grid-cols-2 gap-3">
-                      <button onClick={() => setViewingAssignment(asgn)}
-                        className="glass text-[var(--text-secondary)] py-2.5 rounded-xl text-sm font-semibold hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors flex items-center justify-center gap-1.5">
-                        <Eye size={14} /> Details
-                      </button>
-
-                      {(asgn.status === AssignmentStatus.CONFIRMED) && asgn.paymentStatus !== 'PAID' ? (
-                        <button onClick={() => setPaymentAssignment(asgn)}
-                          className="bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-colors">
-                          Pay Now
+                    <div className="p-4 bg-[var(--surface-elevated)] border-t border-[var(--border)] flex flex-col gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <button onClick={() => setViewingAssignment(asgn)}
+                          className="glass text-[var(--text-secondary)] py-2.5 rounded-xl text-sm font-semibold hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors flex items-center justify-center gap-1.5">
+                          <Eye size={14} /> Details
                         </button>
-                      ) : (
                         <button onClick={() => onOpenChat(asgn)}
-                          disabled={['PENDING', 'PENDING_REVIEW'].includes(asgn.status)}
-                          className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${['PENDING', 'PENDING_REVIEW'].includes(asgn.status)
-                            ? 'bg-[var(--surface)] text-[var(--text-tertiary)] cursor-not-allowed'
-                            : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20'}`}>
+                          disabled={![AssignmentStatus.CONFIRMED, AssignmentStatus.IN_PROGRESS, AssignmentStatus.COMPLETED, AssignmentStatus.REVISION].includes(asgn.status)}
+                          className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${![AssignmentStatus.CONFIRMED, AssignmentStatus.IN_PROGRESS, AssignmentStatus.COMPLETED, AssignmentStatus.REVISION].includes(asgn.status)
+                            ? 'bg-[var(--surface)] text-[var(--text-tertiary)] cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 hover:scale-[1.02] shadow-fuchsia-500/20 hover:shadow-fuchsia-500/40'}`}>
                           <MessageSquare size={14} /> Chat
+                        </button>
+                      </div>
+
+                      {(asgn.status === AssignmentStatus.CONFIRMED) && asgn.paymentStatus !== 'PAID' && (
+                        <button onClick={() => setPaymentAssignment(asgn)}
+                          className="w-full bg-emerald-500 text-white py-3 rounded-xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]">
+                          Pay Now
                         </button>
                       )}
 
