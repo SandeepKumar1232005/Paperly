@@ -6,10 +6,10 @@ import GlowButton from '../components/GlowButton';
 import Hero3DText from '../components/Hero3DText';
 import FeatureIcon3D from '../components/FeatureIcon3D';
 import ParticleTrail from '../components/ParticleTrail';
+import Logo from '../components/Logo';
 
 const BookScene = React.lazy(() => import('../components/BookScene'));
 const ScrollScene = React.lazy(() => import('../components/ScrollScene'));
-import Logo from '../components/Logo';
 const GlowOrbs = React.lazy(() => import('../components/GlowOrbs'));
 
 interface LandingProps {
@@ -52,7 +52,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Floating Nav with 3D Logo */}
+      {/* Floating Nav with Logo */}
       <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-4">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -62,7 +62,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             className="glass rounded-2xl px-6 py-3 flex justify-between items-center border-b border-white/5"
           >
             <div className="flex items-center gap-2">
-              {/* 3D Animated Logo */}
               <Logo className="w-10 h-10" />
               <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
             </div>
@@ -90,15 +89,13 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         </div>
       </nav>
 
-      {/* ═══════ HERO SECTION with Parallax Depth ═══════ */}
+      {/* ═══════ HERO SECTION ═══════ */}
       <section className="relative z-10 pt-32 pb-16 px-4 min-h-screen flex items-center">
         <motion.div style={{ opacity: heroOpacity }} className="max-w-6xl mx-auto w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
 
-            {/* Left — Parallax Layer 1 (medium speed) */}
+            {/* Left — Parallax Layer 1 */}
             <motion.div style={{ y: heroY2 }} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center lg:text-left">
-
-              {/* Parallax badge — fast layer */}
               <motion.div style={{ y: heroY1 }}>
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[var(--accent)] text-xs font-bold uppercase tracking-widest mb-8">
                   <Sparkles size={14} className="animate-pulse" />
@@ -106,7 +103,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 </motion.div>
               </motion.div>
 
-              {/* 3D Extruded Heading */}
               <div className="mb-8">
                 <Hero3DText line1="Ace Every" line2="Assignment" />
               </div>
@@ -125,7 +121,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 </motion.button>
               </motion.div>
 
-              {/* Trust Badges */}
               <div className="flex items-center justify-center lg:justify-start gap-6 text-[var(--text-tertiary)] text-sm">
                 <div className="flex items-center gap-2">
                   <Shield size={16} className="text-green-500" />
@@ -138,7 +133,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               </div>
             </motion.div>
 
-            {/* Right: 3D Book — Parallax Layer 3 (fastest) */}
+            {/* Right: 3D Book */}
             <motion.div style={{ y: heroY3 }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, delay: 0.3 }} className="relative">
               <div className="relative aspect-square max-w-[500px] mx-auto">
                 <div className="absolute inset-0 glass-card-premium rounded-3xl overflow-hidden noise-overlay">
@@ -151,7 +146,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   </Suspense>
                 </div>
 
-                {/* Floating stat card - top right */}
                 <motion.div
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -166,7 +160,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   </div>
                 </motion.div>
 
-                {/* Floating stat card - bottom left */}
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
@@ -186,7 +179,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         </motion.div>
       </section>
 
-      {/* ═══════ SCROLL-DRIVEN 3D Journey ═══════ */}
+      {/* ═══════ 3D Journey ═══════ */}
       <section id="journey" ref={scrollSectionRef} className="relative z-10 py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
@@ -209,7 +202,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* ═══════ FEATURES with 3D Icons ═══════ */}
+      {/* ═══════ FEATURES ═══════ */}
       <section id="features" className="relative z-10 py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
@@ -234,7 +227,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                     <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500`} />
                     <div className="absolute top-4 right-4 text-6xl font-black text-[var(--text-primary)] opacity-[0.03] font-display">{i + 1}</div>
 
-                    {/* 3D Feature Icon */}
                     <div className="mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                       <FeatureIcon3D type={feature.iconType} />
                     </div>
@@ -251,7 +243,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
       {/* ═══════ CTA SECTION ═══════ */}
       <section className="relative z-10 py-20 px-4">
-        {/* 3D Glow Orbs floating behind CTA */}
         <Suspense fallback={null}>
           <GlowOrbs />
         </Suspense>
@@ -284,7 +275,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                  <Logo className="w-9 h-9" />
+                <Logo className="w-9 h-9" />
                 <span className="text-lg font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
               </div>
               <p className="text-sm text-[var(--text-tertiary)] leading-relaxed">Study smarter, not harder. The #1 platform connecting students with expert writers.</p>
