@@ -8,6 +8,7 @@ import EmptyState from '../components/EmptyState';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
 import { Search, Briefcase, DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, Upload, X, Filter, FileText, Sparkles, Star, Zap, MessageSquare } from 'lucide-react';
+import HandwritingSamplesManager from '../components/HandwritingSamplesManager';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -433,42 +434,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
 
             <div className="space-y-6">
               {/* Handwriting Samples */}
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-secondary)] mb-2">
-                  Handwriting Samples {user.handwriting_samples && user.handwriting_samples.length > 0 && (
-                    <span className="text-emerald-500 ml-2">({user.handwriting_samples.length} uploaded)</span>
-                  )}
-                </p>
-
-                {user.handwriting_samples && user.handwriting_samples.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {user.handwriting_samples.map((sample, idx) => (
-                      <div key={idx} className="relative group/sample">
-                        <img src={sample} alt={`Sample ${idx + 1}`} className="w-16 h-16 object-cover rounded-lg border border-[var(--border)]" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/sample:opacity-100 rounded-lg flex items-center justify-center transition-opacity">
-                          <span className="text-white text-xs font-bold">#{idx + 1}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="border-2 border-dashed border-[var(--border)] rounded-xl p-4 text-center hover:bg-[var(--surface)] transition-colors cursor-pointer relative group">
-                  <div className="flex items-center justify-center gap-2">
-                    <Upload className="text-emerald-500 group-hover:scale-110 transition-transform" size={20} />
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      {user.handwriting_samples && user.handwriting_samples.length > 0 ? 'Add more samples' : 'Upload sample image'}
-                    </p>
-                  </div>
-                  <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={async (e) => {
-                    if (e.target.files?.[0]) {
-                      const url = await api.uploadFile(e.target.files[0]);
-                      onUpdateProfile({ handwriting_samples: [...(user.handwriting_samples || []), url] });
-                      alert('Handwriting Sample Uploaded!');
-                    }
-                  }} />
-                </div>
-              </div>
+              <HandwritingSamplesManager user={user} onUpdateProfile={onUpdateProfile} />
 
               {/* QR Code */}
               <div>

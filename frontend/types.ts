@@ -32,6 +32,7 @@ export interface User {
   handwriting_confidence?: number;
   handwriting_sample_url?: string;
   qr_code_url?: string; // New - For direct payments
+  pricePerPage?: number; // Writer's rate per page in INR
 }
 
 export interface Assignment {

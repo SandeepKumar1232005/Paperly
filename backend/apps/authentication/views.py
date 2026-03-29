@@ -196,6 +196,7 @@ class UserDetailsView(APIView):
             'handwriting_sample_url': user.get('handwriting_sample_url'),
             'handwriting_samples': user.get('handwriting_samples', []),
             'qr_code_url': user.get('qr_code_url'),
+            'price_per_page': user.get('price_per_page'),
         })
 
     def patch(self, request):
@@ -214,6 +215,7 @@ class UserDetailsView(APIView):
         if 'coordinates' in updates: valid_updates['coordinates'] = updates['coordinates']
         if 'handwriting_samples' in updates: valid_updates['handwriting_samples'] = updates['handwriting_samples']
         if 'qr_code_url' in updates: valid_updates['qr_code_url'] = updates['qr_code_url']
+        if 'price_per_page' in updates: valid_updates['price_per_page'] = updates['price_per_page']
         
         if valid_updates:
             db.collection('users').document(user['id']).update(valid_updates)
@@ -236,6 +238,7 @@ class UserDetailsView(APIView):
             'handwriting_sample_url': updated_user.get('handwriting_sample_url'),
             'handwriting_samples': updated_user.get('handwriting_samples', []),
             'qr_code_url': updated_user.get('qr_code_url'),
+            'price_per_page': updated_user.get('price_per_page'),
         })
 
 class RequestPasswordResetView(APIView):
