@@ -146,33 +146,9 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   </Suspense>
                 </div>
 
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -top-4 -right-4 md:top-4 md:right-[-2rem] glass-card px-4 py-3 flex items-center gap-3 z-20 shadow-xl"
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Delivered</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">10,429</p>
-                  </div>
-                </motion.div>
 
-                <motion.div
-                  animate={{ y: [0, 10, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                  className="absolute -bottom-4 -left-4 md:bottom-8 md:left-[-2rem] glass-card px-4 py-3 flex items-center gap-3 z-20 shadow-xl"
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <Star className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Rating</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">4.9 ★</p>
-                  </div>
-                </motion.div>
+
+
               </div>
             </motion.div>
           </div>

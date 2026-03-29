@@ -1,25 +1,3 @@
-<<<<<<< HEAD
-from pymongo import MongoClient
-
-try:
-    client = MongoClient('mongodb://localhost:27017')
-    db = client['paperly_db']
-    
-    # Remove handwriting fields from admin
-    result = db.users.update_one(
-        {'email': 'charlie@admin.com'}, 
-        {'$unset': {
-            'handwriting_style': '', 
-            'handwriting_confidence': '',
-            'handwriting_sample_url': '',
-            'handwriting_samples': ''
-        }}
-    )
-    print(f'Modify count: {result.modified_count}')
-
-except Exception as e:
-    print(e)
-=======
 import os
 import sys
 from pathlib import Path
@@ -37,6 +15,7 @@ if db is None:
     print("Database not connected!")
     sys.exit(1)
 
+# Task 1: Remove duplicate users
 users = list(db.users.find())
 seen_emails = set()
 duplicates = 0
@@ -53,4 +32,18 @@ for u in users:
         seen_emails.add(email)
 
 print(f"Removed {duplicates} duplicate users.")
->>>>>>> master
+
+# Task 2: Remove handwriting fields from admin
+try:
+    result = db.users.update_one(
+        {'email': 'charlie@admin.com'}, 
+        {'$unset': {
+            'handwriting_style': '', 
+            'handwriting_confidence': '',
+            'handwriting_sample_url': '',
+            'handwriting_samples': ''
+        }}
+    )
+    print(f'Modify count: {result.modified_count}')
+except Exception as e:
+    print(e)

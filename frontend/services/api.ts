@@ -632,10 +632,16 @@ export const api = {
             email: u.email,
             role: 'WRITER' as const,
             avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
-            lastActive: new Date().toISOString(), // Mock
+            lastActive: new Date().toISOString(),
             handwriting_style: u.handwriting_style,
             handwriting_confidence: u.handwriting_confidence,
-            distance_km: u.distance_km // Map distance
+            handwriting_samples: u.handwriting_samples || [],
+            handwriting_sample_url: u.handwriting_sample_url,
+            address: u.address || '',
+            availability_status: u.availability_status || 'ONLINE',
+            is_verified: u.is_verified || false,
+            pricePerPage: u.price_per_page,
+            distance_km: u.distance_km
           };
         });
         await logger('GET', '/users/?role=provider', start);
@@ -1159,5 +1165,81 @@ export const api = {
       if (response.ok) return await response.json();
     } catch (e) { console.warn("Backend stats failed"); }
     return null;
+  },
+
+  // Handwriting Samples
+  async getWriterSamples(writerId: string): Promise<string[]> {
+    try {
+      const response = await fetch(`http://localhost:8000/api/handwriting/writers/${writerId}/samples/`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.samples || [];
+      }
+    } catch (e) {
+      console.warn('Failed to fetch writer samples from backend', e);
+    }
+    // Fallback: check local DB
+    const users = db.getUsers();
+    const writer = users.find(u => u.id === writerId);
+    return writer?.handwriting_samples || [];
+  },
+
+  async uploadHandwritingSample(writerId: string, file: File): Promise<string> {
+    const token = sessionStorage.getItem('auth_token');
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/handwriting/writers/${writerId}/samples/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.url;
+      }
+      const errData = await response.json();
+      throw new Error(errData.error || 'Upload failed');
+    } catch (e: any) {
+      console.warn('Backend sample upload failed, falling back to local', e);
+      // Fallback to local data URL
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    }
+  },
+
+  async deleteHandwritingSample(writerId: string, sampleUrl: string): Promise<void> {
+    const token = sessionStorage.getItem('auth_token');
+    try {
+      const response = await fetch(`http://localhost:8000/api/handwriting/writers/${writerId}/samples/delete/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ url: sampleUrl })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Delete failed');
+      }
+    } catch (e: any) {
+      console.warn('Backend sample delete failed, falling back to local', e);
+      // Fallback: remove from local DB
+      const users = db.getUsers();
+      const idx = users.findIndex(u => u.id === writerId);
+      if (idx !== -1 && users[idx].handwriting_samples) {
+        users[idx].handwriting_samples = users[idx].handwriting_samples!.filter(s => s !== sampleUrl);
+        db.saveUsers(users);
+      }
+    }
   }
 };
