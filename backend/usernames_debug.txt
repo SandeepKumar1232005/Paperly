@@ -1,0 +1,4 @@
+Listing all users in Firestore:
+Total users: 2
+ID: 3e057ef3-3020-4f19-aeb9-461c7d26754c | Username: sandy12 | Email: sandeepkumarvk18@gmail.com | Role: STUDENT
+ID: 759f2654-e379-4bb2-af95-bfbf317c1e1d | Username: sandeep2005 | Email: kit27.cse306@gmail.com | Role: ADMIN

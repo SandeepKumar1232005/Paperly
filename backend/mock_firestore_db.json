@@ -1,0 +1,46 @@
+{
+    "users": {
+        "63db32ce-7e68-4cc2-9592-68acaf51d7da": {
+            "id": "63db32ce-7e68-4cc2-9592-68acaf51d7da",
+            "email": "admin@paperly.com",
+            "username": "admin",
+            "password": "$pbkdf2-sha256$29000$sdb6P8cYgxAixJhzzvlfyw$tNcR6f4uzcu.SYueASuu9jYHoiSE02ZFBHf7A4o5VTs",
+            "name": "Super Admin",
+            "role": "ADMIN",
+            "is_verified": true,
+            "created_at": "2026-04-26T14:47:54.913993+00:00"
+        },
+        "bffa6cf3-31e1-4601-9f75-a707f32fccc5": {
+            "id": "bffa6cf3-31e1-4601-9f75-a707f32fccc5",
+            "email": "student@paperly.com",
+            "username": "student1",
+            "password": "$pbkdf2-sha256$29000$AUDIube2dq5VyjkHACDkfA$Af05YhDPUuAzx4pTpgRqFYMvoMSLFwTpL2YM/bNiqpc",
+            "name": "Jane Student",
+            "role": "STUDENT",
+            "is_verified": true,
+            "created_at": "2026-04-26T14:47:55.044025+00:00"
+        },
+        "3b7c4c26-b12a-44bc-b913-155a8f9f7405": {
+            "id": "3b7c4c26-b12a-44bc-b913-155a8f9f7405",
+            "email": "writer@paperly.com",
+            "username": "writer1",
+            "password": "$pbkdf2-sha256$29000$FkKIcQ6B0Pr/n1NKCUGodQ$SSy8xpcQCZ5VtrbFLwYiII9u9Gka16Mu0L1KDIcXTNw",
+            "name": "John Writer",
+            "role": "WRITER",
+            "is_verified": true,
+            "created_at": "2026-04-26T14:47:55.134432+00:00",
+            "handwriting_style": "Cursive",
+            "handwriting_confidence": 0.95
+        },
+        "sandeep12-id": {
+            "id": "sandeep12-id",
+            "email": "sandeep@example.com",
+            "username": "sandeep12",
+            "password": "$pbkdf2-sha256$29000$sdb6P8cYgxAixJhzzvlfyw$tNcR6f4uzcu.SYueASuu9jYHoiSE02ZFBHf7A4o5VTs",
+            "name": "Sandeep Kumar",
+            "role": "STUDENT",
+            "is_verified": true,
+            "created_at": "2026-05-12T07:47:00.000Z"
+        }
+    }
+}
