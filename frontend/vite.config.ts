@@ -19,6 +19,19 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+            'stripe-vendor': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+            'motion': ['framer-motion'],
+            'charts': ['recharts'],
+          }
+        }
+      }
     }
   };
 });

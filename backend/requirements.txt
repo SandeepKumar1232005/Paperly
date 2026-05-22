@@ -11,3 +11,5 @@ tensorflow
 numpy
 pillow
 certifi
+gunicorn
+whitenoise

@@ -5,6 +5,11 @@ from rest_framework import status
 from django.conf import settings
 from google.cloud.firestore_v1.base_query import FieldFilter, Or
 from utils.firebase import db
+from passlib.hash import pbkdf2_sha256
+import uuid
+import datetime
+import jwt
+from pathlib import Path
 
 class RegisterView(APIView):
     """
