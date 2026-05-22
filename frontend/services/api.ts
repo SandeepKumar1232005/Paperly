@@ -604,9 +604,40 @@ export const api = {
   // Assignments
   async getAssignments(): Promise<Assignment[]> {
     const start = Date.now();
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch('http://localhost:8000/api/assignments/', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      if (response.ok) {
+        const backendData = await response.json();
+        
+        // Sync to local mock DB just in case
+        db.saveAssignments(backendData);
+        
+        // Hydrate provider details (especially for QR code)
+        const users = db.getUsers();
+        const hydrated = backendData.map((a: any) => {
+          if (a.writerId) {
+            const writer = users.find(u => u.id === a.writerId);
+            if (writer) {
+              return { ...a, provider: writer };
+            }
+          }
+          return a;
+        });
+        await logger('GET', '/assignments', start);
+        return hydrated;
+      }
+    } catch (e) {
+      console.warn("Backend assignments fetch failed, using local mock", e);
+    }
+
     await delay(400);
     const data = db.getAssignments();
-    // Hydrate provider details (especially for QR code)
+    // Hydrate provider details
     const users = db.getUsers();
     const hydrated = data.map(a => {
       if (a.writerId) {
@@ -714,6 +745,17 @@ export const api = {
 
   async createAssignment(assignment: Assignment, file?: File): Promise<Assignment> {
     const start = Date.now();
+    let attachmentUrl = null;
+    if (file) {
+      attachmentUrl = await this.uploadFile(file);
+    }
+
+    const payload = {
+      ...assignment,
+      paymentStatus: 'ESCROW' as const,
+      ...(attachmentUrl ? { attachment: attachmentUrl } : {})
+    };
+
     try {
       const token = sessionStorage.getItem('auth_token');
       const response = await fetch('http://localhost:8000/api/assignments/', {
@@ -722,38 +764,51 @@ export const api = {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : ''
         },
-        body: JSON.stringify(assignment)
+        body: JSON.stringify(payload)
       });
-      if (response.ok) return await response.json();
+      if (response.ok) {
+        const created = await response.json();
+        // Simulate payment logic and sync to local db
+        await paymentGateway.processPayment(created.id, created.budget);
+        const asgns = db.getAssignments();
+        asgns.unshift(created);
+        db.saveAssignments(asgns);
+        return created;
+      }
     } catch (e) {
-      console.warn("Create assignment failed, using local mock");
+      console.warn("Create assignment failed, using local mock", e);
     }
 
     await delay(1200);
 
-    let attachmentUrl = null;
-    if (file) {
-      attachmentUrl = await this.uploadFile(file);
-    }
-
     // Simulate Payment logic on creation (Escrow)
-    await paymentGateway.processPayment(assignment.id, assignment.budget);
+    await paymentGateway.processPayment(payload.id, payload.budget);
 
     const asgns = db.getAssignments();
-    const newAsgn = {
-      ...assignment,
-      paymentStatus: 'ESCROW' as const,
-      attachment: attachmentUrl
-    };
-    asgns.unshift(newAsgn);
+    asgns.unshift(payload);
     db.saveAssignments(asgns);
 
     await logger('POST', '/assignments', start);
-    return newAsgn;
+    return payload;
   },
 
   async updateAssignment(id: string, updates: Partial<Assignment>): Promise<Assignment> {
     const start = Date.now();
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/assignments/${id}/`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify(updates)
+      });
+      // Continue to update local mock DB even if backend succeeds so the UI stays snappy
+    } catch (e) {
+      console.warn("Update assignment failed on backend", e);
+    }
+
     await delay(600);
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === id);
@@ -778,6 +833,20 @@ export const api = {
 
   async submitQuote(assignmentId: string, amount: number, comment: string, writerId: string): Promise<Assignment> {
     const start = Date.now();
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/quote/`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ amount, comment, writerId })
+      });
+    } catch (e) {
+      console.warn("Quote submission failed on backend", e);
+    }
+
     await delay(600);
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === assignmentId);
@@ -798,6 +867,20 @@ export const api = {
 
   async respondToQuote(assignmentId: string, action: 'ACCEPT' | 'REJECT'): Promise<Assignment> {
     const start = Date.now();
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/respond-quote/`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ action })
+      });
+    } catch (e) {
+      console.warn("Quote response failed on backend", e);
+    }
+
     await delay(500);
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === assignmentId);
@@ -808,18 +891,18 @@ export const api = {
       assignment.status = AssignmentStatus.CONFIRMED;
       assignment.budget = assignment.quoted_amount || assignment.budget; // Confirm the budget
       if (assignment.quotingWriterId) {
-        assignment.writerId = assignment.quotingWriterId;
+        assignment.writerId = assignment.quotingWriterId; // Assign to the quoted writer
       }
     } else {
-      assignment.status = AssignmentStatus.PENDING_REVIEW;
+      assignment.status = AssignmentStatus.PENDING;
       assignment.quoted_amount = undefined;
       assignment.writer_comment = undefined;
       assignment.quotingWriterId = undefined;
     }
-
+    
     asgns[idx] = assignment;
     db.saveAssignments(asgns);
-    await logger('POST', `/assignments/${assignmentId}/respond-quote`, start);
+    await logger('POST', `/assignments/${assignmentId}/respond`, start);
     return assignment;
   },
 
