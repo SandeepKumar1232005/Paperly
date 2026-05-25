@@ -192,9 +192,11 @@ export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
 
                                     <div className="mt-6 space-y-3">
                                         <div className="flex items-center justify-between text-sm">
-                                            <div className="flex items-center text-[var(--text-secondary)]">
-                                                <MapPin className="h-4 w-4 mr-2 text-[var(--text-tertiary)]" />
-                                                <span className="truncate max-w-[140px]">{writer.address || 'Global'}</span>
+                                            <div className="flex items-center gap-1.5 text-[var(--text-secondary)] text-sm">
+                                                <MapPin className="w-4 h-4 text-[var(--text-tertiary)]" />
+                                                <span className="truncate max-w-[140px]">
+                                                    {writer.address ? writer.address.split(',')[0].trim() : 'Global'}
+                                                </span>
                                             </div>
                                             {/* @ts-ignore */}
                                             {writer.distance_km !== undefined && (

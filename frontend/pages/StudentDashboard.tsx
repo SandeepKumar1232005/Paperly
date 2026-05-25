@@ -15,6 +15,7 @@ import { calculateSuggestedPrice } from '../utils/pricing';
 interface StudentDashboardProps {
   user: User;
   assignments: Assignment[];
+  messages: import('../types').ChatMessage[];
   onCreateAssignment: (data: Partial<Assignment>, file?: File) => void;
   onRespondToQuote: (id: string, action: 'ACCEPT' | 'REJECT') => void;
   onOpenChat: (assignment: Assignment) => void;
@@ -24,7 +25,7 @@ interface StudentDashboardProps {
   preSelectedWriterId?: string | null;
 }
 
-const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, onCreateAssignment, onRespondToQuote, onOpenChat, onDeleteAssignment, onNavigate, onUpdateStatus, preSelectedWriterId }) => {
+const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, messages = [], onCreateAssignment, onRespondToQuote, onOpenChat, onDeleteAssignment, onNavigate, onUpdateStatus, preSelectedWriterId }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingAssignment, setViewingAssignment] = useState<Assignment | null>(null);
   const [paymentAssignment, setPaymentAssignment] = useState<Assignment | null>(null);
@@ -194,7 +195,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <AnimatePresence>
-                {filteredAssignments.map((asgn, i) => (
+                {filteredAssignments.map((asgn, i) => {
+                  const unreadCount = messages.filter(m => m.assignmentId === asgn.id && !m.isRead && m.senderId !== user.id).length;
+                  return (
                   <motion.div layout key={asgn.id}
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ delay: i * 0.05 }} whileHover={{ y: -4 }}
@@ -264,11 +267,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                           <Eye size={14} /> Details
                         </button>
                         <button onClick={() => onOpenChat(asgn)}
-                          disabled={![AssignmentStatus.CONFIRMED, AssignmentStatus.IN_PROGRESS, AssignmentStatus.COMPLETED, AssignmentStatus.REVISION].includes(asgn.status)}
-                          className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${![AssignmentStatus.CONFIRMED, AssignmentStatus.IN_PROGRESS, AssignmentStatus.COMPLETED, AssignmentStatus.REVISION].includes(asgn.status)
+                          disabled={!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)}
+                          className={`relative py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)
                             ? 'bg-[var(--surface)] text-[var(--text-tertiary)] cursor-not-allowed opacity-50'
                             : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 hover:scale-[1.02] shadow-fuchsia-500/20 hover:shadow-fuchsia-500/40'}`}>
                           <MessageSquare size={14} /> Chat
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border-2 border-[var(--surface)]">
+                              {unreadCount}
+                            </span>
+                          )}
                         </button>
                       </div>
 
@@ -287,7 +295,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       )}
                     </div>
                   </motion.div>
-                ))}
+                  );
+                })}
               </AnimatePresence>
             </div>
           )}
@@ -433,10 +442,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 {viewingAssignment.submission && (
                   <div className="bg-emerald-500/10 p-5 rounded-xl border border-emerald-500/20">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-bold text-emerald-500 dark:text-emerald-400">Final Submission</h3>
-                      <button onClick={() => handleDownload(viewingAssignment)} className="text-xs bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-1.5">
-                        <Download size={14} /> Download
-                      </button>
+                      <h3 className="font-bold text-emerald-500 dark:text-emerald-400">Package Shipped!</h3>
+                      {viewingAssignment.submission.startsWith('http') ? (
+                        <a href={viewingAssignment.submission} target="_blank" rel="noopener noreferrer" className="text-xs bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-1.5">
+                          Track Delivery
+                        </a>
+                      ) : (
+                        <button onClick={() => handleDownload(viewingAssignment)} className="text-xs bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-1.5">
+                          <Download size={14} /> Download
+                        </button>
+                      )}
                     </div>
                     {(viewingAssignment.status === AssignmentStatus.PENDING_REVIEW || viewingAssignment.status === AssignmentStatus.SUBMITTED) && (
                       <div className="flex gap-3">

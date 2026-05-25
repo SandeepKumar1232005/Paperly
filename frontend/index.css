@@ -1,8 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
 
 /* ========== CSS CUSTOM PROPERTIES (THEMING) ========== */
 
@@ -328,12 +335,13 @@ img {
 }
 
 .gradient-text-animate {
-  background: linear-gradient(135deg, #8b5cf6, #d946ef, #ec4899, #8b5cf6);
+  background: linear-gradient(135deg, #67e8f9, #f0abfc, #d8b4fe, #67e8f9);
   background-size: 300% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: gradient-shift 4s ease infinite;
+  text-shadow: 0 0 20px rgba(240, 171, 252, 0.3); /* Add a slight glow */
 }
 
 @keyframes gradient-shift {

@@ -11,8 +11,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
-                display: ['"Playfair Display"', 'Georgia', 'serif'],
+                sans: ['"Outfit"', 'system-ui', 'sans-serif'],
+                display: ['"Outfit"', 'system-ui', 'sans-serif'],
             },
             colors: {
                 surface: {

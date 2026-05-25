@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Assignment, AssignmentStatus } from '../types';
+import { User, Assignment, AssignmentStatus, ChatMessage } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { checkAssignmentQuality } from '../services/gemini';
 import { api } from '../services/api';
 import EmptyState from '../components/EmptyState';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
-import { Search, Briefcase, DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, Upload, X, Filter, FileText, Sparkles, Star, Zap, MessageSquare } from 'lucide-react';
+import { Search, Briefcase, DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, Upload, X, Filter, FileText, Sparkles, Star, Zap, MessageSquare, Copy, ExternalLink } from 'lucide-react';
 import HandwritingSamplesManager from '../components/HandwritingSamplesManager';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -16,7 +16,9 @@ import WriterAnalytics from '../components/WriterAnalytics';
 
 interface WriterDashboardProps {
   user: User;
+  users?: User[];
   assignments: Assignment[];
+  messages: ChatMessage[];
   onUpdateAssignment: (id: string, updates: Partial<Assignment>) => void;
   onSubmitQuote: (id: string, amount: number, comment: string, writerId: string) => void;
   onUploadSubmission: (id: string, text: string) => void;
@@ -25,14 +27,23 @@ interface WriterDashboardProps {
   onRejectAssignment: (id: string) => void;
 }
 
-const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, onUpdateAssignment, onSubmitQuote, onUploadSubmission, onOpenChat, onUpdateProfile, onRejectAssignment }) => {
+const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], assignments, messages = [], onUpdateAssignment, onSubmitQuote, onUploadSubmission, onOpenChat, onUpdateProfile, onRejectAssignment }) => {
   const [selectedAsgn, setSelectedAsgn] = useState<Assignment | null>(null);
   const [quoteData, setQuoteData] = useState<{ id: string, amount: string, comment: string } | null>(null);
   const [submissionText, setSubmissionText] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const [aiResult, setAiResult] = useState<{ score: number, feedback: string, plagiarismLikelihood: string } | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'ACTIVE'>('MARKETPLACE');
+  
+  const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'ACTIVE'>(() => {
+    return (sessionStorage.getItem('writer_active_tab') as 'MARKETPLACE' | 'ACTIVE') || 'MARKETPLACE';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('writer_active_tab', activeTab);
+  }, [activeTab]);
+
+  const [hasVerifiedPayment, setHasVerifiedPayment] = useState(false);
 
   const hasHandwritingSample = user.handwriting_style || (user.handwriting_samples && user.handwriting_samples.length > 0);
   const hasQRCode = !!user.qr_code_url;
@@ -61,7 +72,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
 
   const totalEarnings = myAssignments
     .filter(a => a.status === AssignmentStatus.COMPLETED)
-    .reduce((sum, a) => sum + (a.net_earnings || a.budget * 0.9), 0);
+    .reduce((sum, a) => sum + (a.net_earnings || a.budget), 0);
 
   const handleAiCheck = async () => {
     if (!submissionText || !selectedAsgn) return;
@@ -101,10 +112,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                 <div>
                   <h1 className="text-2xl font-bold text-[var(--text-primary)] font-display">Welcome, {user.name.split(' ')[0]}!</h1>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="flex text-yellow-400 text-xs gap-0.5">
-                      {[1, 2, 3, 4, 5].map(s => <Star key={s} size={12} fill="currentColor" />)}
-                    </div>
-                    <span className="text-[var(--text-tertiary)] text-xs">Top Writer</span>
+                    <span className="text-[var(--text-tertiary)] text-xs">Verified Writer</span>
                   </div>
                 </div>
               </div>
@@ -152,10 +160,26 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
           </TiltCard>
         </div>
 
-        {/* Analytics Section */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <WriterAnalytics assignments={myAssignments} />
-        </motion.div>
+        {/* Handwriting Portfolio Section */}
+        {activeTab === 'MARKETPLACE' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-8">
+            <div className="glass-card-premium p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">Your Handwriting Showcase</h2>
+                  <p className="text-sm text-[var(--text-secondary)]">Students hire based on these samples. Keep them high quality!</p>
+                </div>
+              </div>
+              
+              <div className="bg-[var(--surface)]/50 rounded-2xl p-6 border border-white/5">
+                 <HandwritingSamplesManager user={user} onUpdateProfile={onUpdateProfile} />
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Main Content */}
@@ -289,7 +313,9 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                   ) : (
                     <div className="space-y-4">
                       <AnimatePresence>
-                        {myAssignments.map((asgn, i) => (
+                        {myAssignments.map((asgn, i) => {
+                          const unreadCount = messages.filter(m => m.assignmentId === asgn.id && !m.isRead && m.senderId !== user.id).length;
+                          return (
                           <motion.div layout key={asgn.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.05 }} whileHover={{ scale: 1.01 }}
                             className="glass-card p-6 flex flex-col md:flex-row gap-6 items-start md:items-center group">
@@ -302,14 +328,18 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                               {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
                                 <div className="flex gap-4 text-xs font-mono text-[var(--text-tertiary)] mt-2">
                                   <span>Budget: ₹{asgn.budget}</span>
-                                  <span className="text-red-400">Fee: -₹{asgn.platform_fee || (asgn.budget * 0.1).toFixed(0)}</span>
-                                  <span className="text-emerald-500 dark:text-emerald-400 font-bold">Net: ₹{asgn.net_earnings || (asgn.budget * 0.9).toFixed(0)}</span>
+                                  <span className="text-emerald-500 dark:text-emerald-400 font-bold">Earnings: ₹{asgn.net_earnings || asgn.budget}</span>
                                 </div>
                               )}
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              <button onClick={() => onOpenChat(asgn)} className="px-4 py-2.5 bg-violet-500/10 text-[var(--accent)] rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-violet-500/20 transition-colors">
+                              <button onClick={() => onOpenChat(asgn)} className="relative px-4 py-2.5 bg-violet-500/10 text-[var(--accent)] rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-violet-500/20 transition-colors">
                                 <MessageSquare size={16} /> Chat
+                                {unreadCount > 0 && (
+                                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border-2 border-[var(--surface)]">
+                                    {unreadCount}
+                                  </span>
+                                )}
                               </button>
                               {asgn.status !== AssignmentStatus.COMPLETED && (
                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -320,7 +350,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                               )}
                             </div>
                           </motion.div>
-                        ))}
+                          );
+                        })}
                       </AnimatePresence>
                     </div>
                   )}
@@ -386,38 +417,80 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, assignments, on
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 grid md:grid-cols-2 gap-6">
-                <textarea value={submissionText} onChange={e => setSubmissionText(e.target.value)}
-                  className="w-full h-full min-h-[300px] p-4 rounded-xl glass-input font-mono text-sm resize-none"
-                  placeholder="Paste your final work here..." />
-
-                <div className="space-y-6">
-                  <div className="bg-[var(--accent-muted)] p-6 rounded-2xl border border-[var(--accent)]/20">
-                    <h3 className="font-bold text-[var(--accent)] mb-2 flex items-center gap-2"><Sparkles size={18} /> AI Quality Check</h3>
-                    <p className="text-xs text-[var(--text-tertiary)] mb-4">Validate your submission before sending.</p>
-                    {!aiResult ? (
-                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                        onClick={handleAiCheck} disabled={!submissionText || isChecking}
-                        className="w-full py-3 bg-[var(--accent)] text-white rounded-xl font-bold disabled:opacity-50 ripple">
-                        {isChecking ? 'Analyzing...' : 'Run Analysis'}
-                      </motion.button>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center glass p-3 rounded-lg">
-                          <span className="text-sm font-semibold text-[var(--text-secondary)]">Score</span>
-                          <span className="text-xl font-bold text-[var(--accent)]">{aiResult.score}/100</span>
-                        </div>
-                        <p className="text-xs italic text-[var(--text-secondary)] p-3 glass rounded-lg">"{aiResult.feedback}"</p>
-                        <button onClick={() => setAiResult(null)} className="text-xs text-[var(--accent)] font-semibold">Reset</button>
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-6 max-w-2xl mx-auto">
+                  
+                  {/* Student Address Section */}
+                  <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)]">
+                    <h3 className="font-bold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+                      <FileText size={18} className="text-violet-500" /> Delivery Address
+                    </h3>
+                    <p className="text-sm text-[var(--text-secondary)] mb-4">Please deliver the physical assignment to the following address:</p>
+                    <div className="p-4 glass rounded-xl font-mono text-sm text-[var(--text-primary)] mb-4 break-all">
+                      {selectedAsgn ? (users?.find(u => u.id === selectedAsgn.studentId)?.address || "Address not provided by student yet. Please use Chat to request it.") : ""}
+                    </div>
+                    {selectedAsgn && users?.find(u => u.id === selectedAsgn.studentId)?.address && (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button 
+                          onClick={() => {
+                            const addr = users.find(u => u.id === selectedAsgn.studentId)?.address;
+                            if (addr) navigator.clipboard.writeText(addr);
+                          }}
+                          className="px-4 py-2 glass rounded-lg text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2"
+                        >
+                          <Copy size={16} /> Copy Address
+                        </button>
+                        <a 
+                          href="https://porter.in/" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                        >
+                          <ExternalLink size={16} /> Book Delivery on Porter
+                        </a>
                       </div>
                     )}
                   </div>
 
+                  {/* Porter Tracking Link Section */}
+                  <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)]">
+                    <h3 className="font-bold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+                      <FileText size={18} className="text-emerald-500" /> Porter Tracking Link <span className="text-xs text-[var(--text-tertiary)] font-normal ml-2">(Optional)</span>
+                    </h3>
+                    <p className="text-sm text-[var(--text-secondary)] mb-4">Paste the tracking link so the student can track the delivery if you used a courier:</p>
+                    <input 
+                      type="url" 
+                      value={submissionText}
+                      onChange={(e) => setSubmissionText(e.target.value)}
+                      placeholder="https://share.porter.in/..." 
+                      className="w-full px-4 py-3 rounded-xl glass-input text-sm"
+                    />
+                  </div>
+
+                  {/* Payment Verification Section */}
+                  <div className="flex items-start gap-3 p-4 glass rounded-xl bg-violet-500/5 border border-violet-500/20">
+                    <input 
+                      type="checkbox" 
+                      id="payment-verify"
+                      checked={hasVerifiedPayment}
+                      onChange={(e) => setHasVerifiedPayment(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-[var(--border)] text-violet-600 focus:ring-violet-600 bg-[var(--surface)]"
+                    />
+                    <label htmlFor="payment-verify" className="text-sm text-[var(--text-secondary)]">
+                      I confirm that I have received the payment of <strong className="text-emerald-500">₹{selectedAsgn.net_earnings || (selectedAsgn.budget * 0.9).toFixed(0)}</strong> via my provided QR Code for this assignment.
+                    </label>
+                  </div>
+
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    onClick={() => { onUploadSubmission(selectedAsgn.id, submissionText); setSelectedAsgn(null); }}
-                    disabled={!submissionText}
+                    onClick={() => { 
+                      onUploadSubmission(selectedAsgn.id, submissionText || "Physical delivery verified and shipped."); 
+                      setSelectedAsgn(null); 
+                      setHasVerifiedPayment(false); 
+                      setSubmissionText(''); 
+                    }}
+                    disabled={!hasVerifiedPayment}
                     className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-violet-500/20 disabled:opacity-50 ripple">
-                    Submit Final Work
+                    Submit Work
                   </motion.button>
                 </div>
               </div>

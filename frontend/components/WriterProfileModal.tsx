@@ -4,7 +4,7 @@ import { User } from '../types';
 import { api } from '../services/api';
 import {
   X, Star, MapPin, CheckCircle, Briefcase, Clock,
-  ChevronLeft, ChevronRight, ZoomIn, ImageOff, Loader2
+  ChevronLeft, ChevronRight, ZoomIn, ImageOff, Loader2, Mail
 } from 'lucide-react';
 import StyleBadge from './StyleBadge';
 
@@ -150,20 +150,17 @@ const WriterProfileModal: React.FC<WriterProfileModalProps> = ({ writer, onClose
                     {writer.is_verified && <CheckCircle className="w-5 h-5 text-[var(--accent)]" />}
                   </h2>
                   <p className="text-[var(--text-secondary)] font-medium text-sm mt-1 flex items-center gap-2">
-                    <Briefcase className="w-4 h-4" /> Academic Writing Specialist
+                    <Mail className="w-4 h-4" /> {writer.email}
                   </p>
                 </div>
 
                 {/* Stats Row */}
                 <div className="flex flex-wrap items-center gap-4 py-4 border-y border-[var(--border)]">
-                  <div className="flex items-center gap-1.5">
-                    <Star className="w-5 h-5 text-amber-400 fill-current" />
-                    <span className="font-bold text-[var(--text-primary)] text-lg">{writer.average_rating || '4.9'}</span>
-                  </div>
-                  <div className="h-8 w-px bg-[var(--border)]" />
                   <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
                     <MapPin className="w-4 h-4 text-[var(--text-tertiary)]" />
-                    <span className="font-semibold text-sm truncate max-w-[120px]">{writer.address || 'Unknown'}</span>
+                    <span className="font-semibold text-sm truncate max-w-[120px]">
+                      {writer.address ? writer.address.split(',')[0].trim() : 'Unknown'}
+                    </span>
                   </div>
                   {writer.pricePerPage && (
                     <>

@@ -1,70 +1,58 @@
 import React, { useRef, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Float } from '@react-three/drei';
-import { useScroll, useTransform, motion, MotionValue } from 'framer-motion';
+import { Float, RoundedBox, Torus, Icosahedron, Octahedron, Sphere, MeshDistortMaterial } from '@react-three/drei';
 import * as THREE from 'three';
+import { motion, useScroll, useTransform, MotionValue } from 'framer-motion';
 
-/* ─── Scene 1: Pen Writing ─── */
-const PenWriting = ({ progress }: { progress: number }) => {
+/* ─── Scene 1: Energy Core Assembling ─── */
+const CoreConnecting = ({ progress }: { progress: number }) => {
   const groupRef = useRef<THREE.Group>(null!);
 
   useFrame((state) => {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
-    // Write motion
-    groupRef.current.position.x = Math.sin(t * 1.5) * 0.3;
-    groupRef.current.position.y = Math.cos(t * 2) * 0.1;
-    groupRef.current.rotation.z = Math.sin(t * 1.5) * 0.1 - 0.3;
+    groupRef.current.rotation.y = t * 0.5;
+    groupRef.current.rotation.x = Math.sin(t * 0.3) * 0.2;
   });
 
-  const opacity = progress < 0.3 ? 1 : Math.max(0, 1 - (progress - 0.3) * 5);
+  const opacity = progress < 0.35 ? 1 : Math.max(0, 1 - (progress - 0.35) * 5);
 
   return (
     <group ref={groupRef} scale={opacity > 0 ? 1 : 0}>
-      {/* Pen body */}
-      <mesh rotation={[0, 0, -0.4]} position={[0, 0.2, 0]}>
-        <cylinderGeometry args={[0.04, 0.02, 1.2, 8]} />
-        <meshStandardMaterial
-          color="#6d28d9"
-          roughness={0.2}
-          metalness={0.6}
-          transparent
-          opacity={opacity}
-        />
-      </mesh>
-      {/* Pen tip */}
-      <mesh rotation={[0, 0, -0.4]} position={[-0.22, -0.17, 0]}>
-        <coneGeometry args={[0.04, 0.15, 8]} />
-        <meshStandardMaterial
-          color="#fbbf24"
-          roughness={0.1}
-          metalness={0.9}
-          transparent
-          opacity={opacity}
-        />
-      </mesh>
-      {/* Writing lines appearing */}
-      {[0, 1, 2].map((i) => (
-        <mesh key={i} position={[-0.3 + i * 0.05, -0.5 - i * 0.15, 0]}>
-          <boxGeometry args={[0.8 - i * 0.15, 0.02, 0.01]} />
-          <meshStandardMaterial
-            color="#e9d5ff"
+      <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
+        <Sphere args={[0.3, 32, 32]}>
+          <MeshDistortMaterial
+            color="#c084fc"
+            emissive="#a855f7"
+            emissiveIntensity={1.5}
+            distort={0.4}
+            speed={2}
+            roughness={0.2}
             transparent
-            opacity={opacity * 0.6}
+            opacity={opacity}
           />
-        </mesh>
-      ))}
+        </Sphere>
+        {/* Orbital Rings */}
+        <Torus args={[0.5, 0.015, 16, 64]} rotation={[Math.PI / 2, 0.2, 0]}>
+          <meshStandardMaterial color="#f0abfc" emissive="#f0abfc" emissiveIntensity={2} transparent opacity={opacity * 0.8} />
+        </Torus>
+        <Torus args={[0.6, 0.015, 16, 64]} rotation={[0.2, Math.PI / 2, 0]}>
+          <meshStandardMaterial color="#67e8f9" emissive="#67e8f9" emissiveIntensity={2} transparent opacity={opacity * 0.5} />
+        </Torus>
+      </Float>
     </group>
   );
 };
 
-/* ─── Scene 2: Papers Flying ─── */
-const PapersFlying = ({ progress }: { progress: number }) => {
+/* ─── Scene 2: Crystal Constellation Processing ─── */
+const CoreProcessing = ({ progress }: { progress: number }) => {
   const groupRef = useRef<THREE.Group>(null!);
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.y = state.clock.elapsedTime * 0.3;
+    const t = state.clock.elapsedTime;
+    groupRef.current.rotation.y = t * 0.4;
+    groupRef.current.rotation.z = Math.sin(t * 0.2) * 0.3;
   });
 
   const visibility = progress > 0.25 && progress < 0.75;
@@ -82,20 +70,29 @@ const PapersFlying = ({ progress }: { progress: number }) => {
         const angle = (i / 5) * Math.PI * 2;
         const radius = 0.6;
         return (
-          <Float key={i} speed={2 + i * 0.3} rotationIntensity={0.5} floatIntensity={0.8}>
-            <mesh
-              position={[Math.cos(angle) * radius, Math.sin(angle) * radius * 0.5, Math.sin(angle) * 0.3]}
-              rotation={[Math.random() * 0.5, Math.random() * 0.5, angle + Math.PI / 4]}
+          <Float key={i} speed={3} rotationIntensity={2} floatIntensity={2}>
+            <group
+              position={[Math.cos(angle) * radius, Math.sin(angle * 2) * 0.3, Math.sin(angle) * radius]}
+              rotation={[Math.random(), Math.random(), angle]}
             >
-              <planeGeometry args={[0.4, 0.55]} />
-              <meshStandardMaterial
-                color="#ffffff"
-                roughness={0.5}
-                side={THREE.DoubleSide}
-                transparent
-                opacity={opacity * 0.85}
-              />
-            </mesh>
+              <Icosahedron args={[0.15, 0]}>
+                <meshPhysicalMaterial
+                  color="#ffffff"
+                  roughness={0.1}
+                  metalness={0.8}
+                  transmission={0.9}
+                  ior={1.5}
+                  thickness={0.5}
+                  clearcoat={1}
+                  transparent
+                  opacity={opacity}
+                />
+              </Icosahedron>
+              {/* Inner glowing core of each crystal */}
+              <Sphere args={[0.05]} position={[0,0,0]}>
+                 <meshStandardMaterial color={i % 2 === 0 ? "#c084fc" : "#67e8f9"} emissive={i % 2 === 0 ? "#c084fc" : "#67e8f9"} emissiveIntensity={3} transparent opacity={opacity} />
+              </Sphere>
+            </group>
           </Float>
         );
       })}
@@ -103,58 +100,44 @@ const PapersFlying = ({ progress }: { progress: number }) => {
   );
 };
 
-/* ─── Scene 3: Checkmark ─── */
-const Checkmark = ({ progress }: { progress: number }) => {
+/* ─── Scene 3: Success Diamond ─── */
+const CoreComplete = ({ progress }: { progress: number }) => {
   const groupRef = useRef<THREE.Group>(null!);
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.y = state.clock.elapsedTime * 0.5;
-    groupRef.current.scale.setScalar(progress > 0.65 ? Math.min(1, (progress - 0.65) * 4) : 0);
+    const t = state.clock.elapsedTime;
+    groupRef.current.rotation.y = t * 0.8;
+    groupRef.current.position.y = Math.sin(t * 2) * 0.1;
   });
 
   const opacity = progress > 0.65 ? Math.min(1, (progress - 0.65) * 4) : 0;
 
   return (
-    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.6}>
-      <group ref={groupRef}>
-        {/* Circle */}
-        <mesh>
-          <torusGeometry args={[0.6, 0.06, 16, 32]} />
-          <meshStandardMaterial
-            color="#22c55e"
-            roughness={0.2}
-            metalness={0.7}
-            transparent
-            opacity={opacity}
-            emissive="#22c55e"
-            emissiveIntensity={0.3}
-          />
-        </mesh>
-        {/* Check stroke 1 */}
-        <mesh position={[-0.1, -0.05, 0]} rotation={[0, 0, -0.5]}>
-          <boxGeometry args={[0.35, 0.08, 0.08]} />
-          <meshStandardMaterial
-            color="#4ade80"
-            roughness={0.2}
+    <group ref={groupRef} scale={opacity > 0 ? 1 : 0}>
+      <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
+        <Octahedron args={[0.4, 0]}>
+          <meshPhysicalMaterial
+            color="#a7f3d0"
+            roughness={0.1}
             metalness={0.5}
+            transmission={0.8}
+            ior={1.2}
+            clearcoat={1}
             transparent
             opacity={opacity}
           />
-        </mesh>
-        {/* Check stroke 2 */}
-        <mesh position={[0.2, 0.15, 0]} rotation={[0, 0, 0.7]}>
-          <boxGeometry args={[0.5, 0.08, 0.08]} />
-          <meshStandardMaterial
-            color="#4ade80"
-            roughness={0.2}
-            metalness={0.5}
-            transparent
-            opacity={opacity}
-          />
-        </mesh>
-      </group>
-    </Float>
+        </Octahedron>
+        <Octahedron args={[0.2, 0]}>
+           <meshStandardMaterial color="#34d399" emissive="#10b981" emissiveIntensity={3} transparent opacity={opacity} />
+        </Octahedron>
+        
+        {/* Success Rings */}
+        <Torus args={[0.7, 0.02, 16, 64]} rotation={[Math.PI/2, 0, 0]}>
+          <meshStandardMaterial color="#6ee7b7" emissive="#34d399" emissiveIntensity={2} transparent opacity={opacity} />
+        </Torus>
+      </Float>
+    </group>
   );
 };
 
@@ -167,9 +150,9 @@ const SceneContent = ({ scrollProgress }: { scrollProgress: number }) => {
       <directionalLight position={[-3, -2, 3]} intensity={0.4} color="#818cf8" />
       <pointLight position={[0, 0, 3]} intensity={0.6} color="#e9d5ff" />
 
-      <PenWriting progress={scrollProgress} />
-      <PapersFlying progress={scrollProgress} />
-      <Checkmark progress={scrollProgress} />
+      <CoreConnecting progress={scrollProgress} />
+      <CoreProcessing progress={scrollProgress} />
+      <CoreComplete progress={scrollProgress} />
     </>
   );
 };
@@ -201,7 +184,7 @@ const ScrollSceneCanvas: React.FC<{ progress: MotionValue<number> }> = ({ progre
 const ScrollScene: React.FC<ScrollSceneProps> = ({ containerRef }) => {
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ['start end', 'end start'],
+    offset: ['start start', 'end end'],
   });
 
   // Labels for each phase
@@ -210,7 +193,7 @@ const ScrollScene: React.FC<ScrollSceneProps> = ({ containerRef }) => {
   const labelOpacity3 = useTransform(scrollYProgress, [0.6, 0.75, 1], [0, 1, 1]);
 
   return (
-    <div className="relative w-full h-[300px]">
+    <div className="relative w-full h-[400px]">
       {/* 3D Canvas */}
       <div className="absolute inset-0">
         <Suspense fallback={null}>
@@ -221,13 +204,13 @@ const ScrollScene: React.FC<ScrollSceneProps> = ({ containerRef }) => {
       {/* Phase labels */}
       <div className="absolute inset-0 flex items-end justify-center pb-4 pointer-events-none">
         <motion.span style={{ opacity: labelOpacity1 }} className="absolute text-xs font-bold text-[var(--accent)] uppercase tracking-widest">
-          ✍️ Writing...
+          ✍️ Writing by Hand...
         </motion.span>
         <motion.span style={{ opacity: labelOpacity2 }} className="absolute text-xs font-bold text-fuchsia-400 uppercase tracking-widest">
-          📄 Reviewing...
+          📦 Courier Dispatched...
         </motion.span>
         <motion.span style={{ opacity: labelOpacity3 }} className="absolute text-xs font-bold text-emerald-400 uppercase tracking-widest">
-          ✅ Delivered!
+          🚪 Delivered to Door!
         </motion.span>
       </div>
     </div>

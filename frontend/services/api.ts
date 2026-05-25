@@ -16,7 +16,7 @@ const logger = async (method: SystemLog['method'], endpoint: string, start: numb
   };
   db.addLog(log);
 };
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = `http://${window.location.hostname}:8000`;
 
 const resolveMediaUrl = (url: string | null | undefined) => {
   if (!url) return '';
@@ -734,7 +734,11 @@ export const api = {
           avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
           lastActive: new Date().toISOString(),
           username: u.username,
-          is_verified: u.is_verified
+          is_verified: u.is_verified,
+          address: u.address,
+          qr_code_url: u.qr_code_url,
+          handwriting_samples: u.handwriting_samples,
+          availability_status: u.availability_status
         }));
       }
     } catch (e) {
@@ -943,14 +947,14 @@ export const api = {
 
     const assignment = asgns[idx];
     const budget = assignment.budget || 0;
-    const fee = budget * 0.10; // 10% Platform Fee
+    const fee = 0; // No platform fee
 
     const updated = {
       ...assignment,
       status: AssignmentStatus.IN_PROGRESS,
       paymentStatus: 'PAID' as const, // Direct payment confirmed
       platform_fee: fee,
-      net_earnings: budget - fee
+      net_earnings: budget
     };
 
     asgns[idx] = updated;
@@ -961,10 +965,7 @@ export const api = {
 
   async deleteAssignment(assignmentId: string): Promise<void> {
     const start = Date.now();
-    await delay(400);
 
-    // Mock Backend call would be: DELETE /api/assignments/{id}/
-    // For now we update local db
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === assignmentId);
     if (idx === -1) throw new Error('Assignment not found');
@@ -973,6 +974,23 @@ export const api = {
     if (assignment.status !== AssignmentStatus.PENDING && assignment.status !== AssignmentStatus.PENDING_REVIEW && assignment.status !== AssignmentStatus.QUOTED) {
       throw new Error('Cannot delete assignment in this status');
     }
+
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      if (!response.ok && response.status !== 404) {
+        console.error("Backend delete failed", response.status);
+      }
+    } catch (e) {
+      console.warn("Backend delete assignment failed", e);
+    }
+
+    await delay(400);
 
     asgns.splice(idx, 1);
     db.saveAssignments(asgns);

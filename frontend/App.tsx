@@ -18,6 +18,7 @@ import { Writers } from './pages/Writers';
 type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'FORGOT_PASSWORD' | 'WRITERS';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { motion } from 'framer-motion';
 
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -94,7 +95,7 @@ const AppContent: React.FC = () => {
           api.getNotifications(user.id)
         ];
 
-        if (user.role === 'ADMIN') {
+        if (user.role === 'ADMIN' || user.role === 'WRITER') {
           promises.push(api.getAllUsers());
         }
 
@@ -103,7 +104,7 @@ const AppContent: React.FC = () => {
         setMessages(results[1]);
         setNotifications(results[2]);
 
-        if (user.role === 'ADMIN') {
+        if (user.role === 'ADMIN' || user.role === 'WRITER') {
           setAllUsers(results[3]);
         }
 
@@ -464,8 +465,8 @@ const AppContent: React.FC = () => {
         return <Writers onNavigate={setView} onHire={handleHireWriter} currentUser={user} />;
       case 'DASHBOARD':
         if (!user) return <Landing onNavigate={setView} />;
-        if (user.role === 'STUDENT') return <StudentDashboard user={user} assignments={assignments.filter(a => a.studentId === user.id)} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={setView} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;
-        if (user.role === 'WRITER') return <WriterDashboard user={user} assignments={assignments} onSubmitQuote={handleSubmitQuote} onUpdateAssignment={handleUpdateAssignment} onUploadSubmission={handleUploadSubmission} onOpenChat={handleOpenChat} onUpdateProfile={handleUpdateProfile} onRejectAssignment={handleRejectAssignment} />;
+        if (user.role === 'STUDENT') return <StudentDashboard user={user} assignments={assignments.filter(a => a.studentId === user.id)} messages={messages} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={setView} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;
+        if (user.role === 'WRITER') return <WriterDashboard user={user} users={allUsers} assignments={assignments} messages={messages} onSubmitQuote={handleSubmitQuote} onUpdateAssignment={handleUpdateAssignment} onUploadSubmission={handleUploadSubmission} onOpenChat={handleOpenChat} onUpdateProfile={handleUpdateProfile} onRejectAssignment={handleRejectAssignment} />;
         if (user.role === 'ADMIN') return <AdminDashboard user={user} assignments={assignments} users={allUsers} />;
         return null;
       default:
@@ -484,38 +485,25 @@ const AppContent: React.FC = () => {
       onNavigate={(view) => setView(view as any)}
     >
       {isSyncing && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center">
-          <div className="relative">
-            {/* Outer glow */}
-            <div className={`absolute -inset-4 rounded-full blur-xl opacity-50 animate-pulse ${user?.role === 'WRITER' ? 'bg-emerald-500' :
-              user?.role === 'ADMIN' ? 'bg-red-500' :
-                'bg-violet-500'
-              }`}></div>
-
-            {/* Outer ring */}
-            <div className={`w-16 h-16 border-4 border-white/10 rounded-full animate-spin ${user?.role === 'WRITER' ? 'border-t-emerald-500 border-r-emerald-300' :
-              user?.role === 'ADMIN' ? 'border-t-red-500 border-r-red-300' :
-                'border-t-violet-500 border-r-fuchsia-400'
-              }`}></div>
-
-            {/* Inner ring - spins in opposite direction */}
-            <div className={`absolute top-2 left-2 w-12 h-12 border-4 border-white/5 rounded-full ${user?.role === 'WRITER' ? 'border-b-emerald-400' :
-              user?.role === 'ADMIN' ? 'border-b-red-400' :
-                'border-b-fuchsia-500'
-              }`} style={{ animation: 'spin 0.6s linear infinite reverse' }}></div>
-
-            {/* Center pulsing dot */}
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full animate-pulse ${user?.role === 'WRITER' ? 'bg-emerald-400' :
-              user?.role === 'ADMIN' ? 'bg-red-400' :
-                'bg-violet-400'
-              }`}></div>
+        <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all">
+          <div className="bg-[var(--surface)] border border-white/5 px-5 py-3 rounded-full shadow-2xl flex items-center gap-3">
+             <motion.div 
+               animate={{ rotate: 360 }}
+               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+               className="w-4 h-4 rounded-full border-2 border-transparent"
+               style={{
+                 borderTopColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6',
+                 borderRightColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6'
+               }}
+             />
+             <span className="text-sm font-semibold text-[var(--text-primary)]">Syncing...</span>
           </div>
         </div>
       )}
 
       {isRestoringSession ? (
-        <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="fixed inset-0 bg-[#0a0a14] flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-500"></div>
         </div>
       ) : (
         renderView()
