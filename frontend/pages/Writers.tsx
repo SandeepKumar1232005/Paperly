@@ -182,10 +182,6 @@ export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
                                                     <h3 className="text-lg font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{writer.name}</h3>
                                                     {writer.is_verified && <CheckCircle className="w-4 h-4 text-[var(--accent)] fill-[var(--accent-muted)]" />}
                                                 </div>
-                                                <div className="flex items-center text-sm font-medium text-amber-500 dark:text-amber-400 mt-0.5">
-                                                    <Star className="h-3.5 w-3.5 fill-current" />
-                                                    <span className="ml-1">{writer.average_rating || '4.9'}</span>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>

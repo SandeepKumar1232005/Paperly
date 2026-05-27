@@ -521,7 +521,7 @@ export const api = {
           id: String(u.id),
           name: u.name || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username || 'User',
           email: u.email,
-          role: u.role || 'STUDENT', // Default to student
+          role: u.role === 'provider' ? 'WRITER' : (u.role === 'admin' ? 'ADMIN' : (u.role || 'STUDENT').toUpperCase()),
           avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
           lastActive: new Date().toISOString(),
           is_verified: u.is_verified

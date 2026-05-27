@@ -5,6 +5,7 @@ import { User } from '../types';
 import HandwritingUpload from './HandwritingUpload';
 import { X, Camera, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 interface ProfileModalProps {
   user: User;
@@ -72,7 +73,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
       handwriting_style: handwritingStyle,
       handwriting_confidence: handwritingConfidence
     });
-    onClose();
+    toast.success('Profile changes saved successfully!');
+    if (user.role !== 'ADMIN') {
+      onClose();
+    }
   };
 
   return (

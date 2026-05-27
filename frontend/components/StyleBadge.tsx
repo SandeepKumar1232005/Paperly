@@ -35,11 +35,6 @@ const StyleBadge: React.FC<StyleBadgeProps> = ({ style, confidence, className = 
         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border ${getStyleColor(style)} ${className}`}>
             <span>{getIcon(style)}</span>
             <span>{style}</span>
-            {confidence !== undefined && (
-                <span className="opacity-75 text-[10px] ml-0.5">
-                    {Math.round(confidence * 100)}%
-                </span>
-            )}
         </span>
     );
 };

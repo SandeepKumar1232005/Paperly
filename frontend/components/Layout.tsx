@@ -40,7 +40,7 @@ const Layout: React.FC<LayoutProps> = ({
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user && !sessionStorage.getItem('location_prompted')) {
+    if (user && user.role !== 'ADMIN' && !sessionStorage.getItem('location_prompted')) {
       const timer = setTimeout(() => setShowLocationPrompt(true), 1500);
       return () => clearTimeout(timer);
     }

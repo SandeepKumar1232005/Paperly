@@ -174,8 +174,55 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                 </div>
               </div>
               
-              <div className="bg-[var(--surface)]/50 rounded-2xl p-6 border border-white/5">
-                 <HandwritingSamplesManager user={user} onUpdateProfile={onUpdateProfile} />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left: Handwriting samples (2/3 width) */}
+                <div className="lg:col-span-2 bg-[var(--surface)]/50 rounded-2xl p-6 border border-white/5">
+                   <HandwritingSamplesManager user={user} onUpdateProfile={onUpdateProfile} />
+                </div>
+
+                {/* Right: Consolidated Writer Profile Sidebar (1/3 width) */}
+                <div className="space-y-6 flex flex-col justify-between">
+                  {/* Profile Card & Availability */}
+                  <div className="bg-[var(--surface)]/50 rounded-2xl p-6 border border-white/5 space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="relative inline-block flex-shrink-0">
+                        <img src={user.avatar} className="w-16 h-16 rounded-2xl border border-[var(--border)] shadow-md" />
+                        <button onClick={() => setIsEditingProfile(true)} className="absolute -bottom-1 -right-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-1.5 rounded-lg shadow-lg hover:shadow-xl transition-all">
+                          <Upload size={10} />
+                        </button>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider font-sans">Verified Writer</span>
+                        <h3 className="font-bold text-lg text-[var(--text-primary)] mt-1.5">{user.name}</h3>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider ml-1">Availability Status</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['ONLINE', 'BUSY', 'OFFLINE'].map((status) => (
+                          <button key={status}
+                            onClick={() => onUpdateProfile({ availability_status: status as any })}
+                            className={`py-2.5 rounded-xl text-[10px] font-bold transition-all border ${user.availability_status === status
+                              ? (status === 'ONLINE' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500 dark:text-emerald-400' : status === 'BUSY' ? 'bg-fuchsia-500/20 border-fuchsia-500/30 text-fuchsia-400' : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)]')
+                              : 'border-transparent text-[var(--text-tertiary)] hover:bg-[var(--surface)]'}`}>
+                            {status}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pro Tip */}
+                  <div className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+                    <h3 className="font-bold text-base mb-1 relative z-10">💡 Pro Tip</h3>
+                    <p className="text-emerald-100 text-xs relative z-10">Upload verified handwriting samples to increase your hire rate by 30%.</p>
+                    <button onClick={() => setIsEditingProfile(true)} className="mt-3.5 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-bold transition-colors w-full relative z-10 backdrop-blur-sm">
+                      Manage Profile
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -183,7 +230,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
 
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <AnimatePresence mode='wait'>
               {activeTab === 'MARKETPLACE' ? (
                 <motion.div key="market" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
@@ -358,49 +405,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Profile Card */}
-            <div className="glass-card p-6">
-              <div className="text-center mb-6">
-                <div className="relative inline-block">
-                  <img src={user.avatar} className="w-20 h-20 rounded-2xl border-2 border-[var(--border)] mb-3 shadow-md" />
-                  <button onClick={() => setIsEditingProfile(true)} className="absolute -bottom-1 -right-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-2 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-                    <Upload size={12} />
-                  </button>
-                </div>
-                <h3 className="font-bold text-[var(--text-primary)]">{user.name}</h3>
-                <div className="flex justify-center gap-0.5 text-yellow-400 text-sm mt-1">★★★★★</div>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Availability</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {['ONLINE', 'BUSY', 'OFFLINE'].map((status) => (
-                    <button key={status}
-                      onClick={() => onUpdateProfile({ availability_status: status as any })}
-                      className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${user.availability_status === status
-                        ? (status === 'ONLINE' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500 dark:text-emerald-400' : status === 'BUSY' ? 'bg-fuchsia-500/20 border-fuchsia-500/30 text-fuchsia-400' : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)]')
-                        : 'border-transparent text-[var(--text-tertiary)] hover:bg-[var(--surface)]'}`}>
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Pro Tip */}
-            <div className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg">
-              <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-              <h3 className="font-bold text-lg mb-2 relative z-10">💡 Pro Tip</h3>
-              <p className="text-emerald-100 text-sm relative z-10">Upload verified handwriting samples to increase your hire rate by 30%.</p>
-              <button onClick={() => setIsEditingProfile(true)} className="mt-4 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-bold transition-colors w-full relative z-10 backdrop-blur-sm">
-                Manage Profile
-              </button>
-            </div>
-          </div>
+             </div>
         </div>
       </div>
 
@@ -501,12 +506,12 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
 
       {/* Profile Edit Modal */}
       {isEditingProfile && (
-        <div className="fixed inset-0 bg-[var(--overlay)] z-[110] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsEditingProfile(false); }}>
+        <div className="fixed inset-0 bg-[var(--overlay)] z-[110] flex items-center justify-center p-4 overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setIsEditingProfile(false); }}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 max-w-lg w-full shadow-2xl" style={{ background: 'var(--bg-secondary)' }}>
-            <div className="flex justify-between items-center mb-6">
+            className="glass-card p-6 max-w-lg w-full shadow-2xl my-8 max-h-[calc(100vh-4rem)] overflow-y-auto" style={{ background: 'var(--bg-secondary)' }}>
+            <div className="flex justify-between items-center mb-6 sticky top-0 bg-[var(--bg-secondary)] py-2 z-10 border-b border-[var(--border)]/10">
               <h2 className="font-bold text-xl text-[var(--text-primary)] font-display">Edit Profile</h2>
-              <button onClick={() => setIsEditingProfile(false)} className="p-2 hover:bg-[var(--surface)] rounded-xl text-[var(--text-secondary)]">
+              <button onClick={() => setIsEditingProfile(false)} className="p-2 hover:bg-[var(--surface)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all" title="Close">
                 <X size={20} />
               </button>
             </div>

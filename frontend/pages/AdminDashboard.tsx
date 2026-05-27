@@ -55,6 +55,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
     }
   };
 
+  const handleVerifyUser = async (userId: string) => {
+    try {
+      await api.verifyUser(userId);
+      setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, is_verified: true } : u));
+    } catch (error) {
+      console.error("Failed to verify user:", error);
+    }
+  };
+
   const totalRevenue = assignments.reduce((sum, a) => sum + a.budget, 0);
   const totalStudents = users.filter(u => u.role === 'STUDENT').length;
   const totalWriters = users.filter(u => u.role === 'WRITER').length;
@@ -310,12 +319,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded text-xs font-bold ${u.role === 'ADMIN' ? 'bg-violet-500/10 text-[var(--accent)]' :
-                            u.role === 'WRITER' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-violet-500/10 text-[var(--accent)]'
-                            }`}>{u.role}</span>
+                          <span className={`px-2.5 py-1 rounded text-xs font-bold ${
+                            u.role === 'ADMIN' ? 'bg-rose-500/10 text-rose-500' :
+                            u.role === 'WRITER' ? 'bg-emerald-500/10 text-emerald-500' : 
+                            'bg-violet-500/10 text-[var(--accent)]'
+                          }`}>{u.role}</span>
                         </td>
                         <td className="px-6 py-4">
-                          {u.is_verified ? <span className="text-emerald-500 font-bold text-xs">Verified</span> : <span className="text-[var(--text-tertiary)] font-bold text-xs">Unverified</span>}
+                          {u.is_verified ? (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold text-xs bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.05)]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              Verified
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex items-center gap-1.5 text-[var(--text-tertiary)] font-bold text-xs bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                Unverified
+                              </span>
+                              {u.role !== 'ADMIN' && (
+                                <button
+                                  onClick={() => handleVerifyUser(u.id)}
+                                  className="text-xs px-3 py-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold rounded-lg shadow-md shadow-violet-500/10 hover:shadow-violet-500/25 active:scale-95 transition-all cursor-pointer animate-fade-in"
+                                >
+                                  Verify
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           {u.id !== user.id && (

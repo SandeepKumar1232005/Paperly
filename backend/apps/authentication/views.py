@@ -353,12 +353,16 @@ class UserListView(APIView):
         
         users_ref = db.collection('users')
         if role:
-            if role == 'provider':
+            role_lower = role.lower()
+            role_upper = role.upper()
+            if role_lower in ['provider', 'writer'] or role_upper == 'WRITER':
                 f1 = FieldFilter('role', '==', 'provider')
                 f2 = FieldFilter('role', '==', 'WRITER')
                 docs = users_ref.where(filter=Or(filters=[f1, f2])).stream()
             else:
-                docs = users_ref.where(filter=FieldFilter('role', '==', role)).stream()
+                f1 = FieldFilter('role', '==', role_lower)
+                f2 = FieldFilter('role', '==', role_upper)
+                docs = users_ref.where(filter=Or(filters=[f1, f2])).stream()
         else:
             docs = users_ref.stream()
             
@@ -420,6 +424,60 @@ class UserManagementView(APIView):
         
         db.collection('users').document(user_id).delete()
         return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+    def patch(self, request, user_id):
+        if db is None:
+            return Response({'error': 'Database error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Verify that the requester is an admin
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        try:
+            token = auth_header.split(' ')[1]
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            request_user_id = payload.get('user_id')
+            
+            # Fetch requester profile to check role
+            req_doc = db.collection('users').document(request_user_id).get()
+            if not req_doc.exists or req_doc.to_dict().get('role') != 'ADMIN':
+                return Response({'error': 'Forbidden - Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        updates = request.data
+        valid_updates = {}
+        
+        # Allow admin to toggle verification
+        if 'is_verified' in updates:
+            valid_updates['is_verified'] = bool(updates['is_verified'])
+            
+        if valid_updates:
+            db.collection('users').document(user_id).update(valid_updates)
+            
+        # Return updated user
+        updated_doc = db.collection('users').document(user_id).get()
+        if not updated_doc.exists:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        updated_user = updated_doc.to_dict()
+        return Response({
+            'id': updated_user['id'],
+            'username': updated_user.get('username'),
+            'email': updated_user['email'],
+            'name': updated_user.get('name'),
+            'role': updated_user.get('role'),
+            'avatar': updated_user.get('avatar'),
+            'address': updated_user.get('address'),
+            'is_verified': updated_user.get('is_verified', False),
+            'handwriting_style': updated_user.get('handwriting_style'),
+            'handwriting_confidence': updated_user.get('handwriting_confidence'),
+            'handwriting_sample_url': updated_user.get('handwriting_sample_url'),
+            'handwriting_samples': updated_user.get('handwriting_samples', []),
+            'qr_code_url': updated_user.get('qr_code_url'),
+            'price_per_page': updated_user.get('price_per_page'),
+        })
 class FileUploadView(APIView):
     authentication_classes = [] # Allow public upload for now, or add JWTAuthentication
     permission_classes = []
