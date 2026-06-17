@@ -89,16 +89,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const stats = [
     { label: 'Total', value: assignments.length, icon: FileText, color: 'from-blue-500 to-cyan-500' },
     { label: 'In Progress', value: assignments.filter(a => a.status === AssignmentStatus.IN_PROGRESS).length, icon: Clock, color: 'from-fuchsia-500 to-orange-500' },
-    { label: 'Awaiting Review', value: assignments.filter(a => a.status === AssignmentStatus.QUOTED || a.status === AssignmentStatus.SUBMITTED).length, icon: AlertCircle, color: 'from-violet-500 to-purple-500' },
+    { label: 'Awaiting Review', value: assignments.filter(a => a.status === AssignmentStatus.QUOTED || a.status === AssignmentStatus.SUBMITTED || a.status === AssignmentStatus.PENDING_REVIEW).length, icon: AlertCircle, color: 'from-violet-500 to-purple-500' },
     { label: 'Completed', value: assignments.filter(a => a.status === AssignmentStatus.COMPLETED).length, icon: CheckCircle, color: 'from-emerald-500 to-green-500' }
   ];
 
   const getProgress = (status: AssignmentStatus) => {
     switch (status) {
       case AssignmentStatus.COMPLETED: return 100;
+      case AssignmentStatus.SUBMITTED: return 90;
       case AssignmentStatus.IN_PROGRESS: return 75;
       case AssignmentStatus.CONFIRMED: return 50;
       case AssignmentStatus.QUOTED: return 35;
+      case AssignmentStatus.PENDING_REVIEW: return 20;
       default: return 10;
     }
   };
@@ -248,6 +250,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                             <button onClick={() => onRespondToQuote(asgn.id, 'ACCEPT')} className="flex-1 bg-[var(--accent)] text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">Accept</button>
                             <button onClick={() => onRespondToQuote(asgn.id, 'REJECT')} className="flex-1 bg-[var(--surface)] text-red-500 dark:text-red-400 py-2 rounded-lg text-xs font-bold hover:bg-[var(--surface-hover)]">Decline</button>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Direct Hire Pending */}
+                      {asgn.status === AssignmentStatus.PENDING_REVIEW && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock size={14} className="text-amber-500" />
+                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Awaiting Writer Response</span>
+                          </div>
+                          <p className="text-xs text-[var(--text-secondary)]">Your hire request has been sent. The writer can accept, negotiate, or decline.</p>
                         </div>
                       )}
 

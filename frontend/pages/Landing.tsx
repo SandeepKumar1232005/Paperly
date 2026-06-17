@@ -1,26 +1,28 @@
 import React, { useRef, Suspense } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen } from 'lucide-react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen, Sun, Moon } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
 import Hero3DText from '../components/Hero3DText';
 import FeatureIcon3D from '../components/FeatureIcon3D';
 import ParticleTrail from '../components/ParticleTrail';
 import Logo from '../components/Logo';
+import { useTheme } from '../context/ThemeContext';
 
 import HandwritingShowcase from '../components/landing/HandwritingShowcase';
 import ProcessTimeline from '../components/landing/ProcessTimeline';
 import TrustBento from '../components/landing/TrustBento';
 import PricingEstimator from '../components/landing/PricingEstimator';
 
-const BookScene = React.lazy(() => import('../components/BookScene'));
-const GlowOrbs = React.lazy(() => import('../components/GlowOrbs'));
+import BookScene from '../components/BookScene';
+import GlowOrbs from '../components/GlowOrbs';
 
 interface LandingProps {
   onNavigate: (view: 'LOGIN' | 'REGISTER') => void;
 }
 
 const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
+  const { theme, toggleTheme } = useTheme();
   const { scrollY } = useScroll();
   const scrollSectionRef = useRef<HTMLElement>(null);
 
@@ -70,17 +72,48 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
             </div>
             <div className="flex items-center gap-4 md:gap-8">
-              <div className="hidden md:flex gap-6 text-sm font-medium text-[var(--text-secondary)]">
-                <a href="#features" className="hover:text-[var(--text-primary)] transition-colors relative group">
-                  Features
+              <div className="hidden md:flex gap-6 items-center text-sm font-medium text-[var(--text-secondary)]">
+                <a href="#showcase" className="hover:text-[var(--text-primary)] transition-colors relative group">
+                  Showcase
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
                 </a>
+                <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
                 <a href="#journey" className="hover:text-[var(--text-primary)] transition-colors relative group">
                   Journey
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
                 </a>
+                <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
+                <a href="#trust" className="hover:text-[var(--text-primary)] transition-colors relative group">
+                  Trust
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
+                </a>
+                <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
+                <a href="#pricing" className="hover:text-[var(--text-primary)] transition-colors relative group">
+                  Pricing
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
+                </a>
               </div>
-              <div className="flex gap-2 md:gap-3">
+              <div className="flex gap-2 md:gap-3 items-center">
+                {/* Theme Toggle */}
+                <motion.button
+                  whileTap={{ scale: 0.9, rotate: 180 }}
+                  onClick={toggleTheme}
+                  className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  <AnimatePresence mode="wait">
+                    {theme === 'dark' ? (
+                      <motion.div key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                        <Sun size={18} />
+                      </motion.div>
+                    ) : (
+                      <motion.div key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                        <Moon size={18} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+
                 <button onClick={() => onNavigate('LOGIN')} className="px-4 md:px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                   Log In
                 </button>
@@ -147,16 +180,24 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       </section>
 
       {/* ═══════ HANDWRITING SHOWCASE ═══════ */}
-      <HandwritingShowcase />
+      <div id="showcase">
+        <HandwritingShowcase />
+      </div>
 
       {/* ═══════ PROCESS TIMELINE ═══════ */}
-      <ProcessTimeline />
+      <div id="journey">
+        <ProcessTimeline />
+      </div>
 
       {/* ═══════ TRUST & SECURITY ═══════ */}
-      <TrustBento />
+      <div id="trust">
+        <TrustBento />
+      </div>
 
       {/* ═══════ PRICING ESTIMATOR ═══════ */}
-      <PricingEstimator onNavigate={onNavigate} />
+      <div id="pricing">
+        <PricingEstimator onNavigate={onNavigate} />
+      </div>
 
       {/* ═══════ CTA SECTION ═══════ */}
       <section className="relative z-10 py-20 px-4">
@@ -200,8 +241,10 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             <div>
               <h4 className="font-bold text-sm text-[var(--text-primary)] uppercase tracking-wider mb-4">Quick Links</h4>
               <div className="space-y-2.5">
-                <a href="#features" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Features</a>
+                <a href="#showcase" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Showcase</a>
                 <a href="#journey" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Journey</a>
+                <a href="#trust" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Trust</a>
+                <a href="#pricing" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Pricing</a>
               </div>
             </div>
             <div>

@@ -153,7 +153,7 @@ const BookScene: React.FC = () => {
   return (
     <div className="w-full h-full absolute inset-0" style={{ minHeight: '500px' }}>
       <Canvas
-        camera={{ position: [0, 0, 6], fov: 45 }}
+        camera={{ position: [0, 0, 8.2], fov: 45 }}
         dpr={[1, 2]}
         gl={{ alpha: true, antialias: true }}
       >

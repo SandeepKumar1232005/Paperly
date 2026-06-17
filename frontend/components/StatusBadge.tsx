@@ -32,10 +32,15 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
     [AssignmentStatus.CANCELLED]: 'bg-gray-400',
   };
 
+  const labels: Partial<Record<AssignmentStatus, string>> = {
+    [AssignmentStatus.PENDING_REVIEW]: 'AWAITING WRITER',
+    [AssignmentStatus.IN_PROGRESS]: 'IN PROGRESS',
+  };
+
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border uppercase tracking-wide ${styles[status]}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dotColors[status]}`} />
-      {status.replace('_', ' ')}
+      {labels[status] || status.replace('_', ' ')}
     </span>
   );
 };

@@ -362,39 +362,100 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                       <AnimatePresence>
                         {myAssignments.map((asgn, i) => {
                           const unreadCount = messages.filter(m => m.assignmentId === asgn.id && !m.isRead && m.senderId !== user.id).length;
+                          const isDirectHireOffer = asgn.status === AssignmentStatus.PENDING_REVIEW;
                           return (
                           <motion.div layout key={asgn.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.05 }} whileHover={{ scale: 1.01 }}
-                            className="glass-card p-6 flex flex-col md:flex-row gap-6 items-start md:items-center group">
+                            className={`glass-card p-6 flex flex-col gap-4 group ${isDirectHireOffer ? 'border-l-4 border-amber-500' : ''}`}>
+                            
+                            {/* Direct Hire Offer Banner */}
+                            {isDirectHireOffer && (
+                              <div className="flex items-center gap-2 bg-amber-500/10 text-amber-500 dark:text-amber-400 px-4 py-2 rounded-xl text-sm font-bold">
+                                <Zap size={16} />
+                                Direct Hire Offer — A student has chosen you specifically!
+                              </div>
+                            )}
+
+                            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className="font-bold text-lg text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{asgn.title}</h3>
                                 <StatusBadge status={asgn.status} />
                               </div>
-                              <p className="text-sm text-[var(--text-tertiary)] mb-2">Deadline: {new Date(asgn.deadline).toLocaleDateString()}</p>
+                              <p className="text-sm text-[var(--text-secondary)] mb-1 line-clamp-2">{asgn.description}</p>
+                              <div className="flex gap-4 text-xs text-[var(--text-tertiary)] mt-2">
+                                <span>Deadline: {new Date(asgn.deadline).toLocaleDateString()}</span>
+                                <span className="text-emerald-500 dark:text-emerald-400 font-bold">Budget: ₹{asgn.budget}</span>
+                                {asgn.pages && <span>{asgn.pages} Pages</span>}
+                              </div>
                               {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
                                 <div className="flex gap-4 text-xs font-mono text-[var(--text-tertiary)] mt-2">
-                                  <span>Budget: ₹{asgn.budget}</span>
                                   <span className="text-emerald-500 dark:text-emerald-400 font-bold">Earnings: ₹{asgn.net_earnings || asgn.budget}</span>
                                 </div>
                               )}
                             </div>
+
+                            {/* Action Buttons */}
                             <div className="flex flex-wrap gap-2">
-                              <button onClick={() => onOpenChat(asgn)} className="relative px-4 py-2.5 bg-violet-500/10 text-[var(--accent)] rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-violet-500/20 transition-colors">
-                                <MessageSquare size={16} /> Chat
-                                {unreadCount > 0 && (
-                                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border-2 border-[var(--surface)]">
-                                    {unreadCount}
-                                  </span>
-                                )}
-                              </button>
-                              {asgn.status !== AssignmentStatus.COMPLETED && (
-                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                  onClick={() => setSelectedAsgn(asgn)}
-                                  className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-500/20">
-                                  Submit Work
-                                </motion.button>
+                              {/* Direct Hire Actions */}
+                              {isDirectHireOffer ? (
+                                <>
+                                  {quoteData?.id === asgn.id ? (
+                                    <div className="space-y-2 glass p-4 rounded-xl min-w-[220px]">
+                                      <p className="text-xs font-bold text-[var(--text-secondary)] mb-1">Counter Offer</p>
+                                      <input type="number"
+                                        className="w-full text-sm p-3 rounded-lg glass-input"
+                                        placeholder="Your Price (₹)" value={quoteData.amount}
+                                        onChange={e => setQuoteData({ ...quoteData, amount: e.target.value })} />
+                                      <textarea
+                                        className="w-full text-sm p-3 rounded-lg glass-input resize-none h-16"
+                                        placeholder="Message to student..." value={quoteData.comment}
+                                        onChange={e => setQuoteData({ ...quoteData, comment: e.target.value })} />
+                                      <div className="flex gap-2">
+                                        <button onClick={submitQuote} className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm py-2.5 rounded-lg font-bold">Send Quote</button>
+                                        <button onClick={() => setQuoteData(null)} className="flex-1 glass text-[var(--text-secondary)] text-sm py-2.5 rounded-lg font-semibold">Cancel</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={() => onUpdateAssignment(asgn.id, { status: AssignmentStatus.CONFIRMED })}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                                        <CheckCircle size={16} /> Accept
+                                      </motion.button>
+                                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={() => setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' })}
+                                        className="px-5 py-2.5 bg-violet-500/10 text-[var(--accent)] rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-violet-500/20 transition-colors">
+                                        <DollarSign size={16} /> Negotiate
+                                      </motion.button>
+                                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={() => onRejectAssignment(asgn.id)}
+                                        className="px-5 py-2.5 glass text-red-500 dark:text-red-400 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-500/10 transition-colors">
+                                        <X size={16} /> Decline
+                                      </motion.button>
+                                    </>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <button onClick={() => onOpenChat(asgn)} className="relative px-4 py-2.5 bg-violet-500/10 text-[var(--accent)] rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-violet-500/20 transition-colors">
+                                    <MessageSquare size={16} /> Chat
+                                    {unreadCount > 0 && (
+                                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border-2 border-[var(--surface)]">
+                                        {unreadCount}
+                                      </span>
+                                    )}
+                                  </button>
+                                  {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.REVISION) && (
+                                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                      onClick={() => setSelectedAsgn(asgn)}
+                                      className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-500/20">
+                                      Submit Work
+                                    </motion.button>
+                                  )}
+                                </>
                               )}
+                            </div>
                             </div>
                           </motion.div>
                           );

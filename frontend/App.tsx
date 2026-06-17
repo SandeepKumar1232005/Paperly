@@ -384,19 +384,24 @@ const AppContent: React.FC = () => {
 
 
   const handleRejectAssignment = useCallback(async (id: string) => {
-    if (!window.confirm("Are you sure you want to drop this assignment? This will impact your reliability score.")) return;
+    const asgn = assignments.find(a => a.id === id);
+    const isDirectHire = asgn?.status === AssignmentStatus.PENDING_REVIEW;
+    const confirmMsg = isDirectHire
+      ? "Decline this direct hire request? The assignment will be released back to the marketplace."
+      : "Are you sure you want to drop this assignment? This will impact your reliability score.";
+    if (!window.confirm(confirmMsg)) return;
     setIsSyncing(true);
     try {
       const updated = await api.rejectAssignment(id);
       setAssignments(prev => prev.map(a => a.id === id ? updated : a));
-      await addNotification('Assignment dropped successfully.');
+      await addNotification(isDirectHire ? 'Direct hire offer declined.' : 'Assignment dropped successfully.');
     } catch (err: any) {
       console.error(err);
       await addNotification('Failed to drop assignment: ' + err.message);
     } finally {
       setIsSyncing(false);
     }
-  }, [addNotification]);
+  }, [assignments, addNotification]);
 
   const handleDeleteAssignment = useCallback(async (id: string) => {
     // Confirmation handled in UI

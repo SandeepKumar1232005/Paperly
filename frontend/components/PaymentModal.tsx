@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Assignment } from '../types';
 import { X, QrCode, CheckCircle, Wallet, Smartphone, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../services/api';
 
 interface PaymentModalProps {
     assignment: Assignment;
@@ -19,16 +20,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
     const writerName = assignment.provider?.name || "Writer";
     const qrUrl = assignment.provider?.qr_code_url || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=writer@bank&pn=${encodeURIComponent(writerName)}&am=${assignment.budget}&cu=INR`;
 
-    const handlePaymentConfirm = () => {
+    const handlePaymentConfirm = async () => {
         setIsConfirming(true);
+        try {
+            await api.confirmPayment(assignment.id);
+        } catch (err) {
+            console.error('Payment confirmation failed:', err);
+        }
+        setIsConfirming(false);
+        setShowSuccess(true);
         setTimeout(() => {
-            setIsConfirming(false);
-            setShowSuccess(true);
-            setTimeout(() => {
-                onSuccess();
-                onClose();
-            }, 2000);
-        }, 1500);
+            onSuccess();
+            onClose();
+        }, 2000);
     };
 
     return (

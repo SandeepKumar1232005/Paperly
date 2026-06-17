@@ -862,6 +862,7 @@ export const api = {
       quoted_amount: amount,
       writer_comment: comment,
       quotingWriterId: writerId,
+      writerId: writerId, // Lock assignment to this writer
     };
     asgns[idx] = updated;
     db.saveAssignments(asgns);
@@ -902,6 +903,7 @@ export const api = {
       assignment.quoted_amount = undefined;
       assignment.writer_comment = undefined;
       assignment.quotingWriterId = undefined;
+      assignment.writerId = undefined; // Release back to marketplace
     }
     
     asgns[idx] = assignment;
@@ -913,6 +915,22 @@ export const api = {
   async rejectAssignment(assignmentId: string): Promise<Assignment> {
     const start = Date.now();
     await delay(500);
+
+    // Sync with backend
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ status: 'PENDING', writerId: null })
+      });
+    } catch (e) {
+      console.warn("Backend reject assignment failed", e);
+    }
+
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === assignmentId);
     if (idx === -1) throw new Error('Assignment not found');
@@ -941,6 +959,22 @@ export const api = {
   async confirmPayment(assignmentId: string): Promise<Assignment> {
     const start = Date.now();
     await delay(600);
+
+    // Sync with backend
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ status: 'IN_PROGRESS', paymentStatus: 'PAID' })
+      });
+    } catch (e) {
+      console.warn("Backend confirm payment failed", e);
+    }
+
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === assignmentId);
     if (idx === -1) throw new Error('Assignment not found');
