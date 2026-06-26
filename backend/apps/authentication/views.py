@@ -72,17 +72,36 @@ class RegisterView(APIView):
             db.collection('users').document(user_id).set(new_user)
             print("User inserted successfully")
             
+            # Generate Token (Simple JWT or custom)
+            token_payload = {
+                'user_id': user_id,
+                'email': email,
+                'role': role,
+                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+            }
+            token = jwt.encode(token_payload, settings.SECRET_KEY, algorithm='HS256')
+
             # Determine redirect/payload
-            return Response({'message': 'User created successfully', 'user': {
-                'email': email, 
-                'username': username, 
-                'role': role, 
-                'id': user_id, 
-                'avatar': avatar,
-                'handwriting_style': None,
-                'handwriting_confidence': None,
-                'handwriting_sample_url': None
-            }}, status=status.HTTP_201_CREATED)
+            return Response({
+                'message': 'User created successfully',
+                'key': token,
+                'user': {
+                    'id': user_id,
+                    'email': email, 
+                    'username': username, 
+                    'name': name,
+                    'role': role, 
+                    'avatar': avatar,
+                    'address': address,
+                    'is_verified': False,
+                    'handwriting_style': None,
+                    'handwriting_confidence': None,
+                    'handwriting_sample_url': None,
+                    'handwriting_samples': [],
+                    'qr_code_url': None,
+                    'price_per_page': None,
+                }
+            }, status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -154,6 +173,8 @@ class LoginView(APIView):
                 'handwriting_confidence': user.get('handwriting_confidence'),
                 'handwriting_sample_url': user.get('handwriting_sample_url'),
                 'handwriting_samples': user.get('handwriting_samples', []),
+                'qr_code_url': user.get('qr_code_url'),
+                'price_per_page': user.get('price_per_page'),
             }
         })
 
@@ -385,6 +406,7 @@ class UserListView(APIView):
                 'availability_status': u.get('availability_status', 'ONLINE'),
                 'handwriting_samples': u.get('handwriting_samples', []),
                 'qr_code_url': u.get('qr_code_url'),
+                'price_per_page': u.get('price_per_page'),
             }
             
             # Calculate distance if coords provided

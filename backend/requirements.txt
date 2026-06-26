@@ -10,6 +10,7 @@ bcrypt
 tensorflow
 numpy
 pillow
+google-generativeai
 certifi
 gunicorn
 whitenoise

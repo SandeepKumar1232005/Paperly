@@ -192,7 +192,12 @@ export const api = {
       const users = db.getUsers();
       const idx = users.findIndex(u => (u.email || '').toLowerCase() === (email || '').toLowerCase());
       if (idx !== -1) {
-        users[idx] = { ...users[idx], ...backendUser }; // Update existing
+        const localUser = users[idx];
+        // Preserve local fields if missing or empty on backend, otherwise prefer backend
+        backendUser.qr_code_url = backendUser.qr_code_url || localUser.qr_code_url;
+        backendUser.handwriting_samples = (backendUser.handwriting_samples && backendUser.handwriting_samples.length > 0) ? backendUser.handwriting_samples : localUser.handwriting_samples;
+        backendUser.pricePerPage = backendUser.pricePerPage || localUser.pricePerPage;
+        users[idx] = { ...localUser, ...backendUser }; // Update existing
       } else {
         users.push(backendUser); // Add new if missing locally
       }
@@ -228,6 +233,8 @@ export const api = {
     const start = Date.now();
     await delay(1000);
 
+    let backendUser: Partial<User> = {};
+
     // 1. Register with Backend
     try {
       // dj-rest-auth registration endpoint
@@ -259,8 +266,23 @@ export const api = {
         if (token) {
           sessionStorage.setItem('auth_token', token);
         }
-        // 2. If successful, we might need to update the Role since standard registration might not handle it
-        // For now, we assume the user is created.
+        if (data.user) {
+          backendUser = {
+            id: String(data.user.id),
+            name: data.user.name || user.name,
+            email: data.user.email || user.email,
+            role: data.user.role || user.role,
+            avatar: data.user.avatar || user.avatar,
+            username: data.user.username || user.username,
+            address: data.user.address || user.address || '',
+            is_verified: data.user.is_verified || false,
+            handwriting_style: data.user.handwriting_style || null,
+            handwriting_confidence: data.user.handwriting_confidence || null,
+            handwriting_sample_url: data.user.handwriting_sample_url || null,
+            handwriting_samples: data.user.handwriting_samples || [],
+            qr_code_url: data.user.qr_code_url || '',
+          };
+        }
         await logger('POST', '/auth/registration', start);
       }
     } catch (e: any) {
@@ -268,16 +290,20 @@ export const api = {
       throw e; // Rethrow to stop frontend flow if backend rejects (e.g. duplicate email)
     }
 
-    const newUser = { ...user, lastActive: new Date().toISOString() };
+    const newUser = { 
+      ...user, 
+      ...backendUser, 
+      lastActive: new Date().toISOString() 
+    };
     // In a real app, this would be hashed. For mock:
     (newUser as any).password = user.password; // Keep simple persistence for local mock
 
     const existingUsers = db.getUsers();
-    if (existingUsers.some(u => (u.email || '').toLowerCase() === (newUser.email || '').toLowerCase())) {
-      throw new Error("A user with this email already exists.");
-    }
+    // Filter out any users with matching email to avoid duplicates
+    const cleanUsers = existingUsers.filter(u => (u.email || '').toLowerCase() !== (newUser.email || '').toLowerCase());
+    cleanUsers.push(newUser);
+    db.saveUsers(cleanUsers);
 
-    db.addUser(newUser);
     await logger('POST', '/auth/register', start);
     return newUser;
   },
@@ -430,13 +456,19 @@ export const api = {
       const token = sessionStorage.getItem('auth_token');
       if (!token) throw new Error("No auth token");
 
+      const backendUpdates: any = { ...updates };
+      if (updates.pricePerPage !== undefined) {
+        backendUpdates.price_per_page = updates.pricePerPage;
+        delete backendUpdates.pricePerPage;
+      }
+
       const response = await fetch('http://localhost:8000/api/auth/user/', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(backendUpdates)
       });
 
       if (response.ok) {
@@ -1096,10 +1128,10 @@ export const api = {
         return await response.json();
       }
     } catch (e) {
-      console.warn("Backend handwriting analysis failed, using mock");
+      console.warn("Backend handwriting analysis (Gemini AI) failed, using mock fallback");
     }
 
-    // Mock Fallback
+    // Mock Fallback (only used if backend is completely unreachable)
     await delay(1500);
     const styles = ['Neat', 'Cursive', 'Bold', 'Mixed'];
     const randomStyle = styles[Math.floor(Math.random() * styles.length)];

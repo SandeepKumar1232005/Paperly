@@ -14,11 +14,12 @@ import { api } from './services/api';
 import { db } from './services/db';
 
 import { Writers } from './pages/Writers';
+import CustomCursor from './components/CustomCursor';
 
 type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'FORGOT_PASSWORD' | 'WRITERS';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -27,6 +28,7 @@ const App: React.FC = () => {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
       <ThemeProvider>
+        <CustomCursor />
         <AppContent />
       </ThemeProvider>
     </GoogleOAuthProvider>
@@ -511,7 +513,18 @@ const AppContent: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-500"></div>
         </div>
       ) : (
-        renderView()
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20, transition: { duration: 0.3, ease: "easeIn" } }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full h-full flex flex-col"
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
       )}
 
       {activeChatAsgn && user && (

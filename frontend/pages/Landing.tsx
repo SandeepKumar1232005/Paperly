@@ -1,6 +1,6 @@
-import React, { useRef, Suspense } from 'react';
+import React, { useRef, Suspense, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen, Sun, Moon } from 'lucide-react';
+import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen, Sun, Moon, ArrowUp } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
 import Hero3DText from '../components/Hero3DText';
@@ -8,6 +8,7 @@ import FeatureIcon3D from '../components/FeatureIcon3D';
 import ParticleTrail from '../components/ParticleTrail';
 import Logo from '../components/Logo';
 import { useTheme } from '../context/ThemeContext';
+import RevealOnScroll from '../components/RevealOnScroll';
 
 import HandwritingShowcase from '../components/landing/HandwritingShowcase';
 import ProcessTimeline from '../components/landing/ProcessTimeline';
@@ -26,6 +27,32 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
   const { scrollY } = useScroll();
   const scrollSectionRef = useRef<HTMLElement>(null);
 
+  const [showPreloader, setShowPreloader] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('paperly_visited')) {
+      setShowPreloader(true);
+      sessionStorage.setItem('paperly_visited', 'true');
+      const timer = setTimeout(() => setShowPreloader(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+      setShowScrollTop(window.scrollY > 600);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Parallax transforms for hero depth layers
   const heroY1 = useTransform(scrollY, [0, 600], [0, -80]);   // fast layer
   const heroY2 = useTransform(scrollY, [0, 600], [0, -40]);   // medium layer
@@ -40,6 +67,26 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
   return (
     <div className="relative overflow-hidden bg-[var(--bg-primary)] min-h-screen font-sans">
+      <AnimatePresence>
+        {showPreloader && (
+          <motion.div
+            initial={{ y: 0 }}
+            exit={{ y: "-100%" }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className="fixed inset-0 z-[100] bg-[#0a0a14] flex flex-col items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1.0, opacity: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex items-center gap-3"
+            >
+              <Logo className="w-16 h-16" />
+              <span className="text-4xl font-bold text-white tracking-tight font-display">Paperly</span>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Particle Trail (full-page cursor effect) */}
       <ParticleTrail />
@@ -59,38 +106,42 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       </div>
 
       {/* Floating Nav with Logo */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-4">
+      <nav className={`fixed top-0 left-0 right-0 z-50 px-4 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isScrolled ? 'py-2' : 'py-4'}`}>
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6 }}
-            className="glass rounded-2xl px-6 py-3 flex justify-between items-center border-b border-white/5"
+            className={`rounded-2xl px-6 py-3 flex justify-between items-center transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              isScrolled 
+                ? 'backdrop-blur-xl bg-black/40 border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' 
+                : 'bg-transparent border-b border-transparent'
+            }`}
           >
-            <div className="flex items-center gap-2">
-              <Logo className="w-10 h-10" />
+            <div className="flex items-center gap-2 group cursor-none">
+              <Logo className="w-10 h-10 group-hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] transition-all duration-300" />
               <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
             </div>
             <div className="flex items-center gap-4 md:gap-8">
               <div className="hidden md:flex gap-6 items-center text-sm font-medium text-[var(--text-secondary)]">
-                <a href="#showcase" className="hover:text-[var(--text-primary)] transition-colors relative group">
+                <a href="#showcase" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                   Showcase
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
                 </a>
                 <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
-                <a href="#journey" className="hover:text-[var(--text-primary)] transition-colors relative group">
+                <a href="#journey" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                   Journey
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
                 </a>
                 <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
-                <a href="#trust" className="hover:text-[var(--text-primary)] transition-colors relative group">
+                <a href="#trust" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                   Trust
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
                 </a>
                 <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
-                <a href="#pricing" className="hover:text-[var(--text-primary)] transition-colors relative group">
+                <a href="#pricing" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                   Pricing
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 group-hover:w-full transition-all duration-300" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
                 </a>
               </div>
               <div className="flex gap-2 md:gap-3 items-center">
@@ -114,10 +165,11 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   </AnimatePresence>
                 </motion.button>
 
-                <button onClick={() => onNavigate('LOGIN')} className="px-4 md:px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                <button onClick={() => onNavigate('LOGIN')} className="px-4 md:px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-none">
                   Log In
                 </button>
-                <GlowButton onClick={() => onNavigate('REGISTER')} size="sm">
+                <GlowButton onClick={() => onNavigate('REGISTER')} size="sm" className="relative overflow-hidden group hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(168,85,247,0.6)] transition-all duration-300 cursor-none">
+                  <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.2),transparent)] -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
                   Get Started
                 </GlowButton>
               </div>
@@ -155,11 +207,20 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             </motion.p>
 
             <motion.div style={{ y: heroY1 }} className="flex flex-col sm:flex-row gap-4 justify-center mb-12 pointer-events-auto">
-              <GlowButton onClick={() => onNavigate('REGISTER')} size="lg" icon={<ArrowRight className="w-5 h-5" />}>
-                Start Free
-              </GlowButton>
+              <div className="relative group/btn cursor-none">
+                <div className="absolute -inset-1 bg-purple-500 rounded-2xl blur-md opacity-0 group-hover/btn:opacity-30 group-hover/btn:animate-[pulse-ring_3s_infinite] transition-opacity duration-300"></div>
+                <GlowButton onClick={() => onNavigate('REGISTER')} size="lg" className="relative cursor-none overflow-hidden hover:scale-[1.03] transition-transform duration-300">
+                  <span className="flex items-center gap-2">
+                    Start Free
+                    <div className="relative w-5 h-5 flex items-center overflow-hidden">
+                      <ArrowRight className="absolute left-0 w-5 h-5 transition-transform duration-300 group-hover/btn:translate-x-full group-hover/btn:opacity-0" />
+                      <ArrowRight className="absolute left-0 w-5 h-5 -translate-x-full transition-transform duration-300 group-hover/btn:translate-x-0 group-hover/btn:opacity-100" />
+                    </div>
+                  </span>
+                </GlowButton>
+              </div>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onNavigate('LOGIN')}
-                className="px-8 py-4 glass text-[var(--text-primary)] rounded-2xl font-bold text-lg hover:bg-[var(--surface-hover)] transition-all animated-border">
+                className="px-8 py-4 glass text-[var(--text-primary)] rounded-2xl font-bold text-lg hover:bg-[var(--surface-hover)] transition-all animated-border cursor-none">
                 Watch Demo
               </motion.button>
             </motion.div>
@@ -205,25 +266,48 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           <GlowOrbs />
         </Suspense>
         <div className="max-w-4xl mx-auto text-center relative">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <div className="glass-card-premium p-12 md:p-16 relative overflow-hidden noise-overlay">
-              <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 rounded-full blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl" />
+          <RevealOnScroll duration={0.8}>
+            <div className="glass-card-premium p-12 md:p-16 relative overflow-hidden noise-overlay mesh-gradient border border-[var(--glass-border)] animate-[cta-border-glow_3s_infinite]">
+              <div className="absolute inset-0 pointer-events-none z-0">
+                {[...Array(8)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      y: ['-20px', '20px', '-20px'],
+                    }}
+                    transition={{
+                      duration: Math.random() * 3 + 3,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                    style={{
+                      position: 'absolute',
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      width: '2px',
+                      height: '2px',
+                      backgroundColor: 'white',
+                      borderRadius: '50%',
+                    }}
+                  />
+                ))}
+              </div>
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-5xl font-black text-[var(--text-primary)] mb-4 font-display">Ready to get started?</h2>
                 <p className="text-lg text-[var(--text-secondary)] mb-8 max-w-xl mx-auto">Join thousands of students who are already acing their assignments with Paperly.</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <GlowButton onClick={() => onNavigate('REGISTER')} size="lg" icon={<ArrowRight size={20} />}>
+                  <GlowButton onClick={() => onNavigate('REGISTER')} size="lg" icon={<ArrowRight size={20} />} className="cursor-none group hover:scale-[1.04] hover:shadow-[0_8px_30px_rgba(168,85,247,0.4)] transition-all overflow-hidden relative hover:bg-violet-500">
+                    <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.2),transparent)] -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
                     Get Started Free
                   </GlowButton>
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onNavigate('LOGIN')}
-                    className="px-8 py-4 glass text-[var(--text-primary)] rounded-2xl font-bold text-lg transition-all animated-border">
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} onClick={() => onNavigate('LOGIN')}
+                    className="cursor-none px-8 py-4 glass text-[var(--text-primary)] rounded-2xl font-bold text-lg transition-all border border-[var(--border)] hover:border-[#a855f7] hover:text-[#a855f7]">
                     Sign In
                   </motion.button>
                 </div>
               </div>
             </div>
-          </motion.div>
+          </RevealOnScroll>
         </div>
       </section>
 
@@ -261,6 +345,21 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           </div>
         </div>
       </footer>
+
+      {/* Scroll to Top */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToTop}
+            className="fixed bottom-8 right-8 z-50 p-4 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] shadow-lg hover:shadow-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-none"
+          >
+            <ArrowUp className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

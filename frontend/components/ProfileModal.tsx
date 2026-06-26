@@ -74,9 +74,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
       handwriting_confidence: handwritingConfidence
     });
     toast.success('Profile changes saved successfully!');
-    if (user.role !== 'ADMIN') {
-      onClose();
-    }
+    onClose();
   };
 
   return (

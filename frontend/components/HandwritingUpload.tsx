@@ -57,13 +57,19 @@ const HandwritingUpload: React.FC<HandwritingUploadProps> = ({ onAnalysisComplet
                         {loading ? (
                             <div className="flex flex-col items-center gap-2">
                                 <div className="w-6 h-6 border-3 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-                                <span className="text-xs font-semibold text-[var(--text-tertiary)]">Analyzing strokes...</span>
+                                <span className="text-xs font-semibold text-[var(--text-tertiary)]">AI analyzing handwriting...</span>
                             </div>
                         ) : currentStyle ? (
                             <>
                                 <span className="text-xs text-[var(--text-tertiary)] font-medium mb-2">Detected Style</span>
                                 <StyleBadge style={currentStyle} confidence={currentConfidence} className="text-sm px-3 py-1.5" />
+                                {currentConfidence != null && currentConfidence > 0 && (
+                                    <span className="text-[10px] text-[var(--text-tertiary)] mt-1.5 font-medium">
+                                        {(currentConfidence * 100).toFixed(0)}% confidence
+                                    </span>
+                                )}
                             </>
+
                         ) : (
                             <span className="text-xs text-[var(--text-tertiary)] italic">No handwriting sample analyzed yet</span>
                         )}
