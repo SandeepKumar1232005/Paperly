@@ -176,11 +176,16 @@ body {
 
 /* ========== SMOOTH TRANSITIONS FOR ALL INTERACTIVE ELEMENTS ========== */
 
-button, [role="button"], .btn, input[type="button"], input[type="submit"] {
+button,
+[role="button"],
+.btn,
+input[type="button"],
+input[type="submit"] {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-button:active, [role="button"]:active {
+button:active,
+[role="button"]:active {
   transform: scale(0.97);
 }
 
@@ -188,11 +193,15 @@ a {
   transition: color 0.2s ease, opacity 0.2s ease;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.card, [class*="rounded"], [class*="shadow"] {
+.card,
+[class*="rounded"],
+[class*="shadow"] {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.2s ease;
@@ -282,15 +291,20 @@ img {
 /* ========== LOADING & SKELETON STATES ========== */
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton {
   background: linear-gradient(90deg,
-    var(--surface) 25%,
-    var(--surface-hover) 50%,
-    var(--surface) 75%);
+      var(--surface) 25%,
+      var(--surface-hover) 50%,
+      var(--surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 0.5rem;
@@ -299,8 +313,15 @@ img {
 /* ========== GLOW PULSE ANIMATION ========== */
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 15px -3px rgba(139, 92, 246, 0.3); }
-  50% { box-shadow: 0 0 25px -3px rgba(139, 92, 246, 0.5); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 15px -3px rgba(139, 92, 246, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 25px -3px rgba(139, 92, 246, 0.5);
+  }
 }
 
 .glow-pulse {
@@ -310,8 +331,15 @@ img {
 /* ========== FLOAT ANIMATION ========== */
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .animate-float {
@@ -321,8 +349,15 @@ img {
 /* ========== SLIDE-UP ANIMATION ========== */
 
 @keyframes slide-up {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-slide-up {
@@ -346,13 +381,22 @@ img {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: gradient-shift 4s ease infinite;
-  text-shadow: 0 0 20px rgba(240, 171, 252, 0.3); /* Add a slight glow */
+  text-shadow: 0 0 20px rgba(240, 171, 252, 0.3);
+  /* Add a slight glow */
 }
 
 @keyframes gradient-shift {
-  0% { background-position: 0% center; }
-  50% { background-position: 100% center; }
-  100% { background-position: 0% center; }
+  0% {
+    background-position: 0% center;
+  }
+
+  50% {
+    background-position: 100% center;
+  }
+
+  100% {
+    background-position: 0% center;
+  }
 }
 
 /* ========== THEME TRANSITION ========== */
@@ -367,7 +411,10 @@ img {
 /* ========== REDUCE MOTION FOR ACCESSIBILITY ========== */
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -378,10 +425,23 @@ img {
 /* ========== ANIMATED MESH GRADIENT ========== */
 
 @keyframes mesh-move {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(30px, -40px) rotate(90deg); }
-  50% { transform: translate(-20px, 20px) rotate(180deg); }
-  75% { transform: translate(15px, 30px) rotate(270deg); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(30px, -40px) rotate(90deg);
+  }
+
+  50% {
+    transform: translate(-20px, 20px) rotate(180deg);
+  }
+
+  75% {
+    transform: translate(15px, 30px) rotate(270deg);
+  }
 }
 
 .mesh-gradient {
@@ -432,8 +492,13 @@ img {
 /* ========== ANIMATED GRADIENT BORDER ========== */
 
 @keyframes border-rotate {
-  0% { --angle: 0deg; }
-  100% { --angle: 360deg; }
+  0% {
+    --angle: 0deg;
+  }
+
+  100% {
+    --angle: 360deg;
+  }
 }
 
 .animated-border {
@@ -448,13 +513,11 @@ img {
   inset: -1.5px;
   border-radius: inherit;
   padding: 1.5px;
-  background: conic-gradient(
-    from var(--angle, 0deg),
-    #8b5cf6,
-    #d946ef,
-    #ec4899,
-    #8b5cf6
-  );
+  background: conic-gradient(from var(--angle, 0deg),
+      #8b5cf6,
+      #d946ef,
+      #ec4899,
+      #8b5cf6);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -472,8 +535,15 @@ img {
 /* ========== COUNTER ANIMATION ========== */
 
 @keyframes count-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-count {
@@ -495,23 +565,216 @@ img {
 /* ========== CUSTOM ANIMATIONS ========== */
 
 @keyframes scan-line {
-  0% { transform: translateY(-100%); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(200%); opacity: 0; }
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
 }
 
 @keyframes bounce-small {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-4px) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-4px) scale(1.05);
+  }
 }
 
 @keyframes cta-border-glow {
-  0%, 100% { box-shadow: 0 0 0px 0px rgba(168,85,247,0); border-color: rgba(168,85,247,0.2); }
-  50% { box-shadow: 0 0 30px 5px rgba(168,85,247,0.4); border-color: rgba(168,85,247,0.6); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0px 0px rgba(168, 85, 247, 0);
+    border-color: rgba(168, 85, 247, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 30px 5px rgba(168, 85, 247, 0.4);
+    border-color: rgba(168, 85, 247, 0.6);
+  }
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.9); opacity: 0.3; }
-  100% { transform: scale(1.6); opacity: 0; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0.3;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* ========== GSAP REDESIGN STYLES ========== */
+
+html {
+  cursor: none;
+}
+
+*,
+*::before,
+*::after {
+  cursor: none;
+}
+
+@media (hover: none) {
+  html {
+    cursor: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    cursor: auto;
+  }
+}
+
+.nav-link {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 1.5em;
+  position: relative;
+}
+
+.nav-link-hover {
+  position: absolute;
+  top: 100%;
+  color: #a855f7;
+}
+
+.curtain-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 50vh;
+  background: #0a0a14;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.curtain-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 50vh;
+  background: #0a0a14;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.page-transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: #7c3aed;
+  z-index: 9998;
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+/* ─── CURTAIN ─── */
+.curtain-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 51vh;
+  background: #0a0a14;
+  z-index: 9997;
+  pointer-events: none;
+  transform-origin: top center;
+}
+
+.curtain-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 51vh;
+  background: #0a0a14;
+  z-index: 9997;
+  pointer-events: none;
+  transform-origin: bottom center;
+}
+
+/* ─── NAV LINK FLIP ─── */
+.nav-link {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  flex-direction: column;
+  height: 1.2em;
+  line-height: 1.2em;
+}
+
+.nav-link-default,
+.nav-link-hover {
+  display: block;
+  line-height: 1.2em;
+}
+
+.nav-link-hover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  color: #a855f7;
+}
+
+/* ─── HERO WORD WRAP ─── */
+.hero-word-wrap {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.hero-word {
+  display: inline-block;
+}
+
+/* ─── PAGE TRANSITION ─── */
+#page-transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: #7c3aed;
+  z-index: 9998;
+  transform: translateY(100%);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* ─── CURSOR ─── */
+/* Hide default cursor globally */
+*, *::before, *::after {
+  cursor: none !important;
+}
+
+/* Restore on touch devices */
+@media (hover: none) {
+  *, *::before, *::after {
+    cursor: auto !important;
+  }
+}
+
+/* Cursor elements never block clicks */
+[data-cursor] {
+  pointer-events: none !important;
 }

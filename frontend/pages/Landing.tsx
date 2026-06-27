@@ -1,9 +1,14 @@
 import React, { useRef, Suspense, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+import { navigateWithTransition } from '../lib/pageTransition';
+
+gsap.registerPlugin(ScrollTrigger);
 import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen, Sun, Moon, ArrowUp } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
-import Hero3DText from '../components/Hero3DText';
 import FeatureIcon3D from '../components/FeatureIcon3D';
 import ParticleTrail from '../components/ParticleTrail';
 import Logo from '../components/Logo';
@@ -24,21 +29,10 @@ interface LandingProps {
 
 const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
   const { theme, toggleTheme } = useTheme();
-  const { scrollY } = useScroll();
   const scrollSectionRef = useRef<HTMLElement>(null);
 
-  const [showPreloader, setShowPreloader] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    if (!sessionStorage.getItem('paperly_visited')) {
-      setShowPreloader(true);
-      sessionStorage.setItem('paperly_visited', 'true');
-      const timer = setTimeout(() => setShowPreloader(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,11 +47,140 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Parallax transforms for hero depth layers
-  const heroY1 = useTransform(scrollY, [0, 600], [0, -80]);   // fast layer
-  const heroY2 = useTransform(scrollY, [0, 600], [0, -40]);   // medium layer
-  const heroY3 = useTransform(scrollY, [0, 600], [0, -120]);  // fastest layer (3D scene)
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const container = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const ctx = gsap.context(() => {
+      // INITIAL SETUP
+    gsap.set('.curtain-top', { yPercent: 0 });
+    gsap.set('.curtain-bottom', { yPercent: 0 });
+    gsap.set('.hero-word', { yPercent: 110, opacity: 0 });
+    gsap.set('.hero-subtitle', { y: 40, opacity: 0 });
+    gsap.set('.hero-cta', { clipPath: 'inset(0 100% 0 0)' });
+
+    // 1. PAGE ENTER — CURTAIN TRANSITION
+    const tl = gsap.timeline({ delay: 0.2 });
+    tl.to('.curtain-top', { yPercent: -100, duration: 1.2, ease: 'power4.inOut' });
+    tl.to('.curtain-bottom', { yPercent: 100, duration: 1.2, ease: 'power4.inOut' }, '<');
+    
+    // 2. HERO TEXT — KINETIC TYPOGRAPHY
+    gsap.to('.hero-word', {
+      yPercent: 0,
+      opacity: 1,
+      duration: 1.0,
+      stagger: 0.08,
+      ease: 'power4.out',
+      delay: 1.0
+    });
+
+    gsap.from('.hero-subtitle', {
+      y: 40,
+      opacity: 0,
+      duration: 1.0,
+      ease: 'power3.out',
+      delay: 1.4
+    });
+
+    gsap.from('.hero-cta', {
+      clipPath: 'inset(0 100% 0 0)',
+      duration: 0.8,
+      ease: 'power3.inOut',
+      delay: 1.8
+    });
+
+    // 8. PARALLAX LAYERS — HERO SECTION
+    gsap.to('.particles', {
+      yPercent: -30,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.hero-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: true
+      }
+    });
+
+    gsap.to('.hero-text-container', {
+      yPercent: -15,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.hero-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: true
+      }
+    });
+
+    gsap.to('.three-js-container', {
+      yPercent: -8,
+      rotateZ: 3,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.hero-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: true
+      }
+    });
+
+    gsap.to('.orb-1', {
+      y: 50,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: 'body',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: true
+      }
+    });
+
+    gsap.to('.orb-2', {
+      y: -30,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: 'body',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: true
+      }
+    });
+
+    // 9. NAV LINK HOVER — FLIP ANIMATION
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+      const defaultText = link.querySelector('.nav-link-default');
+      const hoverText = link.querySelector('.nav-link-hover');
+      
+      link.addEventListener('mouseenter', () => {
+        gsap.to([defaultText, hoverText], { yPercent: -100, duration: 0.4, ease: 'power3.out', stagger: 0, overwrite: 'auto' });
+      });
+      link.addEventListener('mouseleave', () => {
+        gsap.to([defaultText, hoverText], { yPercent: 0, duration: 0.4, ease: 'power3.out', overwrite: 'auto' });
+      });
+    });
+
+    // 3. MAGNETIC BUTTONS
+    const magneticButtons = document.querySelectorAll('.magnetic-btn');
+    magneticButtons.forEach(btn => {
+      const b = btn as HTMLElement;
+      b.addEventListener('mousemove', (e: MouseEvent) => {
+        const rect = b.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width/2;
+        const y = e.clientY - rect.top - rect.height/2;
+        gsap.to(b, { x: x * 0.35, y: y * 0.35, duration: 0.6, ease: 'power3.out', overwrite: 'auto' });
+        const span = b.querySelector('span');
+        if (span) gsap.to(span, { x: x * 0.15, y: y * 0.15, duration: 0.6, ease: 'power3.out', overwrite: 'auto' });
+      });
+      b.addEventListener('mouseleave', () => {
+        gsap.to(b, { x: 0, y: 0, duration: 0.8, ease: 'elastic.out(1, 0.4)', overwrite: 'auto' });
+        const span = b.querySelector('span');
+        if (span) gsap.to(span, { x: 0, y: 0, duration: 0.8, ease: 'elastic.out(1, 0.4)', overwrite: 'auto' });
+      });
+    });
+
+    });
+    return () => ctx.revert();
+  }, { scope: container });
 
   const features = [
     { iconType: 'clock' as const, title: 'Post & Pick Handwriting', desc: 'Upload requirements, set a deadline, and select a writer based on their handwriting samples.', color: 'from-blue-500 to-cyan-500', shadowColor: 'shadow-blue-500/20' },
@@ -66,39 +189,24 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
   ];
 
   return (
-    <div className="relative overflow-hidden bg-[var(--bg-primary)] min-h-screen font-sans">
-      <AnimatePresence>
-        {showPreloader && (
-          <motion.div
-            initial={{ y: 0 }}
-            exit={{ y: "-100%" }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="fixed inset-0 z-[100] bg-[#0a0a14] flex flex-col items-center justify-center"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.0, opacity: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex items-center gap-3"
-            >
-              <Logo className="w-16 h-16" />
-              <span className="text-4xl font-bold text-white tracking-tight font-display">Paperly</span>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div ref={container} className="relative overflow-hidden bg-[var(--bg-primary)] min-h-screen font-sans">
+      <div id="page-transition-overlay" />
+      <div className="curtain-top" />
+      <div className="curtain-bottom" />
 
       {/* Particle Trail (full-page cursor effect) */}
-      <ParticleTrail />
+      <div className="particles absolute inset-0 z-0 pointer-events-none">
+        <ParticleTrail />
+      </div>
 
       {/* Animated Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[var(--bg-primary)]" />
         <div className="dark:block hidden">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px]"></div>
-          <motion.div style={{ y: useTransform(scrollY, [0, 1000], [0, 50]) }} className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[150px] mix-blend-screen opacity-40" />
-          <motion.div style={{ y: useTransform(scrollY, [0, 1000], [0, -30]) }} className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-fuchsia-600/15 rounded-full blur-[140px] mix-blend-screen opacity-40" />
-          <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[130px] mix-blend-screen opacity-30" />
+          <div className="orb-1 absolute top-0 left-1/4 w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[150px] mix-blend-screen opacity-40" />
+          <div className="orb-2 absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-fuchsia-600/15 rounded-full blur-[140px] mix-blend-screen opacity-40" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[130px] mix-blend-screen opacity-30" />
         </div>
         <div className="dark:hidden block">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-transparent to-fuchsia-50/30" />
@@ -124,24 +232,24 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             </div>
             <div className="flex items-center gap-4 md:gap-8">
               <div className="hidden md:flex gap-6 items-center text-sm font-medium text-[var(--text-secondary)]">
-                <a href="#showcase" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                  Showcase
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
+                <a href="#showcase" className="nav-link cursor-none font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <span className="nav-link-default">Showcase</span>
+                  <span className="nav-link-hover">Showcase</span>
                 </a>
                 <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
-                <a href="#journey" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                  Journey
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
+                <a href="#journey" className="nav-link cursor-none font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <span className="nav-link-default">Journey</span>
+                  <span className="nav-link-hover">Journey</span>
                 </a>
                 <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
-                <a href="#trust" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                  Trust
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
+                <a href="#trust" className="nav-link cursor-none font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <span className="nav-link-default">Trust</span>
+                  <span className="nav-link-hover">Trust</span>
                 </a>
                 <span className="text-[var(--text-tertiary)] opacity-60 font-semibold text-xs">•</span>
-                <a href="#pricing" className="hover:-translate-y-[2px] transition-transform duration-300 relative group cursor-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                  Pricing
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a855f7] group-hover:w-full transition-all duration-300" />
+                <a href="#pricing" className="nav-link cursor-none font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <span className="nav-link-default">Pricing</span>
+                  <span className="nav-link-hover">Pricing</span>
                 </a>
               </div>
               <div className="flex gap-2 md:gap-3 items-center">
@@ -165,10 +273,10 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   </AnimatePresence>
                 </motion.button>
 
-                <button onClick={() => onNavigate('LOGIN')} className="px-4 md:px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-none">
+                <button onClick={() => navigateWithTransition(() => onNavigate('LOGIN'))} className="px-4 md:px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-none">
                   Log In
                 </button>
-                <GlowButton onClick={() => onNavigate('REGISTER')} size="sm" className="relative overflow-hidden group hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(168,85,247,0.6)] transition-all duration-300 cursor-none">
+                <GlowButton onClick={() => navigateWithTransition(() => onNavigate('REGISTER'))} size="sm" className="relative overflow-hidden group hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(168,85,247,0.6)] transition-all duration-300 cursor-none">
                   <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.2),transparent)] -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
                   Get Started
                 </GlowButton>
@@ -179,37 +287,50 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       </nav>
 
       {/* ═══════ HERO SECTION ═══════ */}
-      <section className="relative z-10 pt-32 pb-16 px-4 min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="hero-section relative z-10 pt-32 pb-16 px-4 min-h-screen flex items-center justify-center overflow-hidden">
         
         {/* Full-page 3D Background */}
-        <div className="absolute inset-0 z-0 opacity-80 pointer-events-auto">
+        <div className="three-js-container absolute inset-0 z-0 opacity-80 pointer-events-auto">
           <Suspense fallback={null}>
             <BookScene />
           </Suspense>
         </div>
 
-        <motion.div className="max-w-4xl mx-auto w-full relative z-10 pointer-events-none">
+        <div className="hero-text-container max-w-4xl mx-auto w-full relative z-10 pointer-events-none">
           <div className="flex flex-col items-center text-center">
 
-            <motion.div style={{ y: heroY1 }}>
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[var(--accent)] text-xs font-bold uppercase tracking-widest mb-8 pointer-events-auto">
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[var(--accent)] text-xs font-bold uppercase tracking-widest mb-8 pointer-events-auto">
                 <Sparkles size={14} className="animate-pulse" />
                 #1 Academic Platform
-              </motion.div>
-            </motion.div>
-
-            <div className="mb-8">
-              <Hero3DText line1="Ace Every" line2="Assignment" />
+              </div>
             </div>
 
-            <motion.p style={{ y: heroY2 }} className="text-xl md:text-2xl text-[var(--text-primary)] font-medium mb-10 max-w-2xl leading-relaxed drop-shadow-md">
-              Connect with verified writers. Get high-quality handwritten assignments delivered to your door. Every time.
-            </motion.p>
+            <div className="mb-8 flex flex-col items-center gap-2">
+              <div className="flex flex-wrap justify-center gap-x-5">
+                {['Ace', 'Every'].map((word, i) => (
+                  <div key={i} className="hero-word-wrap">
+                    <span className="hero-word inline-block text-5xl md:text-7xl lg:text-8xl font-black text-[var(--text-primary)] font-display leading-none">
+                      {word}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="hero-word-wrap">
+                <span className="hero-word inline-block text-5xl md:text-7xl lg:text-8xl font-black bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent font-display leading-none">
+                  Assignment
+                </span>
+              </div>
+            </div>
 
-            <motion.div style={{ y: heroY1 }} className="flex flex-col sm:flex-row gap-4 justify-center mb-12 pointer-events-auto">
+            <p className="hero-subtitle text-xl md:text-2xl text-[var(--text-primary)] font-medium mb-10 max-w-2xl leading-relaxed drop-shadow-md">
+              Connect with verified writers. Get high-quality handwritten assignments delivered to your door. Every time.
+            </p>
+
+            <div className="hero-cta flex flex-col sm:flex-row gap-4 justify-center mb-12 pointer-events-auto">
               <div className="relative group/btn cursor-none">
                 <div className="absolute -inset-1 bg-purple-500 rounded-2xl blur-md opacity-0 group-hover/btn:opacity-30 group-hover/btn:animate-[pulse-ring_3s_infinite] transition-opacity duration-300"></div>
-                <GlowButton onClick={() => onNavigate('REGISTER')} size="lg" className="relative cursor-none overflow-hidden hover:scale-[1.03] transition-transform duration-300">
+                <GlowButton onClick={() => navigateWithTransition(() => onNavigate('REGISTER'))} size="lg" className="magnetic-btn relative cursor-none overflow-hidden hover:scale-[1.03] transition-transform duration-300">
                   <span className="flex items-center gap-2">
                     Start Free
                     <div className="relative w-5 h-5 flex items-center overflow-hidden">
@@ -219,11 +340,11 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   </span>
                 </GlowButton>
               </div>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onNavigate('LOGIN')}
-                className="px-8 py-4 glass text-[var(--text-primary)] rounded-2xl font-bold text-lg hover:bg-[var(--surface-hover)] transition-all animated-border cursor-none">
-                Watch Demo
-              </motion.button>
-            </motion.div>
+              <button onClick={() => navigateWithTransition(() => onNavigate('LOGIN'))}
+                className="magnetic-btn px-8 py-4 glass text-[var(--text-primary)] rounded-2xl font-bold text-lg hover:bg-[var(--surface-hover)] transition-all animated-border cursor-none">
+                <span className="inline-block pointer-events-none">Watch Demo</span>
+              </button>
+            </div>
 
             <div className="flex items-center justify-center gap-8 text-[var(--text-primary)] text-sm font-semibold drop-shadow-md">
               <div className="flex items-center gap-2">
@@ -237,7 +358,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             </div>
 
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ═══════ HANDWRITING SHOWCASE ═══════ */}
@@ -296,11 +417,11 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 <h2 className="text-3xl md:text-5xl font-black text-[var(--text-primary)] mb-4 font-display">Ready to get started?</h2>
                 <p className="text-lg text-[var(--text-secondary)] mb-8 max-w-xl mx-auto">Join thousands of students who are already acing their assignments with Paperly.</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <GlowButton onClick={() => onNavigate('REGISTER')} size="lg" icon={<ArrowRight size={20} />} className="cursor-none group hover:scale-[1.04] hover:shadow-[0_8px_30px_rgba(168,85,247,0.4)] transition-all overflow-hidden relative hover:bg-violet-500">
+                  <GlowButton onClick={() => navigateWithTransition(() => onNavigate('REGISTER'))} size="lg" icon={<ArrowRight size={20} />} className="cursor-none group hover:scale-[1.04] hover:shadow-[0_8px_30px_rgba(168,85,247,0.4)] transition-all overflow-hidden relative hover:bg-violet-500">
                     <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.2),transparent)] -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
                     Get Started Free
                   </GlowButton>
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} onClick={() => onNavigate('LOGIN')}
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} onClick={() => navigateWithTransition(() => onNavigate('LOGIN'))}
                     className="cursor-none px-8 py-4 glass text-[var(--text-primary)] rounded-2xl font-bold text-lg transition-all border border-[var(--border)] hover:border-[#a855f7] hover:text-[#a855f7]">
                     Sign In
                   </motion.button>

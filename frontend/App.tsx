@@ -12,14 +12,16 @@ import AdminDashboard from './pages/AdminDashboard';
 import ChatWindow from './components/ChatWindow';
 import { api } from './services/api';
 import { db } from './services/db';
-
 import { Writers } from './pages/Writers';
-import CustomCursor from './components/CustomCursor';
+import Cursor from './components/Cursor';
+import { initLenis, destroyLenis } from './lib/lenis';
+initLenis()
 
 type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'FORGOT_PASSWORD' | 'WRITERS';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
 
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -28,7 +30,7 @@ const App: React.FC = () => {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
       <ThemeProvider>
-        <CustomCursor />
+        <Cursor />
         <AppContent />
       </ThemeProvider>
     </GoogleOAuthProvider>
@@ -48,6 +50,10 @@ const AppContent: React.FC = () => {
   });
 
   const [activeChatAsgn, setActiveChatAsgn] = useState<Assignment | null>(null);
+
+  const handleNavigate = useCallback((nextView: ViewState) => {
+    setView(nextView);
+  }, []);
   const [chatCounterpart, setChatCounterpart] = useState<User | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -460,24 +466,24 @@ const AppContent: React.FC = () => {
   const renderView = () => {
     switch (view) {
       case 'LANDING':
-        return <Landing onNavigate={setView} />;
+        return <Landing onNavigate={handleNavigate} />;
       case 'LOGIN':
-        return <Login onLogin={handleLoginSubmit} onSocialLoginSuccess={handleSocialLoginSuccess} onNavigate={setView} />;
+        return <Login onLogin={handleLoginSubmit} onSocialLoginSuccess={handleSocialLoginSuccess} onNavigate={handleNavigate} />;
       case 'REGISTER':
-        return <Register onRegister={handleRegisterSubmit} onSocialLoginSuccess={handleSocialLoginSuccess} onNavigate={setView} />;
+        return <Register onRegister={handleRegisterSubmit} onSocialLoginSuccess={handleSocialLoginSuccess} onNavigate={handleNavigate} />;
       case 'FORGOT_PASSWORD':
-        return <ForgotPassword onNavigate={(view) => setView(view as any)} />;
+        return <ForgotPassword onNavigate={(view) => handleNavigate(view as any)} />;
       case 'WRITERS':
-        if (!user) return <Login onLogin={handleLoginSubmit} onNavigate={setView} />; // Protect route
-        return <Writers onNavigate={setView} onHire={handleHireWriter} currentUser={user} />;
+        if (!user) return <Login onLogin={handleLoginSubmit} onNavigate={handleNavigate} />; // Protect route
+        return <Writers onNavigate={handleNavigate} onHire={handleHireWriter} currentUser={user} />;
       case 'DASHBOARD':
-        if (!user) return <Landing onNavigate={setView} />;
-        if (user.role === 'STUDENT') return <StudentDashboard user={user} assignments={assignments.filter(a => a.studentId === user.id)} messages={messages} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={setView} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;
+        if (!user) return <Landing onNavigate={handleNavigate} />;
+        if (user.role === 'STUDENT') return <StudentDashboard user={user} assignments={assignments.filter(a => a.studentId === user.id)} messages={messages} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={handleNavigate} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;
         if (user.role === 'WRITER') return <WriterDashboard user={user} users={allUsers} assignments={assignments} messages={messages} onSubmitQuote={handleSubmitQuote} onUpdateAssignment={handleUpdateAssignment} onUploadSubmission={handleUploadSubmission} onOpenChat={handleOpenChat} onUpdateProfile={handleUpdateProfile} onRejectAssignment={handleRejectAssignment} />;
         if (user.role === 'ADMIN') return <AdminDashboard user={user} assignments={assignments} users={allUsers} />;
         return null;
       default:
-        return <Landing onNavigate={setView} />;
+        return <Landing onNavigate={handleNavigate} />;
     }
   };
 
@@ -489,21 +495,21 @@ const AppContent: React.FC = () => {
       onLogout={handleLogout}
       onMarkRead={markNotificationsRead}
       onUpdateProfile={handleUpdateProfile}
-      onNavigate={(view) => setView(view as any)}
+      onNavigate={(view) => handleNavigate(view as any)}
     >
       {isSyncing && (
         <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all">
           <div className="bg-[var(--surface)] border border-white/5 px-5 py-3 rounded-full shadow-2xl flex items-center gap-3">
-             <motion.div 
-               animate={{ rotate: 360 }}
-               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-               className="w-4 h-4 rounded-full border-2 border-transparent"
-               style={{
-                 borderTopColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6',
-                 borderRightColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6'
-               }}
-             />
-             <span className="text-sm font-semibold text-[var(--text-primary)]">Syncing...</span>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-4 h-4 rounded-full border-2 border-transparent"
+              style={{
+                borderTopColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6',
+                borderRightColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6'
+              }}
+            />
+            <span className="text-sm font-semibold text-[var(--text-primary)]">Syncing...</span>
           </div>
         </div>
       )}
@@ -540,6 +546,9 @@ const AppContent: React.FC = () => {
           onClose={() => { setActiveChatAsgn(null); setChatCounterpart(null); }}
         />
       )}
+
+      <div className="page-transition-overlay" />
+      <Cursor />
     </Layout>
 
   );

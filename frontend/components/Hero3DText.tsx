@@ -66,19 +66,11 @@ const Hero3DText: React.FC<Hero3DTextProps> = ({ line1, line2 }) => {
           }}
         >
           {line1.split(' ').map((word, index) => (
-            <motion.span
-              key={`line1-${index}`}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                delay: 1.6 + index * 0.12,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              }}
-              className="inline-block"
-            >
-              {word}
-            </motion.span>
+            <div key={`line1-${index}`} className="overflow-hidden inline-block leading-tight pt-2 pb-1">
+              <span className="hero-word inline-block opacity-0 translate-y-[110%] will-change-transform">
+                {word}
+              </span>
+            </div>
           ))}
         </div>
 
@@ -94,19 +86,11 @@ const Hero3DText: React.FC<Hero3DTextProps> = ({ line1, line2 }) => {
           }}
         >
           {line2.split(' ').map((word, index) => (
-            <motion.span
-              key={`line2-${index}`}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                delay: 1.6 + (line1.split(' ').length + index) * 0.12,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              }}
-              className="text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight font-display gradient-text-animate inline-block py-2"
-            >
-              {word}
-            </motion.span>
+            <div key={`line2-${index}`} className="overflow-hidden inline-block leading-tight pt-2 pb-1">
+              <span className="hero-word text-5xl lg:text-7xl font-black tracking-tight font-display gradient-text-animate inline-block py-2 opacity-0 translate-y-[110%] will-change-transform">
+                {word}
+              </span>
+            </div>
           ))}
         </div>
 
