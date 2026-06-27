@@ -2,6 +2,8 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+export let lenisInstance: Lenis | null = null;
+
 export const initLenis = () => {
   gsap.registerPlugin(ScrollTrigger);
 
@@ -13,6 +15,7 @@ export const initLenis = () => {
     wheelMultiplier: 0.8,
     touchMultiplier: 1.5,
   });
+  lenisInstance = lenis;
 
   function raf(time: number) {
     lenis.raf(time);

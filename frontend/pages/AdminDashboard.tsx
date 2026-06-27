@@ -7,7 +7,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, PieChart, Pie, ComposedChart, Line
 } from 'recharts';
-import { Activity, Users, DollarSign, Server, Bell, Settings, Terminal, Shield, Search, Trash2, TrendingUp } from 'lucide-react';
+import { Trash2, AlertCircle, Shield, Users, FileText, CheckCircle, Clock, Search, ExternalLink, Settings, DollarSign, Bell, Activity, Server, TrendingUp } from 'lucide-react';
+import { Modal } from '../components/Modal';
 
 interface AdminDashboardProps {
   user: User;
@@ -383,24 +384,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
       </div>
 
       {/* Delete Modal */}
-      <AnimatePresence>
-        {userToDelete && (
-          <div className="fixed inset-0 bg-[var(--overlay)] z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-card p-6 max-w-sm w-full text-center" style={{ background: 'var(--bg-secondary)' }}>
-              <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="text-red-500 dark:text-red-400" size={28} />
-              </div>
-              <h3 className="font-bold text-lg text-[var(--text-primary)] mb-2 font-display">Confirm Deletion</h3>
-              <p className="text-[var(--text-secondary)] mb-6">Permanently remove this user?</p>
-              <div className="flex gap-3">
-                <button onClick={() => setUserToDelete(null)} className="flex-1 py-3 glass text-[var(--text-primary)] rounded-xl font-bold hover:bg-[var(--surface-hover)] transition-colors">Cancel</button>
-                <button onClick={confirmDeleteUser} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors">Delete</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <Modal 
+        isOpen={!!userToDelete} 
+        onClose={() => setUserToDelete(null)}
+        className="max-w-sm text-center"
+        zIndex={50}
+      >
+        <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Trash2 className="text-red-500 dark:text-red-400" size={28} />
+        </div>
+        <h3 className="font-bold text-lg text-[var(--text-primary)] mb-2 font-display">Confirm Deletion</h3>
+        <p className="text-[var(--text-secondary)] mb-6">Permanently remove this user?</p>
+        <div className="flex gap-3">
+          <button onClick={() => setUserToDelete(null)} className="flex-1 py-3 glass text-[var(--text-primary)] rounded-xl font-bold hover:bg-[var(--surface-hover)] transition-colors">Cancel</button>
+          <button onClick={confirmDeleteUser} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors">Delete</button>
+        </div>
+      </Modal>
     </div>
   );
 };

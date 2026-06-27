@@ -4,7 +4,7 @@ import { User } from '../types';
 import { Star, MapPin, CheckCircle, Briefcase, ArrowLeft, Clock, Award, X, Search, Filter } from 'lucide-react';
 import WriterFilter from '../components/WriterFilter';
 import StyleBadge from '../components/StyleBadge';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import WriterProfileModal from '../components/WriterProfileModal';
 
 interface WritersProps {
@@ -64,7 +64,7 @@ export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
         }
     };
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
@@ -72,7 +72,7 @@ export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
         }
     };
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         visible: {
             opacity: 1,

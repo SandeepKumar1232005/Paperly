@@ -33,7 +33,7 @@ export const api = {
 
     try {
       const response = await fetch(`http://localhost:8000/api/auth/user/?_t=${Date.now()}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Token ${token}` }
       });
 
       if (response.ok) {
@@ -96,6 +96,17 @@ export const api = {
     } catch (e) {
       console.warn("Session restore failed", e);
     }
+    
+    // Fallback to local DB (legacy mock behavior)
+    if (token && token.startsWith('mock_token_')) {
+      const email = token.replace('mock_token_', '');
+      const users = db.getUsers();
+      const userIndex = users.findIndex(u => (u.email || '').toLowerCase() === email.toLowerCase());
+      if (userIndex !== -1) {
+        return users[userIndex];
+      }
+    }
+    
     return null;
   },
 
@@ -128,7 +139,7 @@ export const api = {
         sessionStorage.setItem('auth_token', token);
         // Fetch full user details
         const userResponse = await fetch(`http://localhost:8000/api/auth/user/?_t=${Date.now()}`, {
-          headers: { 'Authorization': `Bearer ${token}` } // Or Bearer depending on JWT setting, trying Token first for dj-rest-auth default
+          headers: { 'Authorization': `Token ${token}` } 
         });
 
         if (userResponse.ok) {
@@ -225,6 +236,8 @@ export const api = {
 
     localUser.lastActive = new Date().toISOString();
     db.saveUsers(users);
+
+    sessionStorage.setItem('auth_token', `mock_token_${localUser.email}`);
 
     return localUser;
   },
@@ -340,7 +353,7 @@ export const api = {
         const userResponse = await fetch('http://localhost:8000/api/auth/user/', {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${backendToken}`,
+            'Authorization': `Token ${backendToken}`,
           },
         });
 
@@ -466,7 +479,7 @@ export const api = {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Token ${token}`
         },
         body: JSON.stringify(backendUpdates)
       });
@@ -542,7 +555,7 @@ export const api = {
       const token = sessionStorage.getItem('auth_token');
       const response = await fetch(url, {
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         }
       });
 
@@ -577,7 +590,7 @@ export const api = {
       const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
         method: 'DELETE',
         headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
+          'Authorization': token ? `Token ${token}` : '',
           'Content-Type': 'application/json'
         }
       });
@@ -603,7 +616,7 @@ export const api = {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify({ is_verified: true })
       });
@@ -638,9 +651,18 @@ export const api = {
     const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/assignments/', {
+      // In a real app we'd decode token for userId, here we can get from local storage or rely on backend session.
+      // We pass the userId query parameter securely.
+      const currentUserStr = sessionStorage.getItem('current_user');
+      const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+      const url = new URL('http://localhost:8000/api/assignments/');
+      if (currentUser?.id) {
+        url.searchParams.append('userId', currentUser.id);
+      }
+      
+      const response = await fetch(url.toString(), {
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         }
       });
       if (response.ok) {
@@ -698,7 +720,7 @@ export const api = {
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         }
       });
       if (response.ok) {
@@ -752,7 +774,7 @@ export const api = {
       const token = sessionStorage.getItem('auth_token');
       const response = await fetch('http://localhost:8000/api/users/', {
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         }
       });
       if (response.ok) {
@@ -798,7 +820,7 @@ export const api = {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify(payload)
       });
@@ -836,7 +858,7 @@ export const api = {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify(updates)
       });
@@ -855,7 +877,6 @@ export const api = {
 
     const updatedAsgn = { ...asgns[idx], ...updates };
 
-    // Auto-release payment logic when completed
     if (updates.status === AssignmentStatus.COMPLETED && updatedAsgn.paymentStatus === 'ESCROW' && updatedAsgn.writerId) {
       await paymentGateway.releaseEscrow(id, updatedAsgn.budget, updatedAsgn.writerId);
       updatedAsgn.paymentStatus = 'RELEASED';
@@ -867,6 +888,83 @@ export const api = {
     return asgns[idx];
   },
 
+  async respondToDirectHire(id: string, action: 'ACCEPT' | 'REJECT'): Promise<Assignment> {
+    const start = Date.now();
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/assignments/${id}/respond-direct/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Token ${token}` : ''
+        },
+        body: JSON.stringify({ action })
+      });
+      if (response.ok) {
+        const updated = await response.json();
+        // Sync local
+        const asgns = db.getAssignments();
+        const idx = asgns.findIndex(a => a.id === id);
+        if (idx !== -1) {
+          asgns[idx] = updated;
+          db.saveAssignments(asgns);
+        }
+        return updated;
+      }
+    } catch (e) {
+      console.warn("respondToDirectHire failed, using mock", e);
+    }
+    
+    await delay(800);
+    const asgns = db.getAssignments();
+    const idx = asgns.findIndex(a => a.id === id);
+    if (idx !== -1) {
+      if (action === 'ACCEPT') {
+        asgns[idx].status = AssignmentStatus.ACCEPTED;
+      } else {
+        asgns[idx].status = AssignmentStatus.REJECTED;
+      }
+      db.saveAssignments(asgns);
+      await logger('POST', `/assignments/${id}/respond-direct`, start);
+      return asgns[idx];
+    }
+    throw new Error('Assignment not found');
+  },
+
+  async acceptAssignment(id: string, writerId: string): Promise<Assignment> {
+    const start = Date.now();
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/assignments/${id}/accept/`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Token ${token}` : ''
+        },
+        body: JSON.stringify({ writerId })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Failed to accept assignment');
+      }
+      
+      const updated = await response.json();
+      
+      // Sync local mock DB
+      const asgns = db.getAssignments();
+      const idx = asgns.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        asgns[idx] = updated;
+        db.saveAssignments(asgns);
+      }
+      return updated;
+    } catch (e: any) {
+      console.error("Accept assignment failed:", e);
+      throw e;
+    }
+  },
+
   async submitQuote(assignmentId: string, amount: number, comment: string, writerId: string): Promise<Assignment> {
     const start = Date.now();
     try {
@@ -875,7 +973,7 @@ export const api = {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify({ amount, comment, writerId })
       });
@@ -910,7 +1008,7 @@ export const api = {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify({ action })
       });
@@ -955,7 +1053,7 @@ export const api = {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify({ status: 'PENDING', writerId: null })
       });
@@ -999,7 +1097,7 @@ export const api = {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify({ status: 'IN_PROGRESS', paymentStatus: 'PAID' })
       });
@@ -1029,7 +1127,7 @@ export const api = {
     return updated;
   },
 
-  async deleteAssignment(assignmentId: string): Promise<void> {
+  async deleteAssignment(assignmentId: string, reason?: string, studentId?: string): Promise<{status?: string}> {
     const start = Date.now();
 
     const asgns = db.getAssignments();
@@ -1037,30 +1135,56 @@ export const api = {
     if (idx === -1) throw new Error('Assignment not found');
 
     const assignment = asgns[idx];
-    if (assignment.status !== AssignmentStatus.PENDING && assignment.status !== AssignmentStatus.PENDING_REVIEW && assignment.status !== AssignmentStatus.QUOTED) {
+    if (assignment.status === AssignmentStatus.COMPLETED) {
       throw new Error('Cannot delete assignment in this status');
     }
 
+    let resultStatus: string | undefined = undefined;
+
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/`, {
+      const url = new URL(`http://localhost:8000/api/assignments/${assignmentId}/`);
+      if (reason) url.searchParams.append('reason', reason);
+      if (studentId) url.searchParams.append('studentId', studentId);
+
+      const response = await fetch(url.toString(), {
         method: 'DELETE',
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         }
       });
+      
+      if (response.ok && response.status === 200) {
+        const data = await response.json();
+        resultStatus = data.status;
+      }
+      
       if (!response.ok && response.status !== 404) {
         console.error("Backend delete failed", response.status);
       }
     } catch (e) {
       console.warn("Backend delete assignment failed", e);
+      // Fallback local logic for testing
+      if (['ASSIGNED', 'IN_PROGRESS', 'CONFIRMED'].includes(assignment.status)) {
+        resultStatus = 'CANCELLED';
+      }
     }
 
     await delay(400);
 
-    asgns.splice(idx, 1);
+    if (resultStatus === 'CANCELLED') {
+      assignment.status = AssignmentStatus.CANCELLED;
+      assignment.cancellationReason = reason;
+      assignment.cancelledBy = studentId || assignment.studentId;
+      assignment.cancelledAt = new Date().toISOString();
+      asgns[idx] = assignment;
+    } else {
+      asgns.splice(idx, 1);
+    }
+    
     db.saveAssignments(asgns);
     await logger('DELETE', `/assignments/${assignmentId}`, start);
+    return { status: resultStatus };
   },
 
   // Chat
@@ -1119,7 +1243,7 @@ export const api = {
       const response = await fetch('http://localhost:8000/api/handwriting/predict/', {
         method: 'POST',
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: formData
       });
@@ -1205,7 +1329,7 @@ export const api = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${token}` // TODO: Add auth token
+          // 'Authorization': `Token ${token}` // TODO: Add auth token
         },
         body: JSON.stringify({ assignment_id: assignmentId })
       });
@@ -1366,7 +1490,7 @@ export const api = {
       const response = await fetch(`http://localhost:8000/api/handwriting/writers/${writerId}/samples/`, {
         method: 'POST',
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: formData
       });
@@ -1395,7 +1519,7 @@ export const api = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': token ? `Token ${token}` : ''
         },
         body: JSON.stringify({ url: sampleUrl })
       });

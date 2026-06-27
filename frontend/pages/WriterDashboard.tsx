@@ -12,6 +12,7 @@ import HandwritingSamplesManager from '../components/HandwritingSamplesManager';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { Modal } from '../components/Modal';
 import WriterAnalytics from '../components/WriterAnalytics';
 
 interface WriterDashboardProps {
@@ -25,13 +26,16 @@ interface WriterDashboardProps {
   onOpenChat: (assignment: Assignment) => void;
   onUpdateProfile: (updates: Partial<User>) => void;
   onRejectAssignment: (id: string) => void;
+  onAddAssignment: (assignment: Assignment) => void;
+  addNotification?: (message: string) => Promise<void>;
 }
 
-const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], assignments, messages = [], onUpdateAssignment, onSubmitQuote, onUploadSubmission, onOpenChat, onUpdateProfile, onRejectAssignment }) => {
+const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], assignments, messages = [], onUpdateAssignment, onSubmitQuote, onUploadSubmission, onOpenChat, onUpdateProfile, onRejectAssignment, onAddAssignment, addNotification }) => {
   const [selectedAsgn, setSelectedAsgn] = useState<Assignment | null>(null);
   const [quoteData, setQuoteData] = useState<{ id: string, amount: string, comment: string } | null>(null);
   const [submissionText, setSubmissionText] = useState('');
   const [isChecking, setIsChecking] = useState(false);
+  const [isAccepting, setIsAccepting] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<{ score: number, feedback: string, plagiarismLikelihood: string } | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   
@@ -43,17 +47,83 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
     sessionStorage.setItem('writer_active_tab', activeTab);
   }, [activeTab]);
 
+  // WebSocket for Real-Time Assignment Locking
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:8000/ws/assignments/`);
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'assignment_accepted') {
+        const { assignment_id, writer_id } = data;
+        
+        // Remove it from other writers' view by updating status/writerId
+        if (writer_id !== user.id) {
+          onUpdateAssignment(assignment_id, { 
+            status: AssignmentStatus.ASSIGNED, 
+            writerId: writer_id 
+          });
+        }
+      } else if (data.type === 'assignment_cancelled') {
+        const { assignment_id, writer_id } = data;
+        if (writer_id === user.id) {
+          onUpdateAssignment(assignment_id, { status: AssignmentStatus.CANCELLED });
+          import('react-hot-toast').then(m => m.default.error('A student has cancelled an assignment you were working on.'));
+          if (addNotification) {
+            addNotification('Assignment Cancelled: A student has cancelled an assignment you were assigned to.');
+          }
+        }
+      } else if (data.type === 'assignment_created') {
+        const { assignment_id, visibility, preferredHandwritingStyles } = data;
+        
+        // Filter out if not matching
+        if (visibility === 'SELECTED_STYLES' && preferredHandwritingStyles) {
+          if (!user.handwriting_style || !preferredHandwritingStyles.includes(user.handwriting_style)) {
+            return; // Ignore this assignment
+          }
+        }
+        
+        // Fetch and add the new assignment to state
+        api.getAssignment(assignment_id).then(newAsgn => {
+          if (newAsgn) {
+            onAddAssignment(newAsgn);
+            import('react-hot-toast').then(m => m.default.success('New matching assignment published!'));
+          }
+        }).catch(err => console.error(err));
+
+      } else if (data.type === 'direct_assignment_created') {
+        const { assignment_id, writer_id } = data;
+        if (writer_id === user.id) {
+          api.getAssignment(assignment_id).then(newAsgn => {
+            if (newAsgn) {
+              onAddAssignment(newAsgn);
+              import('react-hot-toast').then(m => m.default.success('You received a new Direct Hire Request!'));
+              if (addNotification) addNotification('You received a new Direct Hire Request!');
+            }
+          }).catch(err => console.error(err));
+        }
+      }
+    };
+    
+    return () => ws.close();
+  }, [user.id, user.handwriting_style, onUpdateAssignment, onAddAssignment]);
+
   const [hasVerifiedPayment, setHasVerifiedPayment] = useState(false);
 
   const hasHandwritingSample = user.handwriting_style || (user.handwriting_samples && user.handwriting_samples.length > 0);
   const hasQRCode = !!user.qr_code_url;
   const isProfileComplete = hasHandwritingSample && hasQRCode;
 
-  const myAssignments = assignments.filter(a => a.writerId === user.id);
+  const myAssignments = assignments.filter(a => a.writerId === user.id && a.status !== AssignmentStatus.CANCELLED);
+  const cancelledAssignments = assignments.filter(a => a.writerId === user.id && a.status === AssignmentStatus.CANCELLED);
   const availableAssignments = assignments.filter(a =>
     (a.status === AssignmentStatus.PENDING || a.status === AssignmentStatus.PENDING_REVIEW) &&
     !a.writerId &&
     (!a.rejectedBy || !a.rejectedBy.includes(user.id))
+  );
+
+  const incomingRequests = assignments.filter(a => 
+    a.status === AssignmentStatus.PENDING_WRITER_ACCEPTANCE && 
+    a.assignedWriterId === user.id
   );
 
   const revenueData = useMemo(() => {
@@ -86,6 +156,25 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
     if (quoteData && quoteData.amount) {
       onSubmitQuote(quoteData.id, Number(quoteData.amount), quoteData.comment, user.id);
       setQuoteData(null);
+    }
+  };
+
+  const handleAcceptAssignment = async (assignmentId: string) => {
+    import('react-hot-toast').then(m => m.default.loading('Accepting assignment...', { id: 'accept' }));
+    setIsAccepting(assignmentId);
+    try {
+      const updated = await api.acceptAssignment(assignmentId, user.id);
+      onUpdateAssignment(assignmentId, { status: updated.status, writerId: updated.writerId });
+      import('react-hot-toast').then(m => m.default.success('Assignment accepted!', { id: 'accept' }));
+      setActiveTab('ACTIVE');
+    } catch (e: any) {
+      import('react-hot-toast').then(m => m.default.error(e.message || 'Failed to accept assignment', { id: 'accept' }));
+      // Remove it from the list if it was taken
+      if (e.message?.toLowerCase().includes('already accepted')) {
+        onUpdateAssignment(assignmentId, { status: AssignmentStatus.ASSIGNED, writerId: 'someone_else' });
+      }
+    } finally {
+      setIsAccepting(null);
     }
   };
 
@@ -130,6 +219,14 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                     : 'glass text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
                   <Briefcase size={16} /> My Work ({myAssignments.length})
                 </button>
+                {cancelledAssignments.length > 0 && (
+                  <button onClick={() => setActiveTab('CANCELLED' as any)}
+                    className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'CANCELLED' as any
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-500/20'
+                      : 'glass text-red-500 hover:text-red-400'}`}>
+                    <AlertCircle size={16} /> Cancelled ({cancelledAssignments.length})
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>
@@ -232,7 +329,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
           {/* Main Content */}
           <div className="lg:col-span-4">
             <AnimatePresence mode='wait'>
-              {activeTab === 'MARKETPLACE' ? (
+              {activeTab === 'MARKETPLACE' && (
                 <motion.div key="market" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                   <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
@@ -320,19 +417,30 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                                 </div>
                               </div>
                             ) : (
-                              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                onClick={() => {
-                                  if (!isProfileComplete) {
-                                    setIsEditingProfile(true);
-                                  } else {
-                                    setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' });
-                                  }
-                                }}
-                                className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
-                                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20 hover:shadow-emerald-500/30'
-                                  : 'glass text-[var(--text-tertiary)] cursor-not-allowed'}`}>
-                                {isProfileComplete ? 'Submit Quote' : 'Complete Profile to Quote'}
-                              </motion.button>
+                              <div className="flex gap-2 mt-4">
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                  onClick={() => {
+                                    if (!isProfileComplete) setIsEditingProfile(true);
+                                    else handleAcceptAssignment(asgn.id);
+                                  }}
+                                  disabled={!isProfileComplete || isAccepting === asgn.id}
+                                  className={`flex-1 py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
+                                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20 hover:shadow-emerald-500/30'
+                                    : 'glass text-[var(--text-tertiary)] cursor-not-allowed'}`}>
+                                  {isAccepting === asgn.id ? 'Locking...' : (isProfileComplete ? 'Accept Now' : 'Complete Profile')}
+                                </motion.button>
+                                
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                  onClick={() => {
+                                    if (!isProfileComplete) setIsEditingProfile(true);
+                                    else setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' });
+                                  }}
+                                  className={`px-4 py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
+                                    ? 'glass text-[var(--accent)] hover:bg-violet-500/10'
+                                    : 'glass text-[var(--text-tertiary)] cursor-not-allowed'}`}>
+                                  Negotiate
+                                </motion.button>
+                              </div>
                             )}
                           </motion.div>
                         ))}
@@ -340,7 +448,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                     </div>
                   )}
                 </motion.div>
-              ) : (
+              )}
+              {activeTab === 'ACTIVE' && (
                 <motion.div key="active" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
@@ -349,7 +458,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                     <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">Your Projects</h2>
                   </div>
 
-                  {myAssignments.length === 0 ? (
+                  {myAssignments.length === 0 && incomingRequests.length === 0 ? (
                     <div className="glass-card p-12 text-center">
                       <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--surface)] flex items-center justify-center">
                         <Briefcase className="w-8 h-8 text-[var(--text-tertiary)]" />
@@ -360,6 +469,52 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                   ) : (
                     <div className="space-y-4">
                       <AnimatePresence>
+                        {incomingRequests.map((asgn, i) => (
+                          <motion.div layout key={asgn.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.05 }} whileHover={{ scale: 1.01 }}
+                            className="glass-card p-6 flex flex-col gap-4 group border-l-4 border-amber-500 bg-amber-500/5">
+                            
+                            <div className="flex items-center gap-2 bg-amber-500/10 text-amber-500 dark:text-amber-400 px-4 py-2 rounded-xl text-sm font-bold">
+                              <Zap size={16} />
+                              Direct Hire Offer — A student has chosen you specifically!
+                            </div>
+                            
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-bold text-xl text-[var(--text-primary)] group-hover:text-amber-500 transition-colors">{asgn.title}</h3>
+                                <div className="flex gap-3 text-sm text-[var(--text-secondary)] mt-1">
+                                  <span className="font-semibold">{asgn.subject}</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1"><Clock size={14} /> {new Date(asgn.deadline).toLocaleDateString()}</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1"><FileText size={14} /> {asgn.pages || 1} Pages</span>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-2xl font-bold text-amber-500">₹{asgn.budget}</span>
+                              </div>
+                            </div>
+
+                            <p className="text-sm text-[var(--text-secondary)]">{asgn.description}</p>
+                            
+                            <div className="flex gap-3 mt-2">
+                              <button onClick={() => {
+                                api.respondToDirectHire(asgn.id, 'ACCEPT').then(updated => {
+                                  onUpdateAssignment(updated.id, { status: updated.status, writerId: updated.writerId });
+                                }).catch(e => console.error(e));
+                              }} className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors">
+                                Accept Direct Offer
+                              </button>
+                              <button onClick={() => {
+                                api.respondToDirectHire(asgn.id, 'REJECT').then(updated => {
+                                  onUpdateAssignment(updated.id, { status: updated.status });
+                                }).catch(e => console.error(e));
+                              }} className="px-6 py-2 glass text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-500 font-bold rounded-xl transition-colors">
+                                Decline
+                              </button>
+                            </div>
+                          </motion.div>
+                        ))}
                         {myAssignments.map((asgn, i) => {
                           const unreadCount = messages.filter(m => m.assignmentId === asgn.id && !m.isRead && m.senderId !== user.id).length;
                           const isDirectHireOffer = asgn.status === AssignmentStatus.PENDING_REVIEW;
@@ -368,14 +523,6 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                             exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.05 }} whileHover={{ scale: 1.01 }}
                             className={`glass-card p-6 flex flex-col gap-4 group ${isDirectHireOffer ? 'border-l-4 border-amber-500' : ''}`}>
                             
-                            {/* Direct Hire Offer Banner */}
-                            {isDirectHireOffer && (
-                              <div className="flex items-center gap-2 bg-amber-500/10 text-amber-500 dark:text-amber-400 px-4 py-2 rounded-xl text-sm font-bold">
-                                <Zap size={16} />
-                                Direct Hire Offer — A student has chosen you specifically!
-                              </div>
-                            )}
-
                             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
@@ -465,26 +612,67 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                   )}
                 </motion.div>
               )}
+              {activeTab === 'CANCELLED' && (
+                <motion.div key="cancelled" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/20">
+                      <AlertCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">Cancelled Assignments</h2>
+                      <p className="text-sm text-[var(--text-secondary)]">Assignments that were cancelled by the student after you accepted them.</p>
+                    </div>
+                  </div>
+
+                  {cancelledAssignments.length === 0 ? (
+                    <div className="glass-card p-12 text-center">
+                      <AlertCircle className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-4" />
+                      <p className="text-[var(--text-secondary)]">No cancelled assignments.</p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <AnimatePresence>
+                        {cancelledAssignments.map((asgn, i) => (
+                          <motion.div layout key={asgn.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                            <TiltCard>
+                              <div className="glass-card p-5 h-full relative overflow-hidden border border-red-500/20 bg-red-500/5">
+                                <div className="absolute top-0 right-0 p-2 px-3 bg-red-500/10 text-red-500 rounded-bl-xl font-bold text-[10px] uppercase tracking-wider">Cancelled</div>
+                                <h3 className="font-bold text-[var(--text-primary)] mb-2 mt-2">{asgn.title}</h3>
+                                <p className="text-sm text-[var(--text-secondary)] mb-4 line-clamp-2">{asgn.description}</p>
+                                {asgn.cancellationReason && (
+                                  <div className="bg-red-500/10 p-3 rounded-xl border border-red-500/20 mb-4">
+                                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mb-1">Reason</p>
+                                    <p className="text-sm text-[var(--text-primary)]">{asgn.cancellationReason}</p>
+                                  </div>
+                                )}
+                                <div className="text-xs text-[var(--text-tertiary)] flex items-center gap-1 border-t border-[var(--border)] pt-4 mt-auto">
+                                  <Clock size={12} />
+                                  <span>{asgn.cancelledAt ? new Date(asgn.cancelledAt).toLocaleString() : 'N/A'}</span>
+                                </div>
+                              </div>
+                            </TiltCard>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </AnimatePresence>
              </div>
         </div>
       </div>
 
       {/* Submission Modal */}
-      <AnimatePresence>
+      <Modal 
+        isOpen={!!selectedAsgn} 
+        onClose={() => setSelectedAsgn(null)} 
+        title={selectedAsgn ? `Submitting: ${selectedAsgn.title}` : ''}
+        className="max-w-4xl"
+        bodyClassName="p-6"
+      >
         {selectedAsgn && (
-          <div className="fixed inset-0 bg-[var(--overlay)] backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-card w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl" style={{ background: 'var(--bg-secondary)' }}>
-              <div className="p-5 border-b border-[var(--border)] flex justify-between items-center">
-                <h2 className="text-lg font-bold text-[var(--text-primary)] font-display">Submitting: {selectedAsgn.title}</h2>
-                <button onClick={() => setSelectedAsgn(null)} className="p-2 hover:bg-[var(--surface)] rounded-xl text-[var(--text-secondary)]">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-6 max-w-2xl mx-auto">
+          <div className="space-y-6 max-w-2xl mx-auto">
                   
                   {/* Student Address Section */}
                   <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)]">
@@ -558,28 +746,21 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                     className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-violet-500/20 disabled:opacity-50 ripple">
                     Submit Work
                   </motion.button>
-                </div>
-              </div>
-            </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Profile Edit Modal */}
-      {isEditingProfile && (
-        <div className="fixed inset-0 bg-[var(--overlay)] z-[110] flex items-center justify-center p-4 overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setIsEditingProfile(false); }}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 max-w-lg w-full shadow-2xl my-8 max-h-[calc(100vh-4rem)] overflow-y-auto" style={{ background: 'var(--bg-secondary)' }}>
-            <div className="flex justify-between items-center mb-6 sticky top-0 bg-[var(--bg-secondary)] py-2 z-10 border-b border-[var(--border)]/10">
-              <h2 className="font-bold text-xl text-[var(--text-primary)] font-display">Edit Profile</h2>
-              <button onClick={() => setIsEditingProfile(false)} className="p-2 hover:bg-[var(--surface)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all" title="Close">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Handwriting Samples */}
-              <HandwritingSamplesManager user={user} onUpdateProfile={onUpdateProfile} />
+      <Modal 
+        isOpen={isEditingProfile} 
+        onClose={() => setIsEditingProfile(false)} 
+        title="Edit Profile"
+        className="max-w-lg shadow-2xl my-8"
+        bodyClassName="space-y-6 p-6"
+        zIndex={110}
+      >
+        {/* Handwriting Samples */}
+        <HandwritingSamplesManager user={user} onUpdateProfile={onUpdateProfile} />
 
               {/* QR Code */}
               <div>
@@ -609,13 +790,10 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                 </div>
               </div>
 
-              <button onClick={() => setIsEditingProfile(false)} className="w-full py-3 glass text-[var(--text-primary)] rounded-xl font-semibold hover:bg-[var(--surface-hover)] transition-colors">
-                Done
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+        <button onClick={() => setIsEditingProfile(false)} className="w-full py-3 glass text-[var(--text-primary)] rounded-xl font-semibold hover:bg-[var(--surface-hover)] transition-colors">
+          Done
+        </button>
+      </Modal>
     </div>
   );
 };

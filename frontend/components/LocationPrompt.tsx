@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MapPin, X } from 'lucide-react';
+import { Modal } from './Modal';
 
 interface LocationPromptProps {
     onLocationGranted: (coords: { lat: number; lon: number }) => void;
@@ -38,8 +39,12 @@ const LocationPrompt: React.FC<LocationPromptProps> = ({ onLocationGranted, onSk
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center">
+        <Modal 
+            isOpen={true} 
+            onClose={onSkip}
+            className="max-w-sm text-center !bg-[#12122a] border border-white/10"
+            zIndex={100}
+        >
                 <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
                     <MapPin className="w-8 h-8 text-white" />
                 </div>
@@ -75,8 +80,7 @@ const LocationPrompt: React.FC<LocationPromptProps> = ({ onLocationGranted, onSk
                         )}
                     </button>
                 </div>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

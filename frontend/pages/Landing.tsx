@@ -228,7 +228,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           >
             <div className="flex items-center gap-2 group cursor-none">
               <Logo className="w-10 h-10 group-hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] transition-all duration-300" />
-              <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
+              <span className="text-xl font-semibold text-[var(--text-primary)] font-display italic tracking-tight">Paperly</span>
             </div>
             <div className="flex items-center gap-4 md:gap-8">
               <div className="hidden md:flex gap-6 items-center text-sm font-medium text-[var(--text-secondary)]">
@@ -300,7 +300,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           <div className="flex flex-col items-center text-center">
 
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[var(--accent)] text-xs font-bold uppercase tracking-widest mb-8 pointer-events-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[var(--accent)] text-xs font-accent font-bold uppercase tracking-[0.2em] mb-8 pointer-events-auto">
                 <Sparkles size={14} className="animate-pulse" />
                 #1 Academic Platform
               </div>
@@ -310,20 +310,20 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               <div className="flex flex-wrap justify-center gap-x-5">
                 {['Ace', 'Every'].map((word, i) => (
                   <div key={i} className="hero-word-wrap">
-                    <span className="hero-word inline-block text-5xl md:text-7xl lg:text-8xl font-black text-[var(--text-primary)] font-display leading-none">
+                    <span className="hero-word inline-block text-[clamp(3.5rem,8vw,7rem)] font-bold text-[var(--text-primary)] font-display tracking-tight leading-none">
                       {word}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="hero-word-wrap">
-                <span className="hero-word inline-block text-5xl md:text-7xl lg:text-8xl font-black bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent font-display leading-none">
+                <span className="hero-word inline-block text-[clamp(3.5rem,8vw,7rem)] font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent font-display tracking-tight leading-none">
                   Assignment
                 </span>
               </div>
             </div>
 
-            <p className="hero-subtitle text-xl md:text-2xl text-[var(--text-primary)] font-medium mb-10 max-w-2xl leading-relaxed drop-shadow-md">
+            <p className="hero-subtitle text-[1.25rem] text-[var(--text-primary)] font-body font-300 mb-10 max-w-2xl leading-[1.8] drop-shadow-md">
               Connect with verified writers. Get high-quality handwritten assignments delivered to your door. Every time.
             </p>
 
@@ -414,7 +414,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 ))}
               </div>
               <div className="relative z-10">
-                <h2 className="text-3xl md:text-5xl font-black text-[var(--text-primary)] mb-4 font-display">Ready to get started?</h2>
+                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tight text-[var(--text-primary)] mb-4 font-display">Ready to get started?</h2>
                 <p className="text-lg text-[var(--text-secondary)] mb-8 max-w-xl mx-auto">Join thousands of students who are already acing their assignments with Paperly.</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <GlowButton onClick={() => navigateWithTransition(() => onNavigate('REGISTER'))} size="lg" icon={<ArrowRight size={20} />} className="cursor-none group hover:scale-[1.04] hover:shadow-[0_8px_30px_rgba(168,85,247,0.4)] transition-all overflow-hidden relative hover:bg-violet-500">
@@ -439,12 +439,12 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             <div>
               <div className="flex items-center gap-2.5 mb-4">
                 <Logo className="w-9 h-9" />
-                <span className="text-lg font-bold text-[var(--text-primary)] tracking-tight font-display">Paperly</span>
+                <span className="text-lg font-semibold italic text-[var(--text-primary)] font-display tracking-tight">Paperly</span>
               </div>
               <p className="text-sm text-[var(--text-tertiary)] leading-relaxed">Study smarter, not harder. The #1 platform connecting students with expert writers for physical handwritten assignments.</p>
             </div>
             <div>
-              <h4 className="font-bold text-sm text-[var(--text-primary)] uppercase tracking-wider mb-4">Quick Links</h4>
+              <h4 className="font-accent font-bold text-[0.7rem] text-[var(--text-primary)] uppercase tracking-[0.25em] mb-4">Quick Links</h4>
               <div className="space-y-2.5">
                 <a href="#showcase" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Showcase</a>
                 <a href="#journey" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Journey</a>
@@ -453,7 +453,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               </div>
             </div>
             <div>
-              <h4 className="font-bold text-sm text-[var(--text-primary)] uppercase tracking-wider mb-4">Legal</h4>
+              <h4 className="font-accent font-bold text-[0.7rem] text-[var(--text-primary)] uppercase tracking-[0.25em] mb-4">Legal</h4>
               <div className="space-y-2.5">
                 <a href="#" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Privacy Policy</a>
                 <a href="#" className="block text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">Terms of Service</a>

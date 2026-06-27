@@ -194,3 +194,33 @@ else:
     db = MockFirestore()
     print("[Firebase] Development Mode: No credentials found. Using LOCAL MOCK Firestore (mock_firestore_db.json)")
 
+import threading
+_mock_db_lock = threading.Lock()
+
+class MockTransaction:
+    def get(self, ref):
+        return ref.get()
+    def update(self, ref, data):
+        ref.update(data)
+    def set(self, ref, data):
+        ref.set(data)
+
+def run_transaction(callback, *args, **kwargs):
+    """
+    Executes a callback in a transaction safely whether using MockFirestore or Real Firestore.
+    The callback must accept `transaction` as its first parameter.
+    """
+    if isinstance(db, MockFirestore):
+        with _mock_db_lock:
+            # We execute it synchronously under a lock
+            return callback(MockTransaction(), *args, **kwargs)
+    else:
+        txn = db.transaction()
+        
+        @firestore.transactional
+        def _wrapped(transaction, *a, **kw):
+            return callback(transaction, *a, **kw)
+            
+        return _wrapped(txn, *args, **kwargs)
+
+

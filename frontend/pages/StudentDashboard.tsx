@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Assignment, AssignmentStatus } from '../types';
 import StatusBadge from '../components/StatusBadge';
@@ -11,6 +12,7 @@ import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
 import { ClipboardList, Plus, Sparkles, Clock, BookOpen, AlertCircle, MessageSquare, Trash2, CheckCircle, FileText, Users, Zap, ArrowRight, Calendar, Search, Download, Eye } from 'lucide-react';
 import { calculateSuggestedPrice } from '../utils/pricing';
+import { Modal } from '../components/Modal';
 
 interface StudentDashboardProps {
   user: User;
@@ -19,19 +21,27 @@ interface StudentDashboardProps {
   onCreateAssignment: (data: Partial<Assignment>, file?: File) => void;
   onRespondToQuote: (id: string, action: 'ACCEPT' | 'REJECT') => void;
   onOpenChat: (assignment: Assignment) => void;
-  onDeleteAssignment: (id: string) => void;
+  onDeleteAssignment: (id: string, reason?: string) => void;
   onNavigate: (view: any) => void;
   onUpdateStatus: (id: string, status: AssignmentStatus, feedback?: string) => void;
   preSelectedWriterId?: string | null;
+  users?: User[];
 }
 
-const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, messages = [], onCreateAssignment, onRespondToQuote, onOpenChat, onDeleteAssignment, onNavigate, onUpdateStatus, preSelectedWriterId }) => {
+const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, messages = [], onCreateAssignment, onRespondToQuote, onOpenChat, onDeleteAssignment, onNavigate, onUpdateStatus, preSelectedWriterId, users = [] }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingAssignment, setViewingAssignment] = useState<Assignment | null>(null);
   const [paymentAssignment, setPaymentAssignment] = useState<Assignment | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [newAsgn, setNewAsgn] = useState({ title: '', subject: '', budget: 50, deadline: '', description: '', pages: 1 });
+  const [newAsgn, setNewAsgn] = useState<{
+    title: string; subject: string; budget: number; deadline: string; description: string; pages: number;
+    preferredHandwritingStyles: string[]; visibility: 'ALL_WRITERS' | 'SELECTED_STYLES';
+  }>({ 
+    title: '', subject: '', budget: 50, deadline: '', description: '', pages: 1,
+    preferredHandwritingStyles: [], visibility: 'ALL_WRITERS'
+  });
   const [suggestedPrice, setSuggestedPrice] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -44,6 +54,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       setSuggestedPrice(calculateSuggestedPrice(newAsgn.subject, newAsgn.deadline, newAsgn.pages));
     }
   }, [newAsgn.subject, newAsgn.deadline, newAsgn.pages]);
+
+
 
   const recommendedWriters = useMemo(() => {
     if (!newAsgn.subject || newAsgn.subject.length < 3) return [];
@@ -58,11 +70,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     );
   }, [assignments, searchQuery]);
 
+  const activeAssignments = useMemo(() => filteredAssignments.filter(a => a.status !== AssignmentStatus.COMPLETED), [filteredAssignments]);
+  const completedAssignments = useMemo(() => filteredAssignments.filter(a => a.status === AssignmentStatus.COMPLETED), [filteredAssignments]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onCreateAssignment({ ...newAsgn }, selectedFile || undefined);
+    onCreateAssignment({ 
+      ...newAsgn,
+      assignedWriterId: preSelectedWriterId || undefined
+    }, selectedFile || undefined);
     setShowCreateModal(false);
-    setNewAsgn({ title: '', subject: '', budget: 50, deadline: '', description: '', pages: 1 });
+    setNewAsgn({ title: '', subject: '', budget: 50, deadline: '', description: '', pages: 1, preferredHandwritingStyles: [], visibility: 'ALL_WRITERS' });
     setSelectedFile(null);
   };
 
@@ -101,8 +119,152 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       case AssignmentStatus.CONFIRMED: return 50;
       case AssignmentStatus.QUOTED: return 35;
       case AssignmentStatus.PENDING_REVIEW: return 20;
+      case AssignmentStatus.PENDING_WRITER_ACCEPTANCE: return 20;
+      case AssignmentStatus.REJECTED: return 0;
       default: return 10;
     }
+  };
+
+  const renderAssignmentCard = (asgn: Assignment, i: number) => {
+    const unreadCount = messages.filter(m => m.assignmentId === asgn.id && !m.isRead && m.senderId !== user.id).length;
+    return (
+      <motion.div layout key={asgn.id}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ delay: i * 0.05 }} whileHover={{ y: -4 }}
+        className="glass-card overflow-hidden group">
+        {/* Card Header */}
+        <div className="p-5 border-b border-[var(--border)]">
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">{asgn.title}</h3>
+              <div className="flex items-center gap-2 mt-1 text-xs text-[var(--text-tertiary)]">
+                <span className="uppercase font-semibold">{asgn.subject}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Calendar size={12} />
+                  {new Date(asgn.deadline).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            <StatusBadge status={asgn.status} />
+          </div>
+        </div>
+
+        {/* Card Body */}
+        <div className="p-5 space-y-4">
+          
+          {/* Handwriting Styles */}
+          {asgn.visibility === 'SELECTED_STYLES' && asgn.preferredHandwritingStyles && asgn.preferredHandwritingStyles.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {asgn.preferredHandwritingStyles.map(style => (
+                <span key={style} className="px-2 py-1 bg-[var(--surface-hover)] border border-white/5 rounded text-[10px] font-bold text-[var(--text-secondary)] uppercase flex items-center gap-1">
+                  <Sparkles size={10} className="text-violet-400" />
+                  {style}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Progress */}
+          <div>
+            <div className="flex justify-between text-xs text-[var(--text-tertiary)] mb-2">
+              <span>Progress</span>
+              <span>{getProgress(asgn.status)}%</span>
+            </div>
+            <div className="h-2 bg-[var(--surface)] rounded-full overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${getProgress(asgn.status)}%` }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`h-full rounded-full ${asgn.status === AssignmentStatus.COMPLETED ? 'bg-emerald-500' : 'bg-gradient-to-r from-violet-500 to-fuchsia-500'}`}
+              />
+            </div>
+          </div>
+
+          {/* Quote Info */}
+          {asgn.status === AssignmentStatus.QUOTED && (
+            <div className="bg-[var(--accent-muted)] border border-[var(--accent)]/20 p-4 rounded-xl">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-semibold text-[var(--accent)]">Writer Quote</span>
+                <span className="font-bold text-lg text-[var(--text-primary)]">₹{asgn.quoted_amount}</span>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] italic mb-3">"{asgn.writer_comment || 'I can help with this.'}"</p>
+              <div className="flex gap-2">
+                <button onClick={() => onRespondToQuote(asgn.id, 'ACCEPT')} className="flex-1 bg-[var(--accent)] text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">Accept</button>
+                <button onClick={() => onRespondToQuote(asgn.id, 'REJECT')} className="flex-1 bg-[var(--surface)] text-red-500 dark:text-red-400 py-2 rounded-lg text-xs font-bold hover:bg-[var(--surface-hover)]">Decline</button>
+              </div>
+            </div>
+          )}
+
+          {/* Direct Hire Pending */}
+          {asgn.status === AssignmentStatus.PENDING_WRITER_ACCEPTANCE && (
+            <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock size={14} className="text-amber-500" />
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Awaiting Writer Response</span>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)]">Your hire request has been sent. The writer can accept, negotiate, or decline.</p>
+            </div>
+          )}
+
+          {/* Direct Hire Rejected */}
+          {asgn.status === AssignmentStatus.REJECTED && (
+            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertCircle size={14} className="text-red-500" />
+                <span className="text-xs font-bold text-red-600 dark:text-red-400">Request Declined</span>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mb-3">Unfortunately, the selected writer declined your assignment.</p>
+              <div className="flex gap-2">
+                <button onClick={() => onNavigate('WRITERS')} className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">Choose Another</button>
+                <button onClick={() => onUpdateStatus(asgn.id, AssignmentStatus.PENDING)} className="flex-1 glass text-[var(--text-primary)] py-2 rounded-lg text-xs font-bold hover:bg-[var(--surface-hover)]">Publish to Marketplace</button>
+              </div>
+            </div>
+          )}
+
+          {/* Budget */}
+          {asgn.status !== AssignmentStatus.QUOTED && (
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-[var(--text-primary)]">₹{asgn.budget > 0 ? asgn.budget : '--'}</span>
+              <span className="text-xs text-[var(--text-tertiary)]">budget</span>
+            </div>
+          )}
+        </div>
+        {/* Card Footer */}
+        <div className="p-4 bg-[var(--surface-elevated)] border-t border-[var(--border)] flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setViewingAssignment(asgn)}
+              className="glass text-[var(--text-secondary)] py-2.5 rounded-xl text-sm font-semibold hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors flex items-center justify-center gap-1.5">
+              <Eye size={14} /> Details
+            </button>
+            <button onClick={() => onOpenChat(asgn)}
+              disabled={!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)}
+              className={`relative py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)
+                ? 'bg-[var(--surface)] text-[var(--text-tertiary)] cursor-not-allowed opacity-50'
+                : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 hover:scale-[1.02] shadow-fuchsia-500/20 hover:shadow-fuchsia-500/40'}`}>
+              <MessageSquare size={14} /> Chat
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border-2 border-[var(--surface)]">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {(asgn.status === AssignmentStatus.CONFIRMED) && asgn.paymentStatus !== 'PAID' && (
+            <button onClick={() => setPaymentAssignment(asgn)}
+              className="w-full bg-emerald-500 text-white py-3 rounded-xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]">
+              Pay Now
+            </button>
+          )}
+
+          {(asgn.status === AssignmentStatus.PENDING || asgn.status === AssignmentStatus.PENDING_REVIEW || asgn.status === AssignmentStatus.PENDING_WRITER_ACCEPTANCE || asgn.status === AssignmentStatus.REJECTED) && (
+            <button onClick={() => setDeleteConfirmId(asgn.id)}
+              className="col-span-2 text-xs text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 font-semibold flex items-center justify-center gap-1 py-2">
+              <Trash2 size={12} /> Delete Request
+            </button>
+          )}
+        </div>
+      </motion.div>
+    );
   };
 
   return (
@@ -180,157 +342,75 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             )}
           </div>
 
-          {filteredAssignments.length === 0 ? (
+          {activeAssignments.length === 0 ? (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
               className="glass-card p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
                 <ClipboardList className="w-10 h-10 text-[var(--accent)]" />
               </div>
-              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2 font-display">No Assignments Yet</h3>
-              <p className="text-[var(--text-secondary)] mb-6">Create your first assignment to get started with expert help</p>
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2 font-display">
+                {assignments.length === 0 ? "No Assignments Yet" : "No Active Assignments"}
+              </h3>
+              <p className="text-[var(--text-secondary)] mb-6">
+                {assignments.length === 0 
+                  ? "Create your first assignment to get started with expert help" 
+                  : "Create a new assignment to get started with expert help"}
+              </p>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                 onClick={() => setShowCreateModal(true)}
                 className="px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-bold shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-all inline-flex items-center gap-2 ripple">
-                <Plus size={18} /> Create First Assignment
+                <Plus size={18} /> {assignments.length === 0 ? "Create First Assignment" : "Create New Assignment"}
               </motion.button>
             </motion.div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <AnimatePresence>
-                {filteredAssignments.map((asgn, i) => {
-                  const unreadCount = messages.filter(m => m.assignmentId === asgn.id && !m.isRead && m.senderId !== user.id).length;
-                  return (
-                  <motion.div layout key={asgn.id}
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ delay: i * 0.05 }} whileHover={{ y: -4 }}
-                    className="glass-card overflow-hidden group">
-                    {/* Card Header */}
-                    <div className="p-5 border-b border-[var(--border)]">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">{asgn.title}</h3>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-[var(--text-tertiary)]">
-                            <span className="uppercase font-semibold">{asgn.subject}</span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <Calendar size={12} />
-                              {new Date(asgn.deadline).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                        <StatusBadge status={asgn.status} />
-                      </div>
-                    </div>
-
-                    {/* Card Body */}
-                    <div className="p-5 space-y-4">
-                      {/* Progress */}
-                      <div>
-                        <div className="flex justify-between text-xs text-[var(--text-tertiary)] mb-2">
-                          <span>Progress</span>
-                          <span>{getProgress(asgn.status)}%</span>
-                        </div>
-                        <div className="h-2 bg-[var(--surface)] rounded-full overflow-hidden">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${getProgress(asgn.status)}%` }}
-                            transition={{ duration: 0.8, ease: "easeOut" }}
-                            className={`h-full rounded-full ${asgn.status === AssignmentStatus.COMPLETED ? 'bg-emerald-500' : 'bg-gradient-to-r from-violet-500 to-fuchsia-500'}`}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Quote Info */}
-                      {asgn.status === AssignmentStatus.QUOTED && (
-                        <div className="bg-[var(--accent-muted)] border border-[var(--accent)]/20 p-4 rounded-xl">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-semibold text-[var(--accent)]">Writer Quote</span>
-                            <span className="font-bold text-lg text-[var(--text-primary)]">₹{asgn.quoted_amount}</span>
-                          </div>
-                          <p className="text-xs text-[var(--text-secondary)] italic mb-3">"{asgn.writer_comment || 'I can help with this.'}"</p>
-                          <div className="flex gap-2">
-                            <button onClick={() => onRespondToQuote(asgn.id, 'ACCEPT')} className="flex-1 bg-[var(--accent)] text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">Accept</button>
-                            <button onClick={() => onRespondToQuote(asgn.id, 'REJECT')} className="flex-1 bg-[var(--surface)] text-red-500 dark:text-red-400 py-2 rounded-lg text-xs font-bold hover:bg-[var(--surface-hover)]">Decline</button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Direct Hire Pending */}
-                      {asgn.status === AssignmentStatus.PENDING_REVIEW && (
-                        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Clock size={14} className="text-amber-500" />
-                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Awaiting Writer Response</span>
-                          </div>
-                          <p className="text-xs text-[var(--text-secondary)]">Your hire request has been sent. The writer can accept, negotiate, or decline.</p>
-                        </div>
-                      )}
-
-                      {/* Budget */}
-                      {asgn.status !== AssignmentStatus.QUOTED && (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold text-[var(--text-primary)]">₹{asgn.budget > 0 ? asgn.budget : '--'}</span>
-                          <span className="text-xs text-[var(--text-tertiary)]">budget</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Card Footer */}
-                    <div className="p-4 bg-[var(--surface-elevated)] border-t border-[var(--border)] flex flex-col gap-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => setViewingAssignment(asgn)}
-                          className="glass text-[var(--text-secondary)] py-2.5 rounded-xl text-sm font-semibold hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors flex items-center justify-center gap-1.5">
-                          <Eye size={14} /> Details
-                        </button>
-                        <button onClick={() => onOpenChat(asgn)}
-                          disabled={!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)}
-                          className={`relative py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)
-                            ? 'bg-[var(--surface)] text-[var(--text-tertiary)] cursor-not-allowed opacity-50'
-                            : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 hover:scale-[1.02] shadow-fuchsia-500/20 hover:shadow-fuchsia-500/40'}`}>
-                          <MessageSquare size={14} /> Chat
-                          {unreadCount > 0 && (
-                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border-2 border-[var(--surface)]">
-                              {unreadCount}
-                            </span>
-                          )}
-                        </button>
-                      </div>
-
-                      {(asgn.status === AssignmentStatus.CONFIRMED) && asgn.paymentStatus !== 'PAID' && (
-                        <button onClick={() => setPaymentAssignment(asgn)}
-                          className="w-full bg-emerald-500 text-white py-3 rounded-xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]">
-                          Pay Now
-                        </button>
-                      )}
-
-                      {(asgn.status === AssignmentStatus.PENDING || asgn.status === AssignmentStatus.PENDING_REVIEW) && (
-                        <button onClick={() => setDeleteConfirmId(asgn.id)}
-                          className="col-span-2 text-xs text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 font-semibold flex items-center justify-center gap-1 py-2">
-                          <Trash2 size={12} /> Delete Request
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                  );
-                })}
+                {activeAssignments.map(renderAssignmentCard)}
               </AnimatePresence>
+            </div>
+          )}
+
+          {/* Completed Assignments Section */}
+          {completedAssignments.length > 0 && (
+            <div className="mt-12">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">Completed Assignments</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <AnimatePresence>
+                  {completedAssignments.map(renderAssignmentCard)}
+                </AnimatePresence>
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Create Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-[var(--overlay)] backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="glass-card w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]" style={{ background: 'var(--bg-secondary)' }}>
-              <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2 font-display">
-                  <Sparkles className="text-[var(--accent)]" /> New Assignment
-                </h2>
-                <button onClick={() => setShowCreateModal(false)} className="w-8 h-8 rounded-full bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors">×</button>
-              </div>
+      <Modal 
+        isOpen={showCreateModal} 
+        onClose={() => setShowCreateModal(false)} 
+        title={<><Sparkles className="text-[var(--accent)]" /> New Assignment</>}
+        className="max-w-lg"
+      >
+        <form onSubmit={handleSubmit} className="space-y-5">
+                  {preSelectedWriterId && (() => {
+                    const selectedWriter = users.find(u => u.id === preSelectedWriterId);
+                    if (!selectedWriter) return null;
+                    return (
+                      <div className="bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20 p-4 rounded-xl mb-4 flex items-center gap-4">
+                        <img src={selectedWriter.avatar} alt={selectedWriter.name} className="w-12 h-12 rounded-xl shadow-md border border-[var(--border)]" />
+                        <div>
+                          <h3 className="font-bold text-[var(--text-primary)] text-sm">Direct Hire Request</h3>
+                          <p className="text-xs text-[var(--text-secondary)]">This assignment will be sent exclusively to <strong className="text-[var(--accent)]">{selectedWriter.name}</strong>.</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
-              <div className="overflow-y-auto p-6">
-                <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
                     <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">Assignment Title</label>
                     <input type="text" required value={newAsgn.title} onChange={e => setNewAsgn({ ...newAsgn, title: e.target.value })}
@@ -400,6 +480,51 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                     />
                   </div>
 
+                  {/* Premium Handwriting Style Selection */}
+                  <div className="bg-[var(--surface)]/50 border border-white/5 p-4 rounded-xl">
+                    <label className="block text-sm font-bold text-[var(--text-primary)] mb-1">Preferred Handwriting Style</label>
+                    <p className="text-xs text-[var(--text-secondary)] mb-3">Only writers with these verified styles will see your request. (Multiple selection allowed)</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {['NEAT', 'CURSIVE', 'BOLD', 'MIXED'].map(style => {
+                        const isSelected = newAsgn.preferredHandwritingStyles.includes(style);
+                        return (
+                          <button type="button" key={style}
+                            onClick={() => {
+                              const updated = isSelected 
+                                ? newAsgn.preferredHandwritingStyles.filter(s => s !== style)
+                                : [...newAsgn.preferredHandwritingStyles, style];
+                              setNewAsgn({
+                                ...newAsgn, 
+                                preferredHandwritingStyles: updated,
+                                visibility: updated.length > 0 ? 'SELECTED_STYLES' : 'ALL_WRITERS'
+                              });
+                            }}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${isSelected 
+                              ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-transparent shadow-lg shadow-violet-500/30' 
+                              : 'glass text-[var(--text-secondary)] border-white/10 hover:border-[var(--accent)]/50 hover:text-[var(--text-primary)]'}`}>
+                            {style.charAt(0) + style.slice(1).toLowerCase()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" id="noPref" 
+                        checked={newAsgn.visibility === 'ALL_WRITERS' || newAsgn.preferredHandwritingStyles.length === 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewAsgn({ ...newAsgn, preferredHandwritingStyles: [], visibility: 'ALL_WRITERS' });
+                          }
+                        }}
+                        className="w-4 h-4 rounded text-violet-500 bg-[var(--surface-hover)] border-white/10 focus:ring-violet-500"
+                      />
+                      <label htmlFor="noPref" className="text-xs text-[var(--text-secondary)] cursor-pointer">
+                        No Preference (Show to All Writers)
+                      </label>
+                    </div>
+                  </div>
+
                   {suggestedPrice && (
                     <div className="flex items-center justify-between bg-gradient-to-r from-violet-600 to-fuchsia-600 p-4 rounded-xl text-white shadow-lg">
                       <div>
@@ -416,24 +541,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                     Post Assignment <ArrowRight size={18} />
                   </motion.button>
                 </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* View Assignment Modal */}
-      <AnimatePresence>
+      <Modal 
+        isOpen={!!viewingAssignment} 
+        onClose={() => setViewingAssignment(null)} 
+        title={viewingAssignment?.title} 
+        className="max-w-2xl"
+        bodyClassName="p-6 space-y-6"
+      >
         {viewingAssignment && (
-          <div className="fixed inset-0 bg-[var(--overlay)] backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-card w-full max-w-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
-              <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">{viewingAssignment.title}</h2>
-                <button onClick={() => setViewingAssignment(null)} className="w-8 h-8 rounded-full bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors">×</button>
-              </div>
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
                     { label: 'Budget', value: `₹${viewingAssignment.budget}` },
                     { label: 'Status', value: null, badge: true },
@@ -477,35 +597,88 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                     )}
                   </div>
                 )}
-              </div>
-            </motion.div>
-          </div>
+          </>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {paymentAssignment && (
         <PaymentModal isOpen={true} assignment={paymentAssignment} onClose={() => setPaymentAssignment(null)} onSuccess={() => { setPaymentAssignment(null); window.location.reload(); }} />
       )}
 
-      {/* Delete Confirm */}
-      <AnimatePresence>
-        {deleteConfirmId && (
-          <div className="fixed inset-0 bg-[var(--overlay)] z-[120] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-card p-6 max-w-sm w-full text-center" style={{ background: 'var(--bg-secondary)' }}>
-              <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-500 dark:text-red-400">
-                <AlertCircle size={28} />
+      {/* Delete/Cancel Confirm */}
+      <Modal 
+        isOpen={!!deleteConfirmId} 
+        onClose={() => {
+          setDeleteConfirmId(null);
+          setCancellationReason('');
+        }}
+        className="max-w-sm text-center"
+        zIndex={120}
+      >
+        {(() => {
+          const asgnToDelete = assignments.find(a => a.id === deleteConfirmId);
+          const isAcceptedOrInProgress = asgnToDelete && ['ASSIGNED', 'IN_PROGRESS', 'ACCEPTED', 'CONFIRMED'].includes(asgnToDelete.status);
+          
+          return (
+            <div className="relative">
+              {isAcceptedOrInProgress && (
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
+              )}
+
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 ${isAcceptedOrInProgress ? 'bg-orange-500/10 text-orange-500 dark:text-orange-400' : 'bg-red-500/10 text-red-500 dark:text-red-400'}`}>
+                <AlertCircle size={32} />
               </div>
-              <h3 className="font-bold text-lg text-[var(--text-primary)] mb-2 font-display">Delete Assignment?</h3>
-              <p className="text-sm text-[var(--text-secondary)] mb-6">This action cannot be undone.</p>
+              
+              <h3 className="font-bold text-xl text-[var(--text-primary)] mb-2 font-display">
+                {isAcceptedOrInProgress ? 'Cancel Assignment?' : 'Delete Assignment?'}
+              </h3>
+              
+              <p className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">
+                {isAcceptedOrInProgress 
+                  ? 'This assignment has already been accepted by a writer. Cancelling it will immediately notify the assigned writer and remove the assignment from their active work.'
+                  : 'This action cannot be undone. Are you sure you want to permanently delete this request?'}
+              </p>
+
+              {isAcceptedOrInProgress && (
+                <div className="mb-6 text-left">
+                  <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">Cancellation Reason</label>
+                  <textarea
+                    required
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    placeholder="Briefly explain why you are cancelling..."
+                    className="w-full px-4 py-3 rounded-xl glass-input h-24 resize-none text-sm text-[var(--text-primary)]"
+                  />
+                </div>
+              )}
+              
               <div className="flex gap-3">
-                <button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 glass text-[var(--text-primary)] rounded-xl font-bold hover:bg-[var(--surface-hover)] transition-colors">Cancel</button>
-                <button onClick={() => { onDeleteAssignment(deleteConfirmId); setDeleteConfirmId(null); }} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors">Delete</button>
+                <button onClick={() => {
+                  setDeleteConfirmId(null);
+                  setCancellationReason('');
+                }} className="flex-1 py-3 glass text-[var(--text-primary)] rounded-xl font-bold hover:bg-[var(--surface-hover)] transition-colors">
+                  {isAcceptedOrInProgress ? 'No, Keep Assignment' : 'Cancel'}
+                </button>
+                <button 
+                  onClick={() => { 
+                    if (deleteConfirmId) {
+                      if (isAcceptedOrInProgress && !cancellationReason.trim()) {
+                        alert('Please provide a cancellation reason.');
+                        return;
+                      }
+                      onDeleteAssignment(deleteConfirmId, isAcceptedOrInProgress ? cancellationReason : undefined); 
+                      setDeleteConfirmId(null); 
+                      setCancellationReason('');
+                    }
+                  }} 
+                  className={`flex-1 py-3 text-white rounded-xl font-bold transition-all shadow-lg ${isAcceptedOrInProgress ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:shadow-red-500/30' : 'bg-red-600 hover:bg-red-700'}`}>
+                  {isAcceptedOrInProgress ? 'Yes, Cancel Assignment' : 'Delete'}
+                </button>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 };

@@ -6,6 +6,7 @@ import {
   Upload, X, Trash2, ImagePlus, AlertCircle, CheckCircle,
   Loader2, ZoomIn, Image as ImageIcon
 } from 'lucide-react';
+import { Modal } from './Modal';
 
 interface HandwritingSamplesManagerProps {
   user: User;
@@ -302,33 +303,25 @@ const HandwritingSamplesManager: React.FC<HandwritingSamplesManagerProps> = ({ u
       </AnimatePresence>
 
       {/* Preview Lightbox */}
-      <AnimatePresence>
+      <Modal 
+        isOpen={!!previewUrl} 
+        onClose={() => setPreviewUrl(null)}
+        className="!bg-transparent !border-none !shadow-none !max-w-[90vw] !max-h-none h-full flex items-center justify-center pointer-events-none"
+        bodyClassName="p-0 overflow-visible flex items-center justify-center pointer-events-auto"
+        zIndex={300}
+      >
         {previewUrl && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4"
-            onClick={() => setPreviewUrl(null)}
-          >
-            <button
-              onClick={() => setPreviewUrl(null)}
-              className="absolute top-6 right-6 bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-colors z-30"
-            >
-              <X className="w-5 h-5" />
-            </button>
             <motion.img
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
               src={previewUrl}
               alt="Preview"
-              className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
-          </motion.div>
         )}
-      </AnimatePresence>
+      </Modal>
     </div>
   );
 };

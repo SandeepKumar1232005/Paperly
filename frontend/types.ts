@@ -11,6 +11,8 @@ export enum AssignmentStatus {
   SUBMITTED = 'SUBMITTED',
   COMPLETED = 'COMPLETED',
   REVISION = 'REVISION',
+  PENDING_WRITER_ACCEPTANCE = 'PENDING_WRITER_ACCEPTANCE', // New
+  REJECTED = 'REJECTED', // New
   CANCELLED = 'CANCELLED'
 }
 
@@ -33,6 +35,7 @@ export interface User {
   handwriting_sample_url?: string;
   qr_code_url?: string; // New - For direct payments
   pricePerPage?: number; // Writer's rate per page in INR
+  distance_km?: number | string; // Distance from current user
 }
 
 export interface Assignment {
@@ -60,6 +63,13 @@ export interface Assignment {
   pages?: number; // New - Number of pages
   platform_fee?: number; // New - Platform fee deducted
   net_earnings?: number; // New - Writer's earnings after fee
+  cancelledBy?: string; // New - For cancellation
+  cancelledAt?: string; // New - For cancellation
+  cancellationReason?: string; // New - For cancellation
+  assignedWriterId?: string; // New - For direct hires
+  assignmentType?: 'DIRECT' | 'MARKETPLACE' | 'PUBLIC'; // New - For direct hires
+  preferredHandwritingStyles?: string[]; // New - e.g. 'NEAT', 'CURSIVE', etc.
+  visibility?: 'ALL_WRITERS' | 'SELECTED_STYLES'; // New
 }
 
 export interface Transaction {
@@ -107,4 +117,9 @@ export interface Notification {
   message: string;
   timestamp: string;
   isRead: boolean;
+  type?: 'ASSIGNMENT_CANCELLED' | string;
+  title?: string;
+  assignmentId?: string;
+  studentId?: string;
+  writerId?: string;
 }

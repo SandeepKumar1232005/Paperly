@@ -3,6 +3,7 @@ import { Assignment } from '../types';
 import { X, QrCode, CheckCircle, Wallet, Smartphone, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
+import { Modal } from './Modal';
 
 interface PaymentModalProps {
     assignment: Assignment;
@@ -36,16 +37,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--overlay)] backdrop-blur-sm p-4">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="glass-card shadow-2xl w-full max-w-md overflow-hidden"
-                style={{ background: 'var(--bg-secondary)' }}
-            >
-                {/* Header */}
-                <div className="relative p-6 bg-gradient-to-r from-emerald-600 to-teal-600">
+        <Modal 
+            isOpen={isOpen} 
+            onClose={onClose}
+            className="max-w-md shadow-2xl"
+            bodyClassName="p-6"
+            headerContent={
+                <div className="relative p-6 bg-gradient-to-r from-emerald-600 to-teal-600 shrink-0">
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
@@ -62,9 +60,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                         </div>
                     </div>
                 </div>
-
-                {/* Content */}
-                <div className="p-6">
+            }
+            footer={
+                <div className="px-6 py-4 bg-[var(--surface)] border-t border-[var(--border)] flex items-center justify-center gap-2 text-[var(--text-tertiary)] text-xs">
+                    <Shield size={12} />
+                    Platform fee deducted from writer's earnings
+                </div>
+            }
+        >
                     <AnimatePresence mode="wait">
                         {showSuccess ? (
                             <motion.div
@@ -137,14 +140,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-[var(--surface)] border-t border-[var(--border)] flex items-center justify-center gap-2 text-[var(--text-tertiary)] text-xs">
-                    <Shield size={12} />
-                    Platform fee deducted from writer's earnings
-                </div>
-            </motion.div>
-        </div>
+        </Modal>
     );
 };

@@ -12,10 +12,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import ChatWindow from './components/ChatWindow';
 import { api } from './services/api';
 import { db } from './services/db';
+import LoadingScreen from './components/LoadingScreen';
 import { Writers } from './pages/Writers';
 import Cursor from './components/Cursor';
-import { initLenis, destroyLenis } from './lib/lenis';
-initLenis()
+import { initLenis } from './lib/lenis';
+initLenis();
 
 type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'FORGOT_PASSWORD' | 'WRITERS';
 
@@ -302,10 +303,13 @@ const AppContent: React.FC = () => {
       files: [],
       createdAt: new Date().toISOString(),
       paymentStatus: 'UNPAID',
+      preferredHandwritingStyles: data.preferredHandwritingStyles || [],
+      visibility: data.visibility || 'ALL_WRITERS',
+      assignmentType: selectedWriterId ? 'DIRECT' : 'MARKETPLACE'
     };
 
     if (selectedWriterId) {
-      newAsgn.status = AssignmentStatus.PENDING_REVIEW; // Or WAITING_ACCEPTANCE if that status existed. PENDING_REVIEW is close enough for MVP.
+      newAsgn.status = AssignmentStatus.PENDING_WRITER_ACCEPTANCE;
     }
 
     await api.createAssignment(newAsgn, file);
@@ -338,6 +342,13 @@ const AppContent: React.FC = () => {
       setIsSyncing(false);
     }
   }, [user, addNotification]);
+
+  const handleAddAssignment = useCallback((newAsgn: Assignment) => {
+    setAssignments(prev => {
+      if (prev.some(a => a.id === newAsgn.id)) return prev;
+      return [newAsgn, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    });
+  }, []);
 
   const handleUploadSubmission = useCallback(async (id: string, text: string) => {
     setIsSyncing(true);
@@ -411,20 +422,25 @@ const AppContent: React.FC = () => {
     }
   }, [assignments, addNotification]);
 
-  const handleDeleteAssignment = useCallback(async (id: string) => {
+  const handleDeleteAssignment = useCallback(async (id: string, reason?: string) => {
     // Confirmation handled in UI
     setIsSyncing(true);
     try {
-      await api.deleteAssignment(id);
-      setAssignments(prev => prev.filter(a => a.id !== id));
-      await addNotification('Assignment deleted successfully.');
+      const response = await api.deleteAssignment(id, reason, user?.id);
+      if (response.status === 'CANCELLED') {
+        setAssignments(prev => prev.map(a => a.id === id ? { ...a, status: AssignmentStatus.CANCELLED, cancellationReason: reason } : a));
+        await addNotification('Assignment cancelled successfully. The assigned writer has been notified.');
+      } else {
+        setAssignments(prev => prev.filter(a => a.id !== id));
+        await addNotification('Assignment deleted successfully.');
+      }
     } catch (err: any) {
       console.error(err);
       await addNotification('Failed to delete assignment: ' + err.message);
     } finally {
       setIsSyncing(false);
     }
-  }, [addNotification]);
+  }, [addNotification, user?.id]);
 
   const handleHireWriter = (writerId: string) => {
     setSelectedWriterId(writerId);
@@ -478,8 +494,8 @@ const AppContent: React.FC = () => {
         return <Writers onNavigate={handleNavigate} onHire={handleHireWriter} currentUser={user} />;
       case 'DASHBOARD':
         if (!user) return <Landing onNavigate={handleNavigate} />;
-        if (user.role === 'STUDENT') return <StudentDashboard user={user} assignments={assignments.filter(a => a.studentId === user.id)} messages={messages} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={handleNavigate} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;
-        if (user.role === 'WRITER') return <WriterDashboard user={user} users={allUsers} assignments={assignments} messages={messages} onSubmitQuote={handleSubmitQuote} onUpdateAssignment={handleUpdateAssignment} onUploadSubmission={handleUploadSubmission} onOpenChat={handleOpenChat} onUpdateProfile={handleUpdateProfile} onRejectAssignment={handleRejectAssignment} />;
+        if (user.role === 'STUDENT') return <StudentDashboard user={user} users={allUsers} assignments={assignments.filter(a => a.studentId === user.id)} messages={messages} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={handleNavigate} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;
+        if (user.role === 'WRITER') return <WriterDashboard user={user} users={allUsers} assignments={assignments} messages={messages} onSubmitQuote={handleSubmitQuote} onUpdateAssignment={handleUpdateAssignment} onUploadSubmission={handleUploadSubmission} onOpenChat={handleOpenChat} onUpdateProfile={handleUpdateProfile} onRejectAssignment={handleRejectAssignment} onAddAssignment={handleAddAssignment} addNotification={addNotification} />;
         if (user.role === 'ADMIN') return <AdminDashboard user={user} assignments={assignments} users={allUsers} />;
         return null;
       default:
@@ -497,22 +513,11 @@ const AppContent: React.FC = () => {
       onUpdateProfile={handleUpdateProfile}
       onNavigate={(view) => handleNavigate(view as any)}
     >
-      {isSyncing && (
-        <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all">
-          <div className="bg-[var(--surface)] border border-white/5 px-5 py-3 rounded-full shadow-2xl flex items-center gap-3">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-4 h-4 rounded-full border-2 border-transparent"
-              style={{
-                borderTopColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6',
-                borderRightColor: user?.role === 'WRITER' ? '#10b981' : user?.role === 'ADMIN' ? '#ef4444' : '#8b5cf6'
-              }}
-            />
-            <span className="text-sm font-semibold text-[var(--text-primary)]">Syncing...</span>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isSyncing && (
+          <LoadingScreen role={user?.role} />
+        )}
+      </AnimatePresence>
 
       {isRestoringSession ? (
         <div className="fixed inset-0 bg-[#0a0a14] flex items-center justify-center z-50">

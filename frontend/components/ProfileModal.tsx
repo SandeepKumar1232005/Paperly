@@ -3,7 +3,8 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/cropImage';
 import { User } from '../types';
 import HandwritingUpload from './HandwritingUpload';
-import { X, Camera, Info } from 'lucide-react';
+import { Camera, CheckCircle, UploadCloud, X, MapPin, Info } from 'lucide-react';
+import { Modal } from './Modal';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 
@@ -78,20 +79,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   };
 
   return (
-    <div className="fixed inset-0 bg-[var(--overlay)] backdrop-blur-sm z-[200] flex items-start justify-center p-4 pt-16 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="glass-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
-        style={{ background: 'var(--bg-secondary)' }}
-      >
-        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center flex-none">
-          <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">{isCropping ? 'Adjust Photo' : 'Edit Profile'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-[var(--surface)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-
+    <Modal 
+      isOpen={true} 
+      onClose={onClose} 
+      title={isCropping ? 'Adjust Photo' : 'Edit Profile'}
+      className="max-w-2xl"
+      bodyClassName="p-0 flex flex-col h-full"
+      zIndex={200}
+    >
         <div className="flex flex-col overflow-hidden h-full">
           {isCropping ? (
             <div className="flex-1 relative bg-[var(--bg-primary)] w-full flex flex-col">
@@ -250,8 +245,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
             </>
           )}
         </div>
-      </motion.div>
-    </div>
+    </Modal>
   );
 };
 
