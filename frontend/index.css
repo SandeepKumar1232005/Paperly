@@ -14,31 +14,6 @@
 /* ========== CSS CUSTOM PROPERTIES (THEMING) ========== */
 
 :root {
-  /* Light Mode Defaults */
-  --bg-primary: #f8f9fc;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f3f9;
-  --surface: rgba(255, 255, 255, 0.8);
-  --surface-hover: rgba(255, 255, 255, 0.95);
-  --surface-elevated: rgba(255, 255, 255, 0.9);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #94a3b8;
-  --text-inverted: #ffffff;
-  --border: rgba(15, 23, 42, 0.08);
-  --border-hover: rgba(15, 23, 42, 0.15);
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-muted: rgba(124, 58, 237, 0.1);
-  --shadow-color: rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 20px 60px -15px rgba(15, 23, 42, 0.15);
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.3);
-  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
-  --overlay: rgba(15, 23, 42, 0.5);
-}
-
-.dark {
   --bg-primary: #000000;
   --bg-secondary: #050505;
   --bg-tertiary: #0a0a0a;
@@ -61,6 +36,8 @@
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
   --overlay: rgba(0, 0, 0, 0.85);
 }
+
+
 
 /* ========== SMOOTH SCROLLING & PERFORMANCE ========== */
 

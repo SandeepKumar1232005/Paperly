@@ -85,11 +85,11 @@ export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
         <div className="min-h-screen bg-[var(--bg-primary)]">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="dark:block hidden">
+                <div className="block hidden">
                     <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[150px]" />
                     <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[120px]" />
                 </div>
-                <div className="dark:hidden block">
+                <div className="hidden block">
                     <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-fuchsia-50/20 to-blue-50/50" />
                 </div>
             </div>
@@ -174,7 +174,7 @@ export function Writers({ onNavigate, onHire, currentUser }: WritersProps) {
                                                 />
                                                 <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[var(--bg-secondary)] ${writer.availability_status === 'ONLINE' ? 'bg-emerald-500' :
                                                     writer.availability_status === 'BUSY' ? 'bg-amber-500' :
-                                                        'bg-gray-400 dark:bg-white/30'
+                                                        'bg-white/30'
                                                     }`}></span>
                                             </div>
                                             <div>

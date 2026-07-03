@@ -114,14 +114,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const getFileIcon = (mimeType: string) => {
     if (mimeType.includes('pdf')) {
       return (
-        <div className="p-2 bg-red-500/10 text-red-500 dark:text-red-400 rounded-lg">
+        <div className="p-2 bg-red-500/10 text-red-400 rounded-lg">
           <FileText size={20} />
         </div>
       );
     }
     if (mimeType.includes('word') || mimeType.includes('officedocument.word') || mimeType.includes('text/plain')) {
       return (
-        <div className="p-2 bg-blue-500/10 text-blue-500 dark:text-blue-400 rounded-lg">
+        <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg">
           <FileText size={20} />
         </div>
       );
@@ -135,7 +135,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const statusInfo = useMemo(() => {
     if (isOtherTyping) return { label: 'Typing...', color: 'bg-emerald-400 animate-pulse' };
-    if (!otherUser || !otherUser.lastActive) return { label: 'Offline', color: 'bg-gray-400 dark:bg-white/30' };
+    if (!otherUser || !otherUser.lastActive) return { label: 'Offline', color: 'bg-white/30' };
 
     const lastActive = new Date(otherUser.lastActive).getTime();
     const now = Date.now();
@@ -148,7 +148,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       ? `Last seen ${Math.floor(diffMins / 60)}h ago`
       : `Last seen ${diffMins}m ago`;
 
-    return { label: lastSeen, color: 'bg-gray-400 dark:bg-white/30' };
+    return { label: lastSeen, color: 'bg-white/30' };
   }, [otherUser, isOtherTyping]);
 
   const otherRoleLabel = currentUser.role === 'STUDENT' ? 'Writer' : 'Student';
@@ -211,7 +211,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Error Message Banner */}
       {error && (
-        <div className="bg-red-500/10 text-red-500 dark:text-red-400 px-4 py-2 text-[11px] font-medium border-b border-red-500/20 animate-in slide-in-from-top-2 flex items-center gap-2" role="alert">
+        <div className="bg-red-500/10 text-red-400 px-4 py-2 text-[11px] font-medium border-b border-red-500/20 animate-in slide-in-from-top-2 flex items-center gap-2" role="alert">
           <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>

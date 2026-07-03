@@ -1,14 +1,12 @@
 
-import { User, Assignment, ChatMessage, Notification, Transaction, SystemLog } from '../types';
+import { User, Assignment, ChatMessage, Notification } from '../types';
 import { mockUsers, initialAssignments } from '../mockData';
 
 const STORAGE_KEYS = {
   USERS: 'paperly_users_v3',
   ASSIGNMENTS: 'paperly_assignments_v3',
   MESSAGES: 'paperly_messages_v3',
-  NOTIFICATIONS: 'paperly_notifications_v3',
-  TRANSACTIONS: 'paperly_transactions_v3',
-  LOGS: 'paperly_logs_v3'
+  NOTIFICATIONS: 'paperly_notifications_v3'
 };
 
 class LocalDB {
@@ -29,12 +27,6 @@ class LocalDB {
     if (!localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) {
       localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
     }
-    if (!localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)) {
-      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
-      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
-    }
   }
 
   private get<T>(key: string): T[] {
@@ -48,10 +40,6 @@ class LocalDB {
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22 || e.message?.includes('usage limit')) {
         console.error('LocalStorage quota exceeded. Data could not be saved locally.');
-        // Optional: Clear low priority data here (e.g. logs)
-        if (key !== STORAGE_KEYS.LOGS) {
-          this.save(STORAGE_KEYS.LOGS, []); // Clear logs to free space?
-        }
       } else {
         console.error('Error saving to localStorage', e);
       }
@@ -88,16 +76,6 @@ class LocalDB {
 
   getNotifications(): Notification[] { return this.get<Notification>(STORAGE_KEYS.NOTIFICATIONS); }
   saveNotifications(data: Notification[]) { this.save(STORAGE_KEYS.NOTIFICATIONS, data); }
-
-  getTransactions(): Transaction[] { return this.get<Transaction>(STORAGE_KEYS.TRANSACTIONS); }
-  saveTransactions(data: Transaction[]) { this.save(STORAGE_KEYS.TRANSACTIONS, data); }
-
-  getLogs(): SystemLog[] { return this.get<SystemLog>(STORAGE_KEYS.LOGS).slice(0, 50); }
-  addLog(log: SystemLog) {
-    const logs = this.getLogs();
-    logs.unshift(log);
-    this.save(STORAGE_KEYS.LOGS, logs.slice(0, 50));
-  }
 }
 
 export const db = new LocalDB();

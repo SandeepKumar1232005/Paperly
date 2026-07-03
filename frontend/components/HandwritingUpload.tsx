@@ -75,7 +75,7 @@ const HandwritingUpload: React.FC<HandwritingUploadProps> = ({ onAnalysisComplet
                         )}
                     </div>
 
-                    {error && <p className="text-xs text-red-500 dark:text-red-400 font-medium text-center">{error}</p>}
+                    {error && <p className="text-xs text-red-400 font-medium text-center">{error}</p>}
                 </div>
 
                 <div className="flex-1 flex flex-col items-center">

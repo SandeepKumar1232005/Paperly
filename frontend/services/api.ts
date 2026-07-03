@@ -1,21 +1,10 @@
 
-import { User, Assignment, ChatMessage, Notification, AssignmentStatus, SystemLog } from '../types';
+import { User, Assignment, ChatMessage, Notification, AssignmentStatus } from '../types';
 import { db } from './db';
 import { paymentGateway } from './payment';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const logger = async (method: SystemLog['method'], endpoint: string, start: number, statusCode: number = 200) => {
-  const log: SystemLog = {
-    id: `log-${Date.now()}`,
-    method,
-    endpoint,
-    statusCode,
-    duration: Date.now() - start,
-    timestamp: new Date().toISOString()
-  };
-  db.addLog(log);
-};
 const BASE_URL = `http://${window.location.hostname}:8000`;
 
 const resolveMediaUrl = (url: string | null | undefined) => {
@@ -27,7 +16,6 @@ const resolveMediaUrl = (url: string | null | undefined) => {
 export const api = {
   // Authentication
   async getCurrentUser(): Promise<User | null> {
-    const start = Date.now();
     const token = sessionStorage.getItem('auth_token');
     if (!token) return null;
 
@@ -90,7 +78,6 @@ export const api = {
         }
         db.saveUsers(localUsers);
 
-        await logger('GET', '/auth/user', start);
         return user;
       }
     } catch (e) {
@@ -111,7 +98,6 @@ export const api = {
   },
 
   async login(email: string, password?: string): Promise<User> {
-    const start = Date.now();
     await delay(800);
 
     let backendUser: User | null = null;
@@ -181,7 +167,6 @@ export const api = {
         }
       }
 
-      await logger('POST', '/auth/login', start);
     } catch (e: any) {
       console.error("Backend login failed:", e.message);
 
@@ -224,13 +209,11 @@ export const api = {
     );
 
     if (userIndex === -1) {
-      await logger('POST', '/auth/login', start, 401);
       throw new Error('User not found');
     }
 
     const localUser = users[userIndex];
     if (password && (localUser as any).password && (localUser as any).password !== password) {
-      await logger('POST', '/auth/login', start, 401);
       throw new Error('Invalid credentials');
     }
 
@@ -243,7 +226,6 @@ export const api = {
   },
 
   async register(user: User & { password?: string }): Promise<User> {
-    const start = Date.now();
     await delay(1000);
 
     let backendUser: Partial<User> = {};
@@ -296,7 +278,6 @@ export const api = {
             qr_code_url: data.user.qr_code_url || '',
           };
         }
-        await logger('POST', '/auth/registration', start);
       }
     } catch (e: any) {
       console.error("Registration validation failed:", e);
@@ -317,12 +298,10 @@ export const api = {
     cleanUsers.push(newUser);
     db.saveUsers(cleanUsers);
 
-    await logger('POST', '/auth/register', start);
     return newUser;
   },
 
   async socialLogin(provider: string, accessToken: string): Promise<User> {
-    const start = Date.now();
     try {
       const response = await fetch(`http://localhost:8000/api/auth/${provider}/`, {
         method: 'POST',
@@ -336,7 +315,6 @@ export const api = {
 
       if (!response.ok) {
         const errorData = await response.json();
-        await logger('POST', `/auth/${provider}`, start, response.status);
         throw new Error(errorData.non_field_errors || errorData.detail || 'Social login failed');
       }
 
@@ -366,7 +344,6 @@ export const api = {
       }
       console.log('DEBUG: Social Login User Data:', userData);
 
-      await logger('POST', `/auth/${provider}`, start);
 
       const roleMap: Record<string, 'STUDENT' | 'WRITER' | 'ADMIN'> = {
         'student': 'STUDENT',
@@ -402,20 +379,16 @@ export const api = {
 
       return finalUser;
     } catch (err) {
-      await logger('POST', `/auth/${provider}`, start, 500);
       throw err;
     }
   },
 
   async getUser(id: string): Promise<User | null> {
-    const start = Date.now();
     const user = db.getUsers().find(u => u.id === id) || null;
-    await logger('GET', `/users/${id}`, start);
     return user;
   },
 
   async updateUser(updates: Partial<User>): Promise<User> {
-    const start = Date.now();
     try {
       // 1. Try to update Backend if running
       // Note: In real app, we need the auth token. 
@@ -434,7 +407,6 @@ export const api = {
       });
 
       if (response.ok) {
-        await logger('PATCH', '/auth/user/', start);
         // If successful, return the updated user from backend
         // const data = await response.json();
         // return data; 
@@ -461,7 +433,6 @@ export const api = {
   },
 
   async updateUserById(id: string, updates: Partial<User>): Promise<User> {
-    const start = Date.now();
     await delay(300);
 
     // Try backend update
@@ -486,7 +457,6 @@ export const api = {
 
       if (response.ok) {
         const data = await response.json();
-        await logger('PATCH', `/ users / ${id} `, start);
 
         // Update local mock DB to stay in sync
         const users = db.getUsers();
@@ -530,7 +500,6 @@ export const api = {
       db.saveUsers(users);
     }
 
-    await logger('PATCH', `/ users / ${id} `, start);
     return users[idx];
   },
 
@@ -544,7 +513,6 @@ export const api = {
   },
 
   async getUsers(role?: string): Promise<User[]> {
-    const start = Date.now();
     try {
       let url = 'http://localhost:8000/api/users/';
       if (role && role !== 'ALL') {
@@ -580,7 +548,6 @@ export const api = {
     if (role && role !== 'ALL') {
       users = users.filter(u => u.role === role);
     }
-    await logger('GET', '/users', start);
     return users;
   },
 
@@ -609,7 +576,6 @@ export const api = {
   },
 
   async verifyUser(userId: string): Promise<User> {
-    const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
       const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
@@ -629,7 +595,6 @@ export const api = {
           users[idx].is_verified = true;
           db.saveUsers(users);
         }
-        await logger('PATCH', `/users/${userId}/verify`, start);
         return await response.json();
       }
       throw new Error('Verification failed');
@@ -648,7 +613,6 @@ export const api = {
 
   // Assignments
   async getAssignments(): Promise<Assignment[]> {
-    const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
       // In a real app we'd decode token for userId, here we can get from local storage or rely on backend session.
@@ -682,7 +646,6 @@ export const api = {
           }
           return a;
         });
-        await logger('GET', '/assignments', start);
         return hydrated;
       }
     } catch (e) {
@@ -702,12 +665,10 @@ export const api = {
       }
       return a;
     });
-    await logger('GET', '/assignments', start);
     return hydrated;
   },
 
   async getWriters(coords?: { lat: number; lon: number }): Promise<User[]> {
-    const start = Date.now();
     await delay(400);
 
     // Try backend fetch
@@ -748,7 +709,6 @@ export const api = {
             distance_km: u.distance_km
           };
         });
-        await logger('GET', '/users/?role=provider', start);
         return writers;
       }
     } catch (e) {
@@ -756,12 +716,10 @@ export const api = {
     }
 
     const data = db.getUsers().filter(u => u.role === 'WRITER');
-    await logger('GET', '/users?role=WRITER', start);
     return data;
   },
 
   async getAllUsers(): Promise<User[]> {
-    const start = Date.now();
     await delay(400);
     try {
       // NOTE: Using the general user list endpoint.
@@ -802,7 +760,6 @@ export const api = {
   },
 
   async createAssignment(assignment: Assignment, file?: File): Promise<Assignment> {
-    const start = Date.now();
     let attachmentUrl = null;
     if (file) {
       attachmentUrl = await this.uploadFile(file);
@@ -846,12 +803,10 @@ export const api = {
     asgns.unshift(payload);
     db.saveAssignments(asgns);
 
-    await logger('POST', '/assignments', start);
     return payload;
   },
 
   async updateAssignment(id: string, updates: Partial<Assignment>): Promise<Assignment> {
-    const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
       const response = await fetch(`http://localhost:8000/api/assignments/${id}/`, {
@@ -871,7 +826,6 @@ export const api = {
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === id);
     if (idx === -1) {
-      await logger('PUT', `/assignments/${id}`, start, 404);
       throw new Error('Assignment not found');
     }
 
@@ -884,12 +838,10 @@ export const api = {
 
     asgns[idx] = updatedAsgn;
     db.saveAssignments(asgns);
-    await logger('PUT', `/assignments/${id}`, start);
     return asgns[idx];
   },
 
   async respondToDirectHire(id: string, action: 'ACCEPT' | 'REJECT'): Promise<Assignment> {
-    const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
       const response = await fetch(`http://localhost:8000/api/assignments/${id}/respond-direct/`, {
@@ -925,14 +877,12 @@ export const api = {
         asgns[idx].status = AssignmentStatus.REJECTED;
       }
       db.saveAssignments(asgns);
-      await logger('POST', `/assignments/${id}/respond-direct`, start);
       return asgns[idx];
     }
     throw new Error('Assignment not found');
   },
 
   async acceptAssignment(id: string, writerId: string): Promise<Assignment> {
-    const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
       const response = await fetch(`http://localhost:8000/api/assignments/${id}/accept/`, {
@@ -966,10 +916,9 @@ export const api = {
   },
 
   async submitQuote(assignmentId: string, amount: number, comment: string, writerId: string): Promise<Assignment> {
-    const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
-      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/quote/`, {
+      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/quote/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -977,6 +926,17 @@ export const api = {
         },
         body: JSON.stringify({ amount, comment, writerId })
       });
+      if (response.ok) {
+        const updated = await response.json();
+        // Sync local
+        const asgns = db.getAssignments();
+        const idx = asgns.findIndex(a => a.id === assignmentId);
+        if (idx !== -1) {
+          asgns[idx] = updated;
+          db.saveAssignments(asgns);
+        }
+        return updated;
+      }
     } catch (e) {
       console.warn("Quote submission failed on backend", e);
     }
@@ -988,23 +948,21 @@ export const api = {
 
     const updated = {
       ...asgns[idx],
-      status: AssignmentStatus.QUOTED,
+      status: AssignmentStatus.PENDING_REVIEW,
       quoted_amount: amount,
-      writer_comment: comment,
+      quoteComment: comment,
       quotingWriterId: writerId,
-      writerId: writerId, // Lock assignment to this writer
+      // writerId intentionally NOT set — writer is not assigned yet
     };
     asgns[idx] = updated;
     db.saveAssignments(asgns);
-    await logger('POST', `/assignments/${assignmentId}/quote`, start);
     return updated;
   },
 
   async respondToQuote(assignmentId: string, action: 'ACCEPT' | 'REJECT'): Promise<Assignment> {
-    const start = Date.now();
     try {
       const token = sessionStorage.getItem('auth_token');
-      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/respond-quote/`, {
+      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/respond-quote/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1012,6 +970,16 @@ export const api = {
         },
         body: JSON.stringify({ action })
       });
+      if (response.ok) {
+        const updated = await response.json();
+        const asgns = db.getAssignments();
+        const idx = asgns.findIndex(a => a.id === assignmentId);
+        if (idx !== -1) {
+          asgns[idx] = updated;
+          db.saveAssignments(asgns);
+        }
+        return updated;
+      }
     } catch (e) {
       console.warn("Quote response failed on backend", e);
     }
@@ -1021,29 +989,88 @@ export const api = {
     const idx = asgns.findIndex(a => a.id === assignmentId);
     if (idx === -1) throw new Error('Assignment not found');
 
-    const assignment = asgns[idx];
+    const assignment = { ...asgns[idx] };
     if (action === 'ACCEPT') {
-      assignment.status = AssignmentStatus.CONFIRMED;
-      assignment.budget = assignment.quoted_amount || assignment.budget; // Confirm the budget
+      assignment.status = AssignmentStatus.ASSIGNED;
+      assignment.budget = assignment.quoted_amount || assignment.budget;
       if (assignment.quotingWriterId) {
-        assignment.writerId = assignment.quotingWriterId; // Assign to the quoted writer
+        assignment.writerId = assignment.quotingWriterId;
       }
+      assignment.quotingWriterId = undefined;
     } else {
       assignment.status = AssignmentStatus.PENDING;
       assignment.quoted_amount = undefined;
-      assignment.writer_comment = undefined;
+      assignment.quoteComment = undefined;
       assignment.quotingWriterId = undefined;
-      assignment.writerId = undefined; // Release back to marketplace
     }
     
     asgns[idx] = assignment;
     db.saveAssignments(asgns);
-    await logger('POST', `/assignments/${assignmentId}/respond`, start);
     return assignment;
   },
 
+  async withdrawQuote(assignmentId: string, writerId: string): Promise<Assignment> {
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/withdraw-quote/`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Token ${token}` : ''
+        },
+        body: JSON.stringify({ writerId })
+      });
+      if (response.ok) {
+        const updated = await response.json();
+        const asgns = db.getAssignments();
+        const idx = asgns.findIndex(a => a.id === assignmentId);
+        if (idx !== -1) {
+          asgns[idx] = updated;
+          db.saveAssignments(asgns);
+        }
+        return updated;
+      }
+    } catch (e) {
+      console.warn("Withdraw quote failed on backend", e);
+    }
+
+    await delay(400);
+    const asgns = db.getAssignments();
+    const idx = asgns.findIndex(a => a.id === assignmentId);
+    if (idx === -1) throw new Error('Assignment not found');
+
+    const updated = {
+      ...asgns[idx],
+      status: AssignmentStatus.PENDING,
+      quotingWriterId: undefined,
+      quoted_amount: undefined,
+      quoteComment: undefined,
+    };
+    asgns[idx] = updated;
+    db.saveAssignments(asgns);
+    return updated;
+  },
+
+  async getAssignment(id: string): Promise<Assignment | null> {
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/assignments/${id}/`, {
+        headers: {
+          'Authorization': token ? `Token ${token}` : ''
+        }
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (e) {
+      console.warn("getAssignment failed", e);
+    }
+    // Fallback to local
+    const asgns = db.getAssignments();
+    return asgns.find(a => a.id === id) || null;
+  },
+
   async rejectAssignment(assignmentId: string): Promise<Assignment> {
-    const start = Date.now();
     await delay(500);
 
     // Sync with backend
@@ -1082,12 +1109,10 @@ export const api = {
     };
     asgns[idx] = updated;
     db.saveAssignments(asgns);
-    await logger('POST', `/assignments/${assignmentId}/reject`, start);
     return updated;
   },
 
   async confirmPayment(assignmentId: string): Promise<Assignment> {
-    const start = Date.now();
     await delay(600);
 
     // Sync with backend
@@ -1123,12 +1148,10 @@ export const api = {
 
     asgns[idx] = updated;
     db.saveAssignments(asgns);
-    await logger('POST', `/assignments/${assignmentId}/payment-confirm`, start);
     return updated;
   },
 
   async deleteAssignment(assignmentId: string, reason?: string, studentId?: string): Promise<{status?: string}> {
-    const start = Date.now();
 
     const asgns = db.getAssignments();
     const idx = asgns.findIndex(a => a.id === assignmentId);
@@ -1183,21 +1206,17 @@ export const api = {
     }
     
     db.saveAssignments(asgns);
-    await logger('DELETE', `/assignments/${assignmentId}`, start);
     return { status: resultStatus };
   },
 
   // Chat
   async getAllMessages(): Promise<ChatMessage[]> {
-    const start = Date.now();
     await delay(300);
     const data = db.getMessages();
-    await logger('GET', '/messages', start);
     return data;
   },
 
   async sendMessage(message: ChatMessage): Promise<ChatMessage> {
-    const start = Date.now();
 
     const formData = new FormData();
     formData.append('content', message.text || '');
@@ -1229,7 +1248,6 @@ export const api = {
     const finalMessage = { ...message, id: `msg-${Date.now()}` }; // New ID from "backend"s
     msgs.push(finalMessage);
     db.saveMessages(msgs);
-    await logger('POST', '/messages', start);
     return finalMessage;
   },
 
@@ -1292,10 +1310,8 @@ export const api = {
 
   // Notifications
   async getNotifications(userId: string): Promise<Notification[]> {
-    const start = Date.now();
     await delay(200);
     const data = db.getNotifications().filter(n => n.userId === userId);
-    await logger('GET', `/notifications/${userId}`, start);
     return data;
   },
 
@@ -1307,20 +1323,12 @@ export const api = {
   },
 
   async markNotificationsRead(userId: string): Promise<void> {
-    const start = Date.now();
     const notifs = db.getNotifications();
     const updated = notifs.map(n => n.userId === userId ? { ...n, isRead: true } : n);
     db.saveNotifications(updated);
-    await logger('PUT', `/ notifications / ${userId}/read`, start);
-  },
-
-  // Backend Health (Admin only)
-  async getSystemLogs(): Promise<SystemLog[]> {
-    return db.getLogs();
   },
 
   async createPaymentIntent(assignmentId: string): Promise<{ clientSecret: string }> {
-    const start = Date.now();
 
     // In a real app with Auth, we would call the backend endpoint
     // Assuming backend is running on localhost:8000
@@ -1341,17 +1349,12 @@ export const api = {
       }
 
       const data = await response.json();
-      await logger('POST', '/payments/create-payment-intent', start);
       return data;
     } catch (e) {
       // MOCK fallback for demonstration if backend is not running or properly configured with keys
       await delay(500);
       return { clientSecret: 'mock_secret' };
     }
-  },
-
-  async getTransactions(): Promise<any[]> {
-    return db.getTransactions();
   },
 
   async requestPasswordReset(email: string): Promise<void> {

@@ -77,7 +77,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                                 className="py-12 flex flex-col items-center text-center"
                             >
                                 <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
-                                    <CheckCircle className="w-10 h-10 text-emerald-500 dark:text-emerald-400" />
+                                    <CheckCircle className="w-10 h-10 text-emerald-400" />
                                 </div>
                                 <h4 className="text-xl font-bold text-[var(--text-primary)] mb-2 font-display">Payment Verified!</h4>
                                 <p className="text-[var(--text-secondary)] text-sm">Your payment has been confirmed successfully.</p>
@@ -99,7 +99,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ assignment, isOpen, 
                                     <div className="bg-white p-3 rounded-2xl shadow-lg mb-3">
                                         <img src={qrUrl} alt="Payment QR" className="w-40 h-40 object-contain" />
                                     </div>
-                                    <div className="flex items-center gap-2 text-emerald-500 dark:text-emerald-400 text-sm font-semibold">
+                                    <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
                                         <QrCode size={16} />
                                         Scan with any UPI App
                                     </div>

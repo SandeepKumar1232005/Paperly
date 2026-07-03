@@ -1,13 +1,13 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Assignment, AssignmentStatus, SystemLog, Transaction } from '../types';
+import { User, Assignment, AssignmentStatus } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { api } from '../services/api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, PieChart, Pie, ComposedChart, Line
 } from 'recharts';
-import { Trash2, AlertCircle, Shield, Users, FileText, CheckCircle, Clock, Search, ExternalLink, Settings, DollarSign, Bell, Activity, Server, TrendingUp } from 'lucide-react';
+import { Trash2, AlertCircle, Shield, Users, FileText, CheckCircle, Clock, Search, ExternalLink, DollarSign, Bell, Activity, Server, TrendingUp } from 'lucide-react';
 import { Modal } from '../components/Modal';
 
 interface AdminDashboardProps {
@@ -17,19 +17,13 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, users }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'HEALTH' | 'REPORTS' | 'COMMUNICATION' | 'SUPPORT' | 'SETTINGS' | 'USERS'>('OVERVIEW');
-  const [logs, setLogs] = useState<SystemLog[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USERS' | 'COMMUNICATION'>('OVERVIEW');
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [userFilter, setUserFilter] = useState<'ALL' | 'STUDENT' | 'WRITER'>('ALL');
   const [userSearch, setUserSearch] = useState('');
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (activeTab === 'HEALTH') {
-      api.getSystemLogs().then(setLogs);
-      api.getTransactions().then(setTransactions);
-    }
     if (activeTab === 'USERS') {
       loadUsers();
     }
@@ -118,7 +112,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
     <div className="flex min-h-screen bg-[var(--bg-primary)]">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="dark:block hidden">
+        <div className="block hidden">
           <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-violet-600/8 rounded-full blur-[150px]" />
           <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-purple-500/6 rounded-full blur-[120px]" />
         </div>
@@ -137,9 +131,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
         <div className="space-y-2 flex-1">
           <NavButton tab="OVERVIEW" icon={Activity} label="Overview" />
           <NavButton tab="USERS" icon={Users} label="User Management" />
-          <NavButton tab="HEALTH" icon={Server} label="System Health" />
           <NavButton tab="COMMUNICATION" icon={Bell} label="Broadcasts" />
-          <NavButton tab="SETTINGS" icon={Settings} label="Settings" />
         </div>
         <div className="text-xs text-[var(--text-tertiary)] text-center">
           v2.5.0 (Stable)
@@ -171,7 +163,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${kpi.color} flex items-center justify-center shadow-lg`}>
                         <kpi.icon className="text-white" size={24} />
                       </div>
-                      <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full flex items-center gap-1">
+                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full flex items-center gap-1">
                         <TrendingUp size={12} /> +4.5%
                       </span>
                     </div>
@@ -221,63 +213,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                 </div>
               </div>
             </motion.div>
-          )}
-
-          {activeTab === 'HEALTH' && (
-            <div className="grid lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]">
-              {/* Console */}
-              <div className="glass-card overflow-hidden flex flex-col font-mono text-sm" style={{ background: 'var(--bg-secondary)' }}>
-                <div className="bg-[var(--surface)] p-3 flex justify-between items-center border-b border-[var(--border)]">
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  </div>
-                  <span className="text-[var(--text-tertiary)] text-xs flex items-center gap-2"><Terminal size={12} /> server.log</span>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 text-[var(--text-secondary)]">
-                  {logs.map((log, i) => (
-                    <div key={i} className="flex gap-3 hover:bg-[var(--surface)] p-1 rounded">
-                      <span className="text-[var(--text-tertiary)] shrink-0">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                      <span className={`font-bold ${log.method === 'GET' ? 'text-cyan-500' : 'text-emerald-500'}`}>{log.method}</span>
-                      <span className="break-all">{log.endpoint}</span>
-                      <span className={`ml-auto font-bold ${log.statusCode >= 400 ? 'text-red-500' : 'text-emerald-500'}`}>{log.statusCode}</span>
-                      <span className="text-[var(--text-tertiary)] w-16 text-right">{log.duration}ms</span>
-                    </div>
-                  ))}
-                  <div className="animate-pulse text-[var(--accent)]">_</div>
-                </div>
-              </div>
-
-              {/* Transactions */}
-              <div className="glass-card overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-[var(--border)] bg-[var(--surface)]">
-                  <h3 className="font-bold text-[var(--text-primary)] font-display">Escrow Ledger</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-[var(--surface)] text-xs uppercase text-[var(--text-tertiary)] sticky top-0">
-                      <tr>
-                        <th className="px-6 py-3">ID</th>
-                        <th className="px-6 py-3">Type</th>
-                        <th className="px-6 py-3">Amount</th>
-                        <th className="px-6 py-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border)] text-sm">
-                      {transactions.map(tr => (
-                        <tr key={tr.id} className="hover:bg-[var(--surface)] transition-colors">
-                          <td className="px-6 py-3 font-mono text-[var(--text-tertiary)]">#{tr.id.slice(-6)}</td>
-                          <td className="px-6 py-3"><span className={`px-2 py-1 rounded text-xs font-bold ${tr.type === 'PAYMENT' ? 'bg-blue-500/10 text-blue-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{tr.type}</span></td>
-                          <td className="px-6 py-3 font-bold text-[var(--text-primary)]">₹{tr.amount}</td>
-                          <td className="px-6 py-3 text-emerald-500 font-bold text-xs">{tr.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
           )}
 
           {activeTab === 'USERS' && (
@@ -351,7 +286,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                         </td>
                         <td className="px-6 py-4">
                           {u.id !== user.id && (
-                            <button onClick={() => handleDeleteUser(u.id)} className="p-2 hover:bg-red-500/10 text-red-500 dark:text-red-400 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                            <button onClick={() => handleDeleteUser(u.id)} className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-colors"><Trash2 size={16} /></button>
                           )}
                         </td>
                       </tr>
@@ -391,7 +326,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
         zIndex={50}
       >
         <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Trash2 className="text-red-500 dark:text-red-400" size={28} />
+          <Trash2 className="text-red-400" size={28} />
         </div>
         <h3 className="font-bold text-lg text-[var(--text-primary)] mb-2 font-display">Confirm Deletion</h3>
         <p className="text-[var(--text-secondary)] mb-6">Permanently remove this user?</p>

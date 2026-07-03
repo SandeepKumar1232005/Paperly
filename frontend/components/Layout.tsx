@@ -2,9 +2,8 @@ import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { User, Notification } from '../types';
 import ProfileModal from './ProfileModal';
 import Logo from './Logo';
-import { Bell, LogOut, UserCircle, ArrowLeftRight, Sun, Moon, Menu, X, ChevronRight } from 'lucide-react';
+import { Bell, LogOut, UserCircle, ArrowLeftRight, Menu, X, ChevronRight } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
-import { useTheme } from '../context/ThemeContext';
 import LocationPrompt from './LocationPrompt';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -34,7 +33,6 @@ const Layout: React.FC<LayoutProps> = ({
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
 
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -123,24 +121,7 @@ const Layout: React.FC<LayoutProps> = ({
             {/* Right: Actions */}
             <div className="flex items-center gap-2">
               {/* Theme Toggle */}
-              <motion.button
-                whileTap={{ scale: 0.9, rotate: 180 }}
-                onClick={toggleTheme}
-                className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                <AnimatePresence mode="wait">
-                  {theme === 'dark' ? (
-                    <motion.div key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Sun size={18} />
-                    </motion.div>
-                  ) : (
-                    <motion.div key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Moon size={18} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
+              
 
               {/* Notifications */}
               <div className="relative" ref={notifDropdownRef}>

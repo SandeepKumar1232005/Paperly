@@ -51,11 +51,11 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onNavigate }) => {
             {/* Background Effects */}
             <div className="fixed inset-0 z-0">
                 <div className="absolute inset-0 bg-[var(--bg-primary)]" />
-                <div className="dark:block hidden">
+                <div className="block hidden">
                     <div className="absolute top-20 left-1/3 w-[500px] h-[500px] bg-amber-600/12 rounded-full blur-[150px]" />
                     <div className="absolute bottom-20 right-1/3 w-[400px] h-[400px] bg-orange-500/8 rounded-full blur-[120px]" />
                 </div>
-                <div className="dark:hidden block">
+                <div className="hidden block">
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50/30 to-yellow-50" />
                 </div>
             </div>
@@ -105,8 +105,8 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onNavigate }) => {
                         {message && (
                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                                 className={`mb-6 p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'success'
-                                    ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400'
-                                    : 'bg-red-500/10 border border-red-500/20 text-red-500 dark:text-red-400'}`}>
+                                    ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                                    : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}>
                                 {message.type === 'success' ? <Check size={16} /> : <span className="w-2 h-2 rounded-full bg-red-500" />}
                                 {message.text}
                             </motion.div>

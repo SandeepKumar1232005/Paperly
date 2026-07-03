@@ -120,7 +120,7 @@ const WriterProfileModal: React.FC<WriterProfileModalProps> = ({ writer, onClose
               </div>
               <span className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 ${writer.availability_status === 'ONLINE' ? 'bg-emerald-500' :
                 writer.availability_status === 'BUSY' ? 'bg-amber-500' :
-                  'bg-gray-400 dark:bg-white/30'
+                  'bg-white/30'
                 }`} style={{ borderColor: 'var(--bg-secondary)' }} />
             </div>
             <div className="mb-1 bg-[var(--accent-muted)] px-3 py-1.5 rounded-full border border-[var(--accent)]/20">

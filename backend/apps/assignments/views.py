@@ -197,18 +197,21 @@ class AssignmentViewSet(viewsets.ViewSet):
                     db.collection('notifications').document(notif_id).set(notif_data)
                 
                 # Broadcast via channels
-                from channels.layers import get_channel_layer
-                from asgiref.sync import async_to_sync
-                channel_layer = get_channel_layer()
-                if channel_layer:
-                    async_to_sync(channel_layer.group_send)(
-                        'assignments',
-                        {
-                            'type': 'assignment_cancelled',
-                            'assignment_id': pk,
-                            'writer_id': writer_id
-                        }
-                    )
+                try:
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+                    channel_layer = get_channel_layer()
+                    if channel_layer:
+                        async_to_sync(channel_layer.group_send)(
+                            'assignments',
+                            {
+                                'type': 'assignment_cancelled',
+                                'assignment_id': pk,
+                                'writer_id': writer_id
+                            }
+                        )
+                except Exception:
+                    pass
                 return Response({'status': 'CANCELLED'}, status=status.HTTP_200_OK)
                 
             else:
@@ -218,40 +221,206 @@ class AssignmentViewSet(viewsets.ViewSet):
                 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+
+    # ─── QUOTE NEGOTIATION ───────────────────────────────────────────────
+
     @action(detail=True, methods=['post'], url_path='quote')
     def submit_quote(self, request, pk=None):
-        # Implementation for submitting a quote
+        """Writer submits a quote. Does NOT assign the writer yet."""
         try:
-            data = request.data # amount, comment, writerId
+            data = request.data  # amount, comment, writerId
             doc_ref = db.collection('assignments').document(pk)
-            
-            # For simplicity, we store quotes in an array or update assignment
-            # The frontend expects the assignment status to update or a quotes array
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            assignment_data = doc.to_dict()
+
+            # Only allow quoting PENDING assignments
+            if assignment_data.get('status') not in ('PENDING', None):
+                return Response({'error': 'Assignment is no longer available for quoting'}, status=status.HTTP_400_BAD_REQUEST)
+
+            writer_id = data.get('writerId')
+            quoted_amount = data.get('amount')
+            quote_comment = data.get('comment', '')
+
+            # Update assignment — do NOT set writerId
             doc_ref.update({
-                'writerId': data.get('writerId'),
-                'quote_amount': data.get('amount'),
-                'quote_comment': data.get('comment'),
-                'status': 'PENDING_REVIEW' # Move to review when quote is sent
+                'quotingWriterId': writer_id,
+                'quoted_amount': quoted_amount,
+                'quoteComment': quote_comment,
+                'status': 'PENDING_REVIEW',
             })
+
+            # Notify the student about the received quote
+            student_id = assignment_data.get('studentId')
+            if student_id:
+                notification_id = str(uuid.uuid4())
+                db.collection('notifications').document(notification_id).set({
+                    'id': notification_id,
+                    'userId': student_id,
+                    'type': 'QUOTE_RECEIVED',
+                    'title': 'New Quote Received',
+                    'message': f"A writer has quoted \u20b9{quoted_amount} for '{assignment_data.get('title', 'your assignment')}'.",
+                    'assignmentId': pk,
+                    'isRead': False,
+                    'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
+                })
+
+            # Broadcast via channels
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        'assignments',
+                        {
+                            'type': 'quote_submitted',
+                            'assignment_id': pk,
+                            'writer_id': writer_id
+                        }
+                    )
+            except Exception:
+                pass
+
             return Response(doc_ref.get().to_dict())
         except Exception as e:
+            print(f"Error submitting quote: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=['post'], url_path='respond-quote')
     def respond_to_quote(self, request, pk=None):
+        """Student accepts or rejects a writer's quote."""
         try:
-            action_type = request.data.get('action') # ACCEPT or REJECT
+            action_type = request.data.get('action')  # ACCEPT or REJECT
             doc_ref = db.collection('assignments').document(pk)
-            
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            assignment_data = doc.to_dict()
+            quoting_writer_id = assignment_data.get('quotingWriterId')
+
             if action_type == 'ACCEPT':
-                doc_ref.update({'status': 'ASSIGNED'})
+                # NOW assign the writer and update budget
+                doc_ref.update({
+                    'status': 'ASSIGNED',
+                    'writerId': quoting_writer_id,
+                    'budget': assignment_data.get('quoted_amount', assignment_data.get('budget')),
+                    'quotingWriterId': None,
+                    'acceptedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()
+                })
+
+                # Notify writer: quote accepted
+                if quoting_writer_id:
+                    notification_id = str(uuid.uuid4())
+                    db.collection('notifications').document(notification_id).set({
+                        'id': notification_id,
+                        'userId': quoting_writer_id,
+                        'type': 'QUOTE_ACCEPTED',
+                        'title': 'Quote Accepted!',
+                        'message': f"Your quote for '{assignment_data.get('title', 'an assignment')}' was accepted! You can start working.",
+                        'assignmentId': pk,
+                        'isRead': False,
+                        'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    })
+
+            elif action_type == 'REJECT':
+                # Clear quote data and return to PENDING
+                doc_ref.update({
+                    'status': 'PENDING',
+                    'quotingWriterId': None,
+                    'quoted_amount': None,
+                    'quoteComment': None,
+                })
+
+                # Notify writer: quote rejected
+                if quoting_writer_id:
+                    notification_id = str(uuid.uuid4())
+                    db.collection('notifications').document(notification_id).set({
+                        'id': notification_id,
+                        'userId': quoting_writer_id,
+                        'type': 'QUOTE_REJECTED',
+                        'title': 'Quote Declined',
+                        'message': f"Your quote for '{assignment_data.get('title', 'an assignment')}' was declined. The assignment is back on the marketplace.",
+                        'assignmentId': pk,
+                        'isRead': False,
+                        'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    })
             else:
-                doc_ref.update({'status': 'PENDING', 'writerId': None})
-                
+                return Response({'error': 'Invalid action. Must be ACCEPT or REJECT.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Broadcast via channels
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        'assignments',
+                        {
+                            'type': 'quote_response',
+                            'assignment_id': pk,
+                            'action': action_type,
+                            'writer_id': quoting_writer_id
+                        }
+                    )
+            except Exception:
+                pass
+
             return Response(doc_ref.get().to_dict())
         except Exception as e:
+            print(f"Error responding to quote: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='withdraw-quote')
+    def withdraw_quote(self, request, pk=None):
+        """Writer withdraws their submitted quote."""
+        try:
+            doc_ref = db.collection('assignments').document(pk)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            assignment_data = doc.to_dict()
+            writer_id = request.data.get('writerId')
+
+            # Only the quoting writer can withdraw
+            if assignment_data.get('quotingWriterId') != writer_id:
+                return Response({'error': 'You are not the quoting writer'}, status=status.HTTP_403_FORBIDDEN)
+
+            doc_ref.update({
+                'status': 'PENDING',
+                'quotingWriterId': None,
+                'quoted_amount': None,
+                'quoteComment': None,
+            })
+
+            # Notify student
+            student_id = assignment_data.get('studentId')
+            if student_id:
+                notification_id = str(uuid.uuid4())
+                db.collection('notifications').document(notification_id).set({
+                    'id': notification_id,
+                    'userId': student_id,
+                    'type': 'QUOTE_WITHDRAWN',
+                    'title': 'Quote Withdrawn',
+                    'message': f"A writer has withdrawn their quote for '{assignment_data.get('title', 'your assignment')}'.",
+                    'assignmentId': pk,
+                    'isRead': False,
+                    'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
+                })
+
+            return Response(doc_ref.get().to_dict())
+        except Exception as e:
+            print(f"Error withdrawing quote: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # ─── ACCEPT ASSIGNMENT (direct accept without negotiation) ────────────
 
     @action(detail=True, methods=['post'], url_path='accept')
     def accept_assignment(self, request, pk=None):
@@ -285,19 +454,21 @@ class AssignmentViewSet(viewsets.ViewSet):
                 return Response({'message': error_msg}, status=status.HTTP_409_CONFLICT)
                 
             # Broadcast via channels
-            from channels.layers import get_channel_layer
-            from asgiref.sync import async_to_sync
-            
-            channel_layer = get_channel_layer()
-            if channel_layer:
-                async_to_sync(channel_layer.group_send)(
-                    'assignments',
-                    {
-                        'type': 'assignment_accepted',
-                        'assignment_id': pk,
-                        'writer_id': writer_id
-                    }
-                )
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        'assignments',
+                        {
+                            'type': 'assignment_accepted',
+                            'assignment_id': pk,
+                            'writer_id': writer_id
+                        }
+                    )
+            except Exception:
+                pass
             
             # Get updated doc to return
             updated_doc = db.collection('assignments').document(pk).get().to_dict()
@@ -305,6 +476,8 @@ class AssignmentViewSet(viewsets.ViewSet):
             
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # ─── DIRECT HIRE ────────────────────────────────────────────────────
 
     @action(detail=True, methods=['post'], url_path='respond-direct')
     def respond_direct(self, request, pk=None):
@@ -329,35 +502,41 @@ class AssignmentViewSet(viewsets.ViewSet):
                     'writerId': writer_id
                 })
                 # Broadcast
-                from channels.layers import get_channel_layer
-                from asgiref.sync import async_to_sync
-                channel_layer = get_channel_layer()
-                if channel_layer:
-                    async_to_sync(channel_layer.group_send)(
-                        'assignments',
-                        {
-                            'type': 'direct_assignment_accepted',
-                            'assignment_id': pk,
-                            'writer_id': writer_id
-                        }
-                    )
+                try:
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+                    channel_layer = get_channel_layer()
+                    if channel_layer:
+                        async_to_sync(channel_layer.group_send)(
+                            'assignments',
+                            {
+                                'type': 'direct_assignment_accepted',
+                                'assignment_id': pk,
+                                'writer_id': writer_id
+                            }
+                        )
+                except Exception:
+                    pass
             else:
                 doc_ref.update({
                     'status': 'REJECTED'
                 })
                 # Broadcast
-                from channels.layers import get_channel_layer
-                from asgiref.sync import async_to_sync
-                channel_layer = get_channel_layer()
-                if channel_layer:
-                    async_to_sync(channel_layer.group_send)(
-                        'assignments',
-                        {
-                            'type': 'direct_assignment_rejected',
-                            'assignment_id': pk,
-                            'writer_id': writer_id
-                        }
-                    )
+                try:
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+                    channel_layer = get_channel_layer()
+                    if channel_layer:
+                        async_to_sync(channel_layer.group_send)(
+                            'assignments',
+                            {
+                                'type': 'direct_assignment_rejected',
+                                'assignment_id': pk,
+                                'writer_id': writer_id
+                            }
+                        )
+                except Exception:
+                    pass
             
             # Add notification for student
             notification_id = str(uuid.uuid4())

@@ -24,16 +24,14 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 
-import { ThemeProvider } from './context/ThemeContext';
+
 
 const App: React.FC = () => {
   console.log("Debug: VITE_GOOGLE_CLIENT_ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
-      <ThemeProvider>
         <Cursor />
         <AppContent />
-      </ThemeProvider>
     </GoogleOAuthProvider>
   );
 };
@@ -126,25 +124,46 @@ const AppContent: React.FC = () => {
     fetchData();
   }, [user?.id]); // Only refetch when user ID changes, not on profile updates
 
-  // Heartbeat / Simulated presence
+  // Real-time polling
   useEffect(() => {
     if (!user) return;
-    const interval = setInterval(() => {
-      api.ping(user.id);
-
-      // Also refresh the counterpart's status if chat is open
-      if (activeChatAsgn) {
-        const otherId = user.role === 'STUDENT'
-          ? activeChatAsgn.writerId
-          : activeChatAsgn.studentId;
-
-        if (otherId) {
-          api.getUser(otherId).then(setChatCounterpart);
+    const pollInterval = setInterval(async () => {
+      try {
+        const promises: Promise<any>[] = [
+          api.getAssignments(),
+          api.getAllMessages(),
+          api.getNotifications(user.id)
+        ];
+        
+        if (user.role === 'ADMIN' || user.role === 'WRITER') {
+          promises.push(api.getAllUsers());
         }
-      }
-    }, 15000); // 15s ping
 
-    return () => clearInterval(interval);
+        const results = await Promise.all(promises);
+        
+        setAssignments(results[0]);
+        setMessages(results[1]);
+        setNotifications(results[2]);
+        
+        if (user.role === 'ADMIN' || user.role === 'WRITER') {
+          setAllUsers(results[3]);
+        }
+
+        if (activeChatAsgn) {
+          const otherId = user.role === 'STUDENT'
+            ? activeChatAsgn.writerId
+            : activeChatAsgn.studentId;
+
+          if (otherId) {
+            api.getUser(otherId).then(setChatCounterpart);
+          }
+        }
+      } catch (e) {
+        console.error('Polling error', e);
+      }
+    }, 5000); // 5s interval as per design spec
+
+    return () => clearInterval(pollInterval);
   }, [user, activeChatAsgn]);
 
   const addNotification = useCallback(async (message: string) => {
@@ -383,6 +402,20 @@ const AppContent: React.FC = () => {
     }
   }, [addNotification]);
 
+  const handleWithdrawQuote = useCallback(async (id: string, writerId: string) => {
+    setIsSyncing(true);
+    try {
+      const updated = await api.withdrawQuote(id, writerId);
+      setAssignments(prev => prev.map(a => a.id === id ? updated : a));
+      await addNotification('Quote withdrawn successfully.');
+    } catch (err: any) {
+      console.error(err);
+      await addNotification('Failed to withdraw quote: ' + err.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [addNotification]);
+
   const handleRespondToQuote = useCallback(async (id: string, action: 'ACCEPT' | 'REJECT') => {
     setIsSyncing(true);
     try {
@@ -495,7 +528,7 @@ const AppContent: React.FC = () => {
       case 'DASHBOARD':
         if (!user) return <Landing onNavigate={handleNavigate} />;
         if (user.role === 'STUDENT') return <StudentDashboard user={user} users={allUsers} assignments={assignments.filter(a => a.studentId === user.id)} messages={messages} onCreateAssignment={handleCreateAssignment} onRespondToQuote={handleRespondToQuote} onOpenChat={handleOpenChat} onDeleteAssignment={handleDeleteAssignment} onNavigate={handleNavigate} preSelectedWriterId={selectedWriterId} onUpdateStatus={handleUpdateStatus} />;
-        if (user.role === 'WRITER') return <WriterDashboard user={user} users={allUsers} assignments={assignments} messages={messages} onSubmitQuote={handleSubmitQuote} onUpdateAssignment={handleUpdateAssignment} onUploadSubmission={handleUploadSubmission} onOpenChat={handleOpenChat} onUpdateProfile={handleUpdateProfile} onRejectAssignment={handleRejectAssignment} onAddAssignment={handleAddAssignment} addNotification={addNotification} />;
+        if (user.role === 'WRITER') return <WriterDashboard user={user} users={allUsers} assignments={assignments} messages={messages} onSubmitQuote={handleSubmitQuote} onUpdateAssignment={handleUpdateAssignment} onUploadSubmission={handleUploadSubmission} onOpenChat={handleOpenChat} onUpdateProfile={handleUpdateProfile} onRejectAssignment={handleRejectAssignment} onAddAssignment={handleAddAssignment} onWithdrawQuote={handleWithdrawQuote} addNotification={addNotification} />;
         if (user.role === 'ADMIN') return <AdminDashboard user={user} assignments={assignments} users={allUsers} />;
         return null;
       default:

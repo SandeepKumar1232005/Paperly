@@ -49,23 +49,49 @@ def predict_with_gemini(image_file):
             new_size = (int(img_rgb.size[0] * ratio), int(img_rgb.size[1] * ratio))
             img_rgb = img_rgb.resize(new_size, Image.LANCZOS)
 
-        prompt = """Analyze this handwriting image and classify its style into EXACTLY ONE of these categories:
+        prompt = """You are a handwriting style classifier.
+Analyze the handwriting in this image ONLY.
 
-1. **Neat** - Clean, well-spaced, print-like letters with consistent sizing. Letters are clearly separated and easy to read.
-2. **Cursive** - Flowing, connected letters with loops and curves. Letters join together in a continuous stroke. Script-like or calligraphic handwriting.
-3. **Bold** - Thick, heavy strokes with strong ink presence. Letters appear dark and prominent. Written with pressure or thick pen/marker.
-4. **Mixed** - A combination of styles, or handwriting that doesn't clearly fit one category.
+Follow these EXACT rules to classify:
 
-IMPORTANT: Look carefully at these features:
-- If letters are CONNECTED with loops and flowing strokes → Cursive
-- If letters are thick/heavy but NOT connected → Bold
-- If letters are clean, separated, and uniform → Neat
-- If it's a mix → Mixed
+CURSIVE:
+- Letters are CONNECTED to each other
+- Strokes flow from one letter to next
+- Letters lean to the right
+- No pen lifts between letters in a word
+Example: Letters join like this ~~~
 
-Respond with ONLY a JSON object in this exact format (no markdown, no extra text):
-{"style": "Cursive", "confidence": 0.95}
+NEAT:
+- Letters are DISCONNECTED from each other
+- Each letter stands alone (printed style)
+- Letters are upright or slightly tilted
+- Clear space between each letter
+Example: Letters look like BLOCK text
 
-The confidence should be between 0.0 and 1.0 based on how clearly the handwriting matches the chosen style."""
+BOLD:
+- Stroke thickness is visibly HEAVY
+- Letters appear dark and thick
+- Pen pressure is clearly strong
+- Works on top of NEAT or CURSIVE
+
+MIXED:
+- ONLY use this if the image clearly shows
+  BOTH connected AND disconnected letters
+- Do not use Mixed if you are unsure
+
+DECISION RULES (in order):
+1. Are letters CONNECTED? → CURSIVE
+2. Are letters DISCONNECTED? → NEAT  
+3. Are strokes very THICK/HEAVY? → BOLD
+4. Both connected AND disconnected? → MIXED
+
+Respond ONLY with this exact JSON.
+No extra text. No explanation outside JSON:
+{
+  "style": "NEAT" or "CURSIVE" or "BOLD" or "MIXED",
+  "confidence": number between 0 and 100,
+  "reason": "one sentence about what you saw"
+}"""
 
         response = model.generate_content([prompt, img_rgb])
 
@@ -81,7 +107,9 @@ The confidence should be between 0.0 and 1.0 based on how clearly the handwritin
 
         result = json.loads(response_text)
         style = result.get('style', 'Mixed')
-        confidence = float(result.get('confidence', 0.5))
+        confidence_val = float(result.get('confidence', 50))
+        # Handle 0-100 scale from new prompt
+        confidence = confidence_val / 100.0 if confidence_val > 1.0 else confidence_val
 
         # Validate the style is in our class list
         if style not in CLASSES:

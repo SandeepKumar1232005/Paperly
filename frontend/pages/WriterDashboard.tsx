@@ -27,10 +27,11 @@ interface WriterDashboardProps {
   onUpdateProfile: (updates: Partial<User>) => void;
   onRejectAssignment: (id: string) => void;
   onAddAssignment: (assignment: Assignment) => void;
+  onWithdrawQuote: (id: string, writerId: string) => void;
   addNotification?: (message: string) => Promise<void>;
 }
 
-const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], assignments, messages = [], onUpdateAssignment, onSubmitQuote, onUploadSubmission, onOpenChat, onUpdateProfile, onRejectAssignment, onAddAssignment, addNotification }) => {
+const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], assignments, messages = [], onUpdateAssignment, onSubmitQuote, onUploadSubmission, onOpenChat, onUpdateProfile, onRejectAssignment, onAddAssignment, onWithdrawQuote, addNotification }) => {
   const [selectedAsgn, setSelectedAsgn] = useState<Assignment | null>(null);
   const [quoteData, setQuoteData] = useState<{ id: string, amount: string, comment: string } | null>(null);
   const [submissionText, setSubmissionText] = useState('');
@@ -39,8 +40,8 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
   const [aiResult, setAiResult] = useState<{ score: number, feedback: string, plagiarismLikelihood: string } | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   
-  const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'ACTIVE'>(() => {
-    return (sessionStorage.getItem('writer_active_tab') as 'MARKETPLACE' | 'ACTIVE') || 'MARKETPLACE';
+  const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'ACTIVE' | 'QUOTES'>(() => {
+    return (sessionStorage.getItem('writer_active_tab') as 'MARKETPLACE' | 'ACTIVE' | 'QUOTES') || 'MARKETPLACE';
   });
 
   useEffect(() => {
@@ -116,9 +117,14 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
   const myAssignments = assignments.filter(a => a.writerId === user.id && a.status !== AssignmentStatus.CANCELLED);
   const cancelledAssignments = assignments.filter(a => a.writerId === user.id && a.status === AssignmentStatus.CANCELLED);
   const availableAssignments = assignments.filter(a =>
-    (a.status === AssignmentStatus.PENDING || a.status === AssignmentStatus.PENDING_REVIEW) &&
+    a.status === AssignmentStatus.PENDING &&
     !a.writerId &&
     (!a.rejectedBy || !a.rejectedBy.includes(user.id))
+  );
+
+  const pendingQuotes = assignments.filter(a => 
+    a.status === AssignmentStatus.PENDING_REVIEW && 
+    a.quotingWriterId === user.id
   );
 
   const incomingRequests = assignments.filter(a => 
@@ -182,7 +188,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="dark:block hidden">
+        <div className="block hidden">
           <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-emerald-600/8 rounded-full blur-[150px]" />
           <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-violet-500/6 rounded-full blur-[120px]" />
         </div>
@@ -218,6 +224,12 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                     ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20'
                     : 'glass text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
                   <Briefcase size={16} /> My Work ({myAssignments.length})
+                </button>
+                <button onClick={() => setActiveTab('QUOTES')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'QUOTES'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'glass text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+                  <MessageSquare size={16} /> Quotes ({pendingQuotes.length})
                 </button>
                 {cancelledAssignments.length > 0 && (
                   <button onClick={() => setActiveTab('CANCELLED' as any)}
@@ -301,7 +313,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                           <button key={status}
                             onClick={() => onUpdateProfile({ availability_status: status as any })}
                             className={`py-2.5 rounded-xl text-[10px] font-bold transition-all border ${user.availability_status === status
-                              ? (status === 'ONLINE' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500 dark:text-emerald-400' : status === 'BUSY' ? 'bg-fuchsia-500/20 border-fuchsia-500/30 text-fuchsia-400' : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)]')
+                              ? (status === 'ONLINE' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : status === 'BUSY' ? 'bg-fuchsia-500/20 border-fuchsia-500/30 text-fuchsia-400' : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)]')
                               : 'border-transparent text-[var(--text-tertiary)] hover:bg-[var(--surface)]'}`}>
                             {status}
                           </button>
@@ -354,11 +366,11 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                             You must upload your handwriting sample and payment QR code before you can accept orders.
                           </p>
                           <div className="flex flex-wrap gap-3 mb-4">
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${hasHandwritingSample ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400' : 'bg-[var(--surface)] text-[var(--text-tertiary)]'}`}>
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${hasHandwritingSample ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[var(--surface)] text-[var(--text-tertiary)]'}`}>
                               {hasHandwritingSample ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
                               Handwriting Sample
                             </div>
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${hasQRCode ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400' : 'bg-[var(--surface)] text-[var(--text-tertiary)]'}`}>
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${hasQRCode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[var(--surface)] text-[var(--text-tertiary)]'}`}>
                               {hasQRCode ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
                               Payment QR Code
                             </div>
@@ -417,28 +429,16 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex gap-2 mt-4">
-                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                  onClick={() => {
-                                    if (!isProfileComplete) setIsEditingProfile(true);
-                                    else handleAcceptAssignment(asgn.id);
-                                  }}
-                                  disabled={!isProfileComplete || isAccepting === asgn.id}
-                                  className={`flex-1 py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
-                                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20 hover:shadow-emerald-500/30'
-                                    : 'glass text-[var(--text-tertiary)] cursor-not-allowed'}`}>
-                                  {isAccepting === asgn.id ? 'Locking...' : (isProfileComplete ? 'Accept Now' : 'Complete Profile')}
-                                </motion.button>
-                                
+                              <div className="flex mt-4">
                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                   onClick={() => {
                                     if (!isProfileComplete) setIsEditingProfile(true);
                                     else setQuoteData({ id: asgn.id, amount: String(asgn.budget), comment: '' });
                                   }}
-                                  className={`px-4 py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
-                                    ? 'glass text-[var(--accent)] hover:bg-violet-500/10'
+                                  className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${isProfileComplete
+                                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20 hover:shadow-emerald-500/30'
                                     : 'glass text-[var(--text-tertiary)] cursor-not-allowed'}`}>
-                                  Negotiate
+                                  {isProfileComplete ? 'Submit Quote' : 'Complete Profile to Quote'}
                                 </motion.button>
                               </div>
                             )}
@@ -474,7 +474,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                             exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.05 }} whileHover={{ scale: 1.01 }}
                             className="glass-card p-6 flex flex-col gap-4 group border-l-4 border-amber-500 bg-amber-500/5">
                             
-                            <div className="flex items-center gap-2 bg-amber-500/10 text-amber-500 dark:text-amber-400 px-4 py-2 rounded-xl text-sm font-bold">
+                            <div className="flex items-center gap-2 bg-amber-500/10 text-amber-400 px-4 py-2 rounded-xl text-sm font-bold">
                               <Zap size={16} />
                               Direct Hire Offer — A student has chosen you specifically!
                             </div>
@@ -532,12 +532,12 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                               <p className="text-sm text-[var(--text-secondary)] mb-1 line-clamp-2">{asgn.description}</p>
                               <div className="flex gap-4 text-xs text-[var(--text-tertiary)] mt-2">
                                 <span>Deadline: {new Date(asgn.deadline).toLocaleDateString()}</span>
-                                <span className="text-emerald-500 dark:text-emerald-400 font-bold">Budget: ₹{asgn.budget}</span>
+                                <span className="text-emerald-400 font-bold">Budget: ₹{asgn.budget}</span>
                                 {asgn.pages && <span>{asgn.pages} Pages</span>}
                               </div>
                               {(asgn.status === AssignmentStatus.IN_PROGRESS || asgn.status === AssignmentStatus.COMPLETED) && (
                                 <div className="flex gap-4 text-xs font-mono text-[var(--text-tertiary)] mt-2">
-                                  <span className="text-emerald-500 dark:text-emerald-400 font-bold">Earnings: ₹{asgn.net_earnings || asgn.budget}</span>
+                                  <span className="text-emerald-400 font-bold">Earnings: ₹{asgn.net_earnings || asgn.budget}</span>
                                 </div>
                               )}
                             </div>
@@ -577,7 +577,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                                       </motion.button>
                                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                         onClick={() => onRejectAssignment(asgn.id)}
-                                        className="px-5 py-2.5 glass text-red-500 dark:text-red-400 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-500/10 transition-colors">
+                                        className="px-5 py-2.5 glass text-red-400 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-500/10 transition-colors">
                                         <X size={16} /> Decline
                                       </motion.button>
                                     </>
@@ -607,6 +607,59 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                           </motion.div>
                           );
                         })}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+              {activeTab === 'QUOTES' && (
+                <motion.div key="quotes" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                      <MessageSquare className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="text-xl font-bold text-[var(--text-primary)] font-display">Pending Quotes</h2>
+                  </div>
+
+                  {pendingQuotes.length === 0 ? (
+                    <div className="glass-card p-12 text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--surface)] flex items-center justify-center">
+                        <MessageSquare className="w-8 h-8 text-[var(--text-tertiary)]" />
+                      </div>
+                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2 font-display">No Pending Quotes</h3>
+                      <p className="text-[var(--text-secondary)]">Your submitted quotes waiting for a student's response will appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <AnimatePresence>
+                        {pendingQuotes.map((asgn, i) => (
+                          <motion.div layout key={asgn.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.05 }}
+                            className="glass-card p-5 group border-l-4 border-blue-500 bg-blue-500/5">
+                            <div className="flex justify-between items-start mb-3">
+                               <span className="px-3 py-1 bg-[var(--surface)] text-[var(--text-tertiary)] text-xs font-semibold rounded-lg uppercase">{asgn.subject}</span>
+                               <span className="text-blue-500 font-bold bg-blue-500/10 px-3 py-1 rounded-lg text-sm flex items-center gap-1 animate-pulse">
+                                 AWAITING ACCEPTANCE
+                               </span>
+                            </div>
+                            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-2">{asgn.title}</h3>
+                            <div className="flex justify-between items-center bg-blue-500/10 p-4 rounded-xl mt-4 border border-blue-500/20">
+                              <div>
+                                <p className="text-xs font-bold text-blue-500 uppercase tracking-wider">Your Quote</p>
+                                <p className="text-2xl font-bold text-[var(--text-primary)]">₹{asgn.quoted_amount}</p>
+                              </div>
+                              <button onClick={() => onWithdrawQuote(asgn.id, user.id)}
+                                className="px-4 py-2 glass text-red-500 hover:bg-red-500/10 rounded-lg text-xs font-bold transition-colors">
+                                Withdraw Quote
+                              </button>
+                            </div>
+                            {asgn.quoteComment && (
+                              <p className="text-sm text-[var(--text-secondary)] mt-3 italic border-l-2 border-[var(--border)] pl-3">
+                                "{asgn.quoteComment}"
+                              </p>
+                            )}
+                          </motion.div>
+                        ))}
                       </AnimatePresence>
                     </div>
                   )}

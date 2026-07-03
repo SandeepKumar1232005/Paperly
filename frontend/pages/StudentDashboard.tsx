@@ -107,7 +107,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const stats = [
     { label: 'Total', value: assignments.length, icon: FileText, color: 'from-blue-500 to-cyan-500' },
     { label: 'In Progress', value: assignments.filter(a => a.status === AssignmentStatus.IN_PROGRESS).length, icon: Clock, color: 'from-fuchsia-500 to-orange-500' },
-    { label: 'Awaiting Review', value: assignments.filter(a => a.status === AssignmentStatus.QUOTED || a.status === AssignmentStatus.SUBMITTED || a.status === AssignmentStatus.PENDING_REVIEW).length, icon: AlertCircle, color: 'from-violet-500 to-purple-500' },
+    { label: 'Awaiting Review', value: assignments.filter(a => a.status === AssignmentStatus.PENDING_REVIEW || a.status === AssignmentStatus.SUBMITTED).length, icon: AlertCircle, color: 'from-violet-500 to-purple-500' },
     { label: 'Completed', value: assignments.filter(a => a.status === AssignmentStatus.COMPLETED).length, icon: CheckCircle, color: 'from-emerald-500 to-green-500' }
   ];
 
@@ -116,9 +116,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       case AssignmentStatus.COMPLETED: return 100;
       case AssignmentStatus.SUBMITTED: return 90;
       case AssignmentStatus.IN_PROGRESS: return 75;
-      case AssignmentStatus.CONFIRMED: return 50;
-      case AssignmentStatus.QUOTED: return 35;
-      case AssignmentStatus.PENDING_REVIEW: return 20;
+      case AssignmentStatus.ASSIGNED: return 50;
+      case AssignmentStatus.PENDING_REVIEW: return 25;
       case AssignmentStatus.PENDING_WRITER_ACCEPTANCE: return 20;
       case AssignmentStatus.REJECTED: return 0;
       default: return 10;
@@ -179,17 +178,22 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             </div>
           </div>
 
-          {/* Quote Info */}
-          {asgn.status === AssignmentStatus.QUOTED && (
-            <div className="bg-[var(--accent-muted)] border border-[var(--accent)]/20 p-4 rounded-xl">
+          {/* Quote Info — Writer submitted a negotiated price */}
+          {asgn.status === AssignmentStatus.PENDING_REVIEW && asgn.quoted_amount && (
+            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-semibold text-[var(--accent)]">Writer Quote</span>
-                <span className="font-bold text-lg text-[var(--text-primary)]">₹{asgn.quoted_amount}</span>
+                <span className="text-xs font-semibold text-blue-400">Writer's Quote</span>
+                <div className="flex items-center gap-2">
+                  <span className="line-through text-sm text-[var(--text-tertiary)]">₹{asgn.budget}</span>
+                  <span className="font-bold text-lg text-blue-400">₹{asgn.quoted_amount}</span>
+                </div>
               </div>
-              <p className="text-xs text-[var(--text-secondary)] italic mb-3">"{asgn.writer_comment || 'I can help with this.'}"</p>
+              {asgn.quoteComment && (
+                <p className="text-xs text-[var(--text-secondary)] italic mb-3 border-l-2 border-blue-500/40 pl-3">"{asgn.quoteComment}"</p>
+              )}
               <div className="flex gap-2">
-                <button onClick={() => onRespondToQuote(asgn.id, 'ACCEPT')} className="flex-1 bg-[var(--accent)] text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">Accept</button>
-                <button onClick={() => onRespondToQuote(asgn.id, 'REJECT')} className="flex-1 bg-[var(--surface)] text-red-500 dark:text-red-400 py-2 rounded-lg text-xs font-bold hover:bg-[var(--surface-hover)]">Decline</button>
+                <button onClick={() => onRespondToQuote(asgn.id, 'ACCEPT')} className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity shadow-lg shadow-emerald-500/20">✓ Accept Quote</button>
+                <button onClick={() => onRespondToQuote(asgn.id, 'REJECT')} className="flex-1 bg-[var(--surface)] text-red-400 py-2.5 rounded-lg text-xs font-bold hover:bg-red-500/10 transition-colors">✗ Reject</button>
               </div>
             </div>
           )}
@@ -199,7 +203,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
               <div className="flex items-center gap-2 mb-1">
                 <Clock size={14} className="text-amber-500" />
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Awaiting Writer Response</span>
+                <span className="text-xs font-bold text-amber-400">Awaiting Writer Response</span>
               </div>
               <p className="text-xs text-[var(--text-secondary)]">Your hire request has been sent. The writer can accept, negotiate, or decline.</p>
             </div>
@@ -210,7 +214,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
               <div className="flex items-center gap-2 mb-1">
                 <AlertCircle size={14} className="text-red-500" />
-                <span className="text-xs font-bold text-red-600 dark:text-red-400">Request Declined</span>
+                <span className="text-xs font-bold text-red-400">Request Declined</span>
               </div>
               <p className="text-xs text-[var(--text-secondary)] mb-3">Unfortunately, the selected writer declined your assignment.</p>
               <div className="flex gap-2">
@@ -221,7 +225,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           )}
 
           {/* Budget */}
-          {asgn.status !== AssignmentStatus.QUOTED && (
+          {asgn.status !== AssignmentStatus.PENDING_REVIEW && (
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold text-[var(--text-primary)]">₹{asgn.budget > 0 ? asgn.budget : '--'}</span>
               <span className="text-xs text-[var(--text-tertiary)]">budget</span>
@@ -236,8 +240,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               <Eye size={14} /> Details
             </button>
             <button onClick={() => onOpenChat(asgn)}
-              disabled={!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)}
-              className={`relative py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.QUOTED, AssignmentStatus.CANCELLED].includes(asgn.status)
+              disabled={!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.PENDING_REVIEW, AssignmentStatus.CANCELLED].includes(asgn.status)}
+              className={`relative py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${!asgn.writerId || [AssignmentStatus.PENDING, AssignmentStatus.PENDING_REVIEW, AssignmentStatus.CANCELLED].includes(asgn.status)
                 ? 'bg-[var(--surface)] text-[var(--text-tertiary)] cursor-not-allowed opacity-50'
                 : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 hover:scale-[1.02] shadow-fuchsia-500/20 hover:shadow-fuchsia-500/40'}`}>
               <MessageSquare size={14} /> Chat
@@ -249,7 +253,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             </button>
           </div>
 
-          {(asgn.status === AssignmentStatus.CONFIRMED) && asgn.paymentStatus !== 'PAID' && (
+          {(asgn.status === AssignmentStatus.ASSIGNED) && asgn.paymentStatus !== 'PAID' && (
             <button onClick={() => setPaymentAssignment(asgn)}
               className="w-full bg-emerald-500 text-white py-3 rounded-xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]">
               Pay Now
@@ -258,7 +262,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
           {(asgn.status === AssignmentStatus.PENDING || asgn.status === AssignmentStatus.PENDING_REVIEW || asgn.status === AssignmentStatus.PENDING_WRITER_ACCEPTANCE || asgn.status === AssignmentStatus.REJECTED) && (
             <button onClick={() => setDeleteConfirmId(asgn.id)}
-              className="col-span-2 text-xs text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 font-semibold flex items-center justify-center gap-1 py-2">
+              className="col-span-2 text-xs text-red-400 hover:text-red-300 font-semibold flex items-center justify-center gap-1 py-2">
               <Trash2 size={12} /> Delete Request
             </button>
           )}
@@ -271,7 +275,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="dark:block hidden">
+        <div className="block hidden">
           <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-violet-600/8 rounded-full blur-[150px]" />
           <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] bg-fuchsia-500/6 rounded-full blur-[120px]" />
         </div>
@@ -575,7 +579,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 {viewingAssignment.submission && (
                   <div className="bg-emerald-500/10 p-5 rounded-xl border border-emerald-500/20">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-bold text-emerald-500 dark:text-emerald-400">Package Shipped!</h3>
+                      <h3 className="font-bold text-emerald-400">Package Shipped!</h3>
                       {viewingAssignment.submission.startsWith('http') ? (
                         <a href={viewingAssignment.submission} target="_blank" rel="noopener noreferrer" className="text-xs bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-1.5">
                           Track Delivery
@@ -592,7 +596,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <button onClick={() => {
                           const reason = prompt("Revision feedback:");
                           if (reason) onUpdateStatus(viewingAssignment.id, AssignmentStatus.REVISION, reason);
-                        }} className="flex-1 bg-fuchsia-500/20 text-fuchsia-500 dark:text-fuchsia-400 py-3 rounded-xl font-bold hover:bg-fuchsia-500/30 transition-colors">Request Revision</button>
+                        }} className="flex-1 bg-fuchsia-500/20 text-fuchsia-400 py-3 rounded-xl font-bold hover:bg-fuchsia-500/30 transition-colors">Request Revision</button>
                       </div>
                     )}
                   </div>
@@ -625,7 +629,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
               )}
 
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 ${isAcceptedOrInProgress ? 'bg-orange-500/10 text-orange-500 dark:text-orange-400' : 'bg-red-500/10 text-red-500 dark:text-red-400'}`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 ${isAcceptedOrInProgress ? 'bg-orange-500/10 text-orange-400' : 'bg-red-500/10 text-red-400'}`}>
                 <AlertCircle size={32} />
               </div>
               

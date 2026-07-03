@@ -3,16 +3,14 @@ export type UserRole = 'STUDENT' | 'WRITER' | 'ADMIN';
 
 export enum AssignmentStatus {
   PENDING = 'PENDING',
-  PENDING_REVIEW = 'PENDING_REVIEW', // New
-  QUOTED = 'QUOTED', // New
-  CONFIRMED = 'CONFIRMED', // New
-  ASSIGNED = 'ASSIGNED',
+  PENDING_REVIEW = 'PENDING_REVIEW', // Writer submitted a quote, awaiting student decision
+  ASSIGNED = 'ASSIGNED',             // Student accepted quote, writer is assigned
   IN_PROGRESS = 'IN_PROGRESS',
   SUBMITTED = 'SUBMITTED',
   COMPLETED = 'COMPLETED',
   REVISION = 'REVISION',
-  PENDING_WRITER_ACCEPTANCE = 'PENDING_WRITER_ACCEPTANCE', // New
-  REJECTED = 'REJECTED', // New
+  PENDING_WRITER_ACCEPTANCE = 'PENDING_WRITER_ACCEPTANCE', // Direct hire pending
+  REJECTED = 'REJECTED', // Direct hire rejected
   CANCELLED = 'CANCELLED'
 }
 
@@ -53,10 +51,10 @@ export interface Assignment {
   feedback?: string;
   createdAt: string;
   paymentStatus: 'UNPAID' | 'ESCROW' | 'RELEASED' | 'PAID';
-  quoted_amount?: number; // New
-  revision_count?: number; // New
-  writer_comment?: string; // New
-  quotingWriterId?: string; // New - to track who quoted
+  quoted_amount?: number; // Writer's negotiated price
+  revision_count?: number;
+  quoteComment?: string; // Writer's pitch message with the quote
+  quotingWriterId?: string; // Writer who submitted the quote (not yet assigned)
   provider?: User; // New - to match backend structure if needed
   rejectedBy?: string[]; // New - IDs of writers who rejected this
   attachment?: string | null; // New - URL/Path to attached file
@@ -72,23 +70,6 @@ export interface Assignment {
   visibility?: 'ALL_WRITERS' | 'SELECTED_STYLES'; // New
 }
 
-export interface Transaction {
-  id: string;
-  assignmentId: string;
-  amount: number;
-  type: 'PAYMENT' | 'PAYOUT' | 'REFUND';
-  timestamp: string;
-  status: 'PENDING' | 'SUCCESS' | 'FAILED';
-}
-
-export interface SystemLog {
-  id: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  endpoint: string;
-  statusCode: number;
-  duration: number;
-  timestamp: string;
-}
 
 export interface ChatMessage {
   id: string;

@@ -6,13 +6,12 @@ import { useGSAP } from '@gsap/react';
 import { navigateWithTransition } from '../lib/pageTransition';
 
 gsap.registerPlugin(ScrollTrigger);
-import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen, Sun, Moon, ArrowUp } from 'lucide-react';
+import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen, ArrowUp } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
 import FeatureIcon3D from '../components/FeatureIcon3D';
 import ParticleTrail from '../components/ParticleTrail';
 import Logo from '../components/Logo';
-import { useTheme } from '../context/ThemeContext';
 import RevealOnScroll from '../components/RevealOnScroll';
 
 import HandwritingShowcase from '../components/landing/HandwritingShowcase';
@@ -28,7 +27,6 @@ interface LandingProps {
 }
 
 const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
-  const { theme, toggleTheme } = useTheme();
   const scrollSectionRef = useRef<HTMLElement>(null);
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -202,13 +200,13 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       {/* Animated Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[var(--bg-primary)]" />
-        <div className="dark:block hidden">
+        <div className="block hidden">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px]"></div>
           <div className="orb-1 absolute top-0 left-1/4 w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[150px] mix-blend-screen opacity-40" />
           <div className="orb-2 absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-fuchsia-600/15 rounded-full blur-[140px] mix-blend-screen opacity-40" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[130px] mix-blend-screen opacity-30" />
         </div>
-        <div className="dark:hidden block">
+        <div className="hidden block">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-transparent to-fuchsia-50/30" />
         </div>
       </div>
@@ -253,26 +251,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 </a>
               </div>
               <div className="flex gap-2 md:gap-3 items-center">
-                {/* Theme Toggle */}
-                <motion.button
-                  whileTap={{ scale: 0.9, rotate: 180 }}
-                  onClick={toggleTheme}
-                  className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  <AnimatePresence mode="wait">
-                    {theme === 'dark' ? (
-                      <motion.div key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                        <Sun size={18} />
-                      </motion.div>
-                    ) : (
-                      <motion.div key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                        <Moon size={18} />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-
                 <button onClick={() => navigateWithTransition(() => onNavigate('LOGIN'))} className="px-4 md:px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-none">
                   Log In
                 </button>
