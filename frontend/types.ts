@@ -34,6 +34,8 @@ export interface User {
   qr_code_url?: string; // New - For direct payments
   pricePerPage?: number; // Writer's rate per page in INR
   distance_km?: number | string; // Distance from current user
+  auth_provider?: string; // 'google' | 'email' | null
+  is_custom_profile_picture?: boolean; // true if user uploaded custom avatar
 }
 
 export interface Assignment {

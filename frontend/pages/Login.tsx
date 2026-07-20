@@ -4,8 +4,9 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { User } from '../types';
-import { api } from '../services/api';
+import { api, UsernameTakenError } from '../services/api';
 import GlowButton from '../components/GlowButton';
+import Modal from '../components/Modal';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -20,19 +21,59 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState<string | null>(null);
 
+  const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const [pendingGoogleToken, setPendingGoogleToken] = useState<string | null>(null);
+  const [selectedUsername, setSelectedUsername] = useState<string>('');
+
+
   const loginWithGoogle = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setIsLoading('google');
+      setError('');
       try {
         const user = await api.socialLogin('google', tokenResponse.access_token);
-        if (onSocialLoginSuccess) onSocialLoginSuccess(user);
+        if (onSocialLoginSuccess) await onSocialLoginSuccess(user);
       } catch (err: any) {
-        setError(err.message || 'Google login failed');
+        if (err.name === 'UsernameTakenError') {
+          setPendingGoogleToken(tokenResponse.access_token);
+          setUsernameSuggestions(err.suggestions || []);
+          setSelectedUsername(err.suggestions?.[0] || '');
+          setShowUsernamePrompt(true);
+        } else {
+          setError(err.message || 'Google login failed');
+        }
+      } finally {
         setIsLoading(null);
       }
     },
-    onError: () => setError('Google login Failed'),
+    onError: (errResp: any) => {
+      console.warn("Google OAuth Popup Error:", errResp);
+      setError('Google Popup failed or closed. Please try again.');
+      setIsLoading(null);
+    },
   });
+
+  const handleUsernameSubmit = async () => {
+    if (!pendingGoogleToken || !selectedUsername) return;
+    setIsLoading('google');
+    setError('');
+    try {
+      const user = await api.socialLogin('google', pendingGoogleToken, selectedUsername);
+      setShowUsernamePrompt(false);
+      if (onSocialLoginSuccess) await onSocialLoginSuccess(user);
+    } catch (err: any) {
+      if (err.name === 'UsernameTakenError') {
+        setUsernameSuggestions(err.suggestions || []);
+        setError('That username is also taken. Please try another.');
+      } else {
+        setError(err.message || 'Google login failed');
+        setShowUsernamePrompt(false);
+      }
+    } finally {
+      setIsLoading(null);
+    }
+  };
 
   const handleStandardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,15 +114,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
       </motion.button>
 
       {/* Left Panel - Brand Visual (hidden on mobile) */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative z-10 p-12">
-        <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-md">
-          <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white font-black text-3xl mb-8 shadow-lg shadow-violet-500/30">
+      <div className="hidden lg:flex flex-1 items-start justify-center relative z-10 p-8 lg:p-12 pt-20 lg:pt-24">
+        <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-md w-full">
+          <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white font-black text-3xl mb-6 shadow-lg shadow-violet-500/30">
             P
           </div>
           <h2 className="text-4xl font-black text-[var(--text-primary)] leading-tight mb-4 font-display">
             Welcome back to <span className="gradient-text">Paperly</span>
           </h2>
-          <p className="text-lg text-[var(--text-secondary)] mb-8 leading-relaxed">
+          <p className="text-lg text-[var(--text-secondary)] mb-6 leading-relaxed">
             Sign in to manage your assignments, connect with writers, and track your progress.
           </p>
 
@@ -103,7 +144,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center relative z-10 px-4 py-12">
+      <div className="flex-1 flex items-start justify-center relative z-10 px-4 py-12 pt-20 lg:pt-24">
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -121,16 +162,18 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
             </div>
 
             {/* Google Login */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => loginWithGoogle()}
-              disabled={!!isLoading}
-              className="w-full flex items-center justify-center gap-3 glass-card-premium !rounded-xl py-3.5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all mb-6"
-            >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-              <span>{isLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
-            </motion.button>
+            <div className="mb-6">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => loginWithGoogle()}
+                disabled={!!isLoading}
+                className="w-full flex items-center justify-center gap-3 glass-card-premium !rounded-xl py-3.5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all"
+              >
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
+                <span>{isLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
+              </motion.button>
+            </div>
 
             {/* Divider */}
             <div className="flex items-center gap-4 mb-6">
@@ -156,7 +199,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
                 <div className="relative">
                   <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
                   <input type="text" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="you@example.com or username" />
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="Enter your email or username" />
                 </div>
               </div>
 
@@ -170,7 +213,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
                 <div className="relative">
                   <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
                   <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-12 py-3.5 rounded-xl glass-input" placeholder="••••••••" />
+                    className="w-full pl-11 pr-12 py-3.5 rounded-xl glass-input" placeholder="Enter your password" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -205,6 +248,56 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSocialLoginSuccess, onNavigate
           </div>
         </motion.div>
       </div>
+      
+      {/* Username Prompt Modal */}
+      {showUsernamePrompt && (
+        <Modal
+          isOpen={showUsernamePrompt}
+          onClose={() => setShowUsernamePrompt(false)}
+          title="Choose a Username"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--text-secondary)]">
+              Your default username is already taken. Please choose one from below or type a custom one.
+            </p>
+            {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm">{error}</div>}
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Suggestions</label>
+              <div className="flex flex-wrap gap-2">
+                {usernameSuggestions.map((sugg) => (
+                  <button
+                    key={sugg}
+                    onClick={() => setSelectedUsername(sugg)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      selectedUsername === sugg
+                        ? 'bg-violet-500/20 text-violet-400 border border-violet-500/50'
+                        : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--text-tertiary)]'
+                    }`}
+                  >
+                    {sugg}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Custom Username</label>
+              <input
+                type="text"
+                value={selectedUsername}
+                onChange={(e) => setSelectedUsername(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl glass-input"
+                placeholder="Type your username..."
+              />
+            </div>
+
+            <GlowButton onClick={handleUsernameSubmit} disabled={!selectedUsername || !!isLoading} className="w-full mt-4" size="lg">
+              {isLoading === 'google' ? 'Saving...' : 'Confirm'}
+            </GlowButton>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

@@ -3,7 +3,7 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/cropImage';
 import { User } from '../types';
 import HandwritingUpload from './HandwritingUpload';
-import { Camera, CheckCircle, UploadCloud, X, MapPin, Info } from 'lucide-react';
+import { Camera, Info } from 'lucide-react';
 import { Modal } from './Modal';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -30,6 +30,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   const [tempImg, setTempImg] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
 
+  // Image loading & error states for avatar preview
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // Get user initials for fallback
+  const getInitials = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return (parts[0]?.[0] || '?').toUpperCase();
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -52,6 +63,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
         const croppedImage = await getCroppedImg(tempImg, croppedAreaPixels, rotation);
         if (croppedImage) {
           setAvatar(croppedImage);
+          setImgLoaded(false);
+          setImgError(false);
           setIsCropping(false);
           setTempImg(null);
         }
@@ -66,14 +79,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
     setTempImg(null);
   };
 
+  const isDiceBearAvatar = (url: string) => url.includes('api.dicebear.com');
+
   const handleSave = () => {
-    onSave({
+    const avatarChanged = avatar !== user.avatar;
+    const saveData: Partial<typeof user> & { is_custom_profile_picture?: boolean } = {
       name,
       avatar,
       address,
       handwriting_style: handwritingStyle,
-      handwriting_confidence: handwritingConfidence
-    });
+      handwriting_confidence: handwritingConfidence,
+    };
+    // Track custom profile picture status
+    if (avatarChanged) {
+      // If user picked a DiceBear avatar, mark as NOT custom (allows Google sync to resume)
+      saveData.is_custom_profile_picture = !isDiceBearAvatar(avatar);
+    }
+    onSave(saveData);
     toast.success('Profile changes saved successfully!');
     onClose();
   };
@@ -142,7 +164,27 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                 <div className="flex flex-col items-center mb-8">
                   <div className="relative group">
                     <div className={`w-32 h-32 rounded-full overflow-hidden border-2 border-[var(--border)] bg-[var(--surface)] ${isUploading ? 'opacity-50' : ''}`}>
-                      <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
+                      {/* Loading skeleton */}
+                      {!imgLoaded && !imgError && avatar && (
+                        <div className="w-full h-full animate-pulse bg-gradient-to-br from-[var(--surface)] to-[var(--surface-hover)]" />
+                      )}
+                      {/* Avatar image */}
+                      {avatar && !imgError && (
+                        <img
+                          src={avatar}
+                          alt="Profile"
+                          className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          referrerPolicy="no-referrer"
+                          onLoad={() => setImgLoaded(true)}
+                          onError={() => { setImgError(true); setImgLoaded(true); }}
+                        />
+                      )}
+                      {/* Initials fallback */}
+                      {(!avatar || imgError) && (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white text-3xl font-bold">
+                          {getInitials(name || user.name)}
+                        </div>
+                      )}
                       {isUploading && (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
@@ -171,7 +213,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                         return (
                           <button
                             key={seed} type="button"
-                            onClick={() => setAvatar(url)}
+                            onClick={() => { setAvatar(url); setImgLoaded(false); setImgError(false); }}
                             className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-transform hover:scale-110 ${avatar === url ? 'border-violet-500 ring-2 ring-violet-500/20 scale-110' : 'border-[var(--border)]'}`}
                           >
                             <img src={url} alt={seed} className="w-full h-full object-cover" />

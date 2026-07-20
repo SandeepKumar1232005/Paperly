@@ -11,7 +11,6 @@ import WriterDashboard from './pages/WriterDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ChatWindow from './components/ChatWindow';
 import { api } from './services/api';
-import { db } from './services/db';
 import LoadingScreen from './components/LoadingScreen';
 import { Writers } from './pages/Writers';
 import Cursor from './components/Cursor';
@@ -22,12 +21,11 @@ type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'FORGOT_PASSWO
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
-import gsap from 'gsap';
 
 
 
 const App: React.FC = () => {
-  console.log("Debug: VITE_GOOGLE_CLIENT_ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
         <Cursor />

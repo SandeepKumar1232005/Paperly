@@ -1,5 +1,5 @@
 
-import { User, Assignment, AssignmentStatus } from './types';
+import { User, Assignment } from './types';
 
 export const mockUsers: User[] = [
     {

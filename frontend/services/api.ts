@@ -13,6 +13,15 @@ const resolveMediaUrl = (url: string | null | undefined) => {
   return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
+export class UsernameTakenError extends Error {
+  suggestions: string[];
+  constructor(suggestions: string[]) {
+    super('USERNAME_TAKEN');
+    this.name = 'UsernameTakenError';
+    this.suggestions = suggestions;
+  }
+}
+
 export const api = {
   // Authentication
   async getCurrentUser(): Promise<User | null> {
@@ -59,6 +68,8 @@ export const api = {
           ),
           qr_code_url: resolveMediaUrl(userData.qr_code_url),
           pricePerPage: userData.price_per_page,
+          auth_provider: userData.auth_provider || undefined,
+          is_custom_profile_picture: userData.is_custom_profile_picture || false,
         };
 
         const localUsers = db.getUsers();
@@ -301,7 +312,7 @@ export const api = {
     return newUser;
   },
 
-  async socialLogin(provider: string, accessToken: string): Promise<User> {
+  async socialLogin(provider: string, accessToken: string, username?: string): Promise<User> {
     try {
       const response = await fetch(`http://localhost:8000/api/auth/${provider}/`, {
         method: 'POST',
@@ -310,12 +321,16 @@ export const api = {
         },
         body: JSON.stringify({
           access_token: accessToken,
+          ...(username ? { username } : {}),
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.non_field_errors || errorData.detail || 'Social login failed');
+        if (errorData.error === 'USERNAME_TAKEN') {
+          throw new UsernameTakenError(errorData.suggestions || []);
+        }
+        throw new Error(errorData.error || errorData.non_field_errors || errorData.detail || 'Social login failed');
       }
 
       const data = await response.json();
@@ -342,7 +357,7 @@ export const api = {
         }
         userData = await userResponse.json();
       }
-      console.log('DEBUG: Social Login User Data:', userData);
+
 
 
       const roleMap: Record<string, 'STUDENT' | 'WRITER' | 'ADMIN'> = {
@@ -364,7 +379,9 @@ export const api = {
         lastActive: new Date().toISOString(),
         username: userData.username,
         is_verified: userData.is_verified || false,
-        address: userData.address || ''
+        address: userData.address || '',
+        auth_provider: userData.auth_provider || undefined,
+        is_custom_profile_picture: userData.is_custom_profile_picture || false,
       };
 
       // Sync with local DB to ensure hybrid app works
@@ -445,6 +462,10 @@ export const api = {
         backendUpdates.price_per_page = updates.pricePerPage;
         delete backendUpdates.pricePerPage;
       }
+      // If avatar is being changed, mark as custom profile picture
+      if (updates.avatar !== undefined && updates.is_custom_profile_picture === undefined) {
+        backendUpdates.is_custom_profile_picture = true;
+      }
 
       const response = await fetch('http://localhost:8000/api/auth/user/', {
         method: 'PATCH',
@@ -482,6 +503,8 @@ export const api = {
             handwriting_samples: (data.handwriting_samples || updates.handwriting_samples || users[idx].handwriting_samples || []).map((s: any) => 
               resolveMediaUrl(typeof s === 'string' ? s : s.sample_url)
             ),
+            auth_provider: data.auth_provider || users[idx].auth_provider,
+            is_custom_profile_picture: data.is_custom_profile_picture ?? updates.is_custom_profile_picture ?? users[idx].is_custom_profile_picture,
           };
           users[idx] = backendUser;
           db.saveUsers(users);

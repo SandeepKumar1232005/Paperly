@@ -5,8 +5,7 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 import os
 import jwt
-from utils.firebase import db
-from google.cloud import firestore
+from database.repositories.users import UserRepository
 from .utils import predict_handwriting_style
 
 class PredictHandwritingView(APIView):
@@ -23,10 +22,7 @@ class PredictHandwritingView(APIView):
             token = auth_header.split(' ')[1]
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = payload.get('user_id')
-            if db is not None:
-                doc = db.collection('users').document(user_id).get()
-                return doc.to_dict() if doc.exists else None
-            return None
+            return UserRepository.get_by_id(user_id)
         except Exception as e:
             print(f"Token Error: {e}")
             return None
@@ -54,14 +50,13 @@ class PredictHandwritingView(APIView):
         filename = fs.save(f"handwriting_samples/{image_file.name}", image_file)
         file_url = fs.url(filename)
 
-        # 3. Update User (Writer) Profile
-        if db is not None:
-            db.collection('users').document(user['id']).update({
-                'handwriting_style': style,
-                'handwriting_confidence': confidence,
-                'handwriting_sample_url': file_url,
-                'handwriting_samples': firestore.ArrayUnion([file_url])
-            })
+        # 3. Update User (Writer) Profile — append sample URL to array
+        UserRepository.update(user['id'], {
+            'handwriting_style': style,
+            'handwriting_confidence': confidence,
+            'handwriting_sample_url': file_url,
+        })
+        UserRepository.append_to_array(user['id'], 'handwriting_samples', file_url)
 
         # 4. Return Result
         return Response({
@@ -80,10 +75,7 @@ def get_user_from_token(request):
         token = auth_header.split(' ')[1]
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         user_id = payload.get('user_id')
-        if db is not None:
-            doc = db.collection('users').document(user_id).get()
-            return doc.to_dict() if doc.exists else None
-        return None
+        return UserRepository.get_by_id(user_id)
     except Exception as e:
         print(f"Token Error: {e}")
         return None
@@ -96,15 +88,11 @@ class WriterSamplesView(APIView):
 
     def get(self, request, writer_id):
         """Public endpoint - any student can view a writer's samples."""
-        if db is None:
-            return Response({'error': 'Database error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
         try:
-            doc = db.collection('users').document(writer_id).get()
-            if not doc.exists:
+            user_data = UserRepository.get_by_id(writer_id)
+            if not user_data:
                 return Response({'error': 'Writer not found'}, status=status.HTTP_404_NOT_FOUND)
             
-            user_data = doc.to_dict()
             samples = user_data.get('handwriting_samples', [])
             price_per_page = user_data.get('price_per_page')
             
@@ -142,9 +130,9 @@ class WriterSamplesView(APIView):
 
         # Check max samples limit (10)
         try:
-            doc = db.collection('users').document(writer_id).get()
-            if doc.exists:
-                current_samples = doc.to_dict().get('handwriting_samples', [])
+            current_user = UserRepository.get_by_id(writer_id)
+            if current_user:
+                current_samples = current_user.get('handwriting_samples', [])
                 if len(current_samples) >= 10:
                     return Response({'error': 'Maximum 10 samples allowed. Delete some before uploading more.'}, 
                                   status=status.HTTP_400_BAD_REQUEST)
@@ -156,13 +144,11 @@ class WriterSamplesView(APIView):
         filename = fs.save(f"handwriting_samples/{writer_id}/{image_file.name}", image_file)
         file_url = fs.url(filename)
 
-        # Append URL to Firestore handwriting_samples array
+        # Append URL to handwriting_samples array
         try:
-            db.collection('users').document(writer_id).update({
-                'handwriting_samples': firestore.ArrayUnion([file_url])
-            })
+            UserRepository.append_to_array(writer_id, 'handwriting_samples', file_url)
         except Exception as e:
-            print(f"Error updating Firestore: {e}")
+            print(f"Error updating database: {e}")
             return Response({'error': 'Failed to save sample'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
@@ -192,10 +178,8 @@ class DeleteSampleView(APIView):
             return Response({'error': 'Sample URL is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Remove from Firestore array
-            db.collection('users').document(writer_id).update({
-                'handwriting_samples': firestore.ArrayRemove([sample_url])
-            })
+            # Remove from array in database
+            UserRepository.remove_from_array(writer_id, 'handwriting_samples', sample_url)
 
             # Try to delete the file from disk (best effort)
             try:

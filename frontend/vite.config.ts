@@ -13,10 +13,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     optimizeDeps: {
-      include: ['three', '@react-three/fiber', '@react-three/drei'],
     },
     resolve: {
       alias: {
@@ -28,7 +26,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
             'stripe-vendor': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
             'motion': ['framer-motion'],
             'charts': ['recharts'],

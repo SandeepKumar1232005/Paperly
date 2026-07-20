@@ -1,16 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Assignment, AssignmentStatus } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { PaymentModal } from '../components/PaymentModal';
-import { api } from '../services/api';
 import { mockUsers } from '../mockData';
-import EmptyState from '../components/EmptyState';
-import ProgressBar from '../components/ProgressBar';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
-import { ClipboardList, Plus, Sparkles, Clock, BookOpen, AlertCircle, MessageSquare, Trash2, CheckCircle, FileText, Users, Zap, ArrowRight, Calendar, Search, Download, Eye } from 'lucide-react';
+import { ClipboardList, Plus, Sparkles, Clock, BookOpen, AlertCircle, MessageSquare, Trash2, CheckCircle, FileText, Users, ArrowRight, Calendar, Search, Download, Eye } from 'lucide-react';
 import { calculateSuggestedPrice } from '../utils/pricing';
 import { Modal } from '../components/Modal';
 
@@ -289,7 +285,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[var(--border)] shadow-lg">
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white font-bold text-xl">${(user.name || '?')[0].toUpperCase()}</div>`; }} />
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] font-display">

@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole, User as UserType } from '../types';
-import { api } from '../services/api';
+import { api, UsernameTakenError } from '../services/api';
 import GlowButton from '../components/GlowButton';
+import Modal from '../components/Modal';
 
 interface RegisterProps {
   onRegister: (name: string, email: string, username: string, password: string, role: UserRole) => Promise<void>;
@@ -19,29 +20,72 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [role, setRole] = useState<UserRole>('STUDENT');
+  const [role, setRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const [pendingGoogleToken, setPendingGoogleToken] = useState<string | null>(null);
+  const [selectedUsername, setSelectedUsername] = useState<string>('');
+
 
   const loginWithGoogle = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setIsLoading('google');
+      setError('');
       try {
         const user = await api.socialLogin('google', tokenResponse.access_token);
         if (onSocialLoginSuccess) {
           await onSocialLoginSuccess(user);
         }
       } catch (err: any) {
-        setError(err.message || 'Google signup failed');
+        if (err.name === 'UsernameTakenError') {
+          setPendingGoogleToken(tokenResponse.access_token);
+          setUsernameSuggestions(err.suggestions || []);
+          setSelectedUsername(err.suggestions?.[0] || '');
+          setShowUsernamePrompt(true);
+        } else {
+          setError(err.message || 'Google signup failed');
+        }
       } finally {
         setIsLoading(null);
       }
     },
-    onError: () => setError('Google signup Failed'),
+    onError: (errResp: any) => {
+      console.warn("Google OAuth Popup Error:", errResp);
+      setError('Google Popup failed or closed. Please try again.');
+      setIsLoading(null);
+    },
   });
+
+  const handleUsernameSubmit = async () => {
+    if (!pendingGoogleToken || !selectedUsername) return;
+    setIsLoading('google');
+    setError('');
+    try {
+      const user = await api.socialLogin('google', pendingGoogleToken, selectedUsername);
+      setShowUsernamePrompt(false);
+      if (onSocialLoginSuccess) await onSocialLoginSuccess(user);
+    } catch (err: any) {
+      if (err.name === 'UsernameTakenError') {
+        setUsernameSuggestions(err.suggestions || []);
+        setError('That username is also taken. Please try another.');
+      } else {
+        setError(err.message || 'Google signup failed');
+        setShowUsernamePrompt(false);
+      }
+    } finally {
+      setIsLoading(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!role) {
+      setError('Please select whether you are registering as a Student or a Writer.');
+      return;
+    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;
@@ -83,15 +127,15 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
       </motion.button>
 
       {/* Left Panel - Brand (hidden on mobile) */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative z-10 p-12">
-        <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-md">
-          <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white font-black text-3xl mb-8 shadow-lg shadow-violet-500/30">
+      <div className="hidden lg:flex flex-1 items-start justify-center relative z-10 p-8 lg:p-12 pt-20 lg:pt-24">
+        <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-md w-full">
+          <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white font-black text-3xl mb-6 shadow-lg shadow-violet-500/30">
             <UserPlus size={32} />
           </div>
           <h2 className="text-4xl font-black text-[var(--text-primary)] leading-tight mb-4 font-display">
             Join the <span className="gradient-text">Paperly</span> community
           </h2>
-          <p className="text-lg text-[var(--text-secondary)] mb-8 leading-relaxed">
+          <p className="text-lg text-[var(--text-secondary)] mb-6 leading-relaxed">
             Whether you're a student needing help or a writer ready to earn — your journey starts here.
           </p>
 
@@ -99,16 +143,37 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
           <div className="space-y-3">
             {(['STUDENT', 'WRITER'] as const).map((r) => {
               const config = roleConfig[r];
+              const isSelected = role === r;
               return (
-                <motion.div key={r} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: r === 'STUDENT' ? 0.5 : 0.65 }}
-                  className={`glass-card p-4 !rounded-xl flex items-center gap-4 cursor-pointer transition-all ${role === r ? 'ring-2 ring-[var(--accent)]' : ''}`}
-                  onClick={() => setRole(r)}>
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center flex-shrink-0`}>
+                <motion.div
+                  key={r}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={isSelected}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setRole(r);
+                    }
+                  }}
+                  onClick={() => setRole(r)}
+                  className={`relative p-4 rounded-xl flex items-center gap-4 cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] ${
+                    isSelected
+                      ? 'bg-[#13111C] border-2 border-[#8B5CF6] shadow-[0_0_20px_rgba(139,92,246,0.35)]'
+                      : 'glass-card border border-[var(--border)] hover:bg-[var(--surface-hover)] shadow-sm'
+                  }`}
+                >
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center flex-shrink-0 shadow-md`}>
                     <config.icon size={22} className="text-white" />
                   </div>
                   <div>
                     <p className="font-bold text-[var(--text-primary)] text-sm">{r === 'STUDENT' ? 'Student' : 'Writer'}</p>
-                    <p className="text-xs text-[var(--text-secondary)]">{config.desc}</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">{config.desc}</p>
                   </div>
                 </motion.div>
               );
@@ -118,7 +183,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center relative z-10 px-4 py-12">
+      <div className="flex-1 flex items-start justify-center relative z-10 px-4 py-12 pt-20 lg:pt-24">
         <motion.div initial={{ opacity: 0, y: 30, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5 }}
           className="w-full max-w-md">
           <div className="glass-card-premium p-8 animated-border">
@@ -132,25 +197,42 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
             </div>
 
             {/* Role Selector (mobile) */}
-            <div className="flex p-1 glass rounded-2xl gap-1 mb-6 lg:hidden">
-              {(['STUDENT', 'WRITER'] as const).map((r) => {
-                const config = roleConfig[r];
-                return (
-                  <button key={r} type="button" onClick={() => setRole(r)}
-                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${role === r ? `bg-gradient-to-r ${config.gradient} text-white shadow-lg` : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
-                    <config.icon size={16} /> {r === 'STUDENT' ? 'Student' : 'Writer'}
-                  </button>
-                );
-              })}
+            <div className="mb-6 lg:hidden">
+              <label className="block text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-2">Select Your Role</label>
+              <div className="grid grid-cols-2 gap-3">
+                {(['STUDENT', 'WRITER'] as const).map((r) => {
+                  const isSelected = role === r;
+                  const config = roleConfig[r];
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={`relative p-3.5 rounded-xl text-left transition-all duration-300 flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] ${
+                        isSelected
+                          ? 'bg-[#13111C] border-2 border-[#8B5CF6] shadow-[0_0_15px_rgba(139,92,246,0.35)]'
+                          : 'glass-card border border-[var(--border)] hover:bg-[var(--surface-hover)] shadow-sm'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white flex-shrink-0`}>
+                        <config.icon size={16} />
+                      </div>
+                      <p className="font-bold text-xs text-[var(--text-primary)]">{r === 'STUDENT' ? 'Student' : 'Writer'}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Google Signup */}
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => loginWithGoogle()} disabled={!!isLoading}
-              className="w-full flex items-center justify-center gap-3 glass-card !rounded-xl py-3.5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all mb-5">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-              <span>{isLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}</span>
-            </motion.button>
+            <div className="mb-5">
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={() => loginWithGoogle()} disabled={!!isLoading}
+                className="w-full flex items-center justify-center gap-3 glass-card !rounded-xl py-3.5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
+                <span>{isLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}</span>
+              </motion.button>
+            </div>
 
             <div className="flex items-center gap-4 mb-5">
               <div className="h-px bg-[var(--border)] flex-1" />
@@ -174,7 +256,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                 <div className="relative">
                   <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
                   <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="John Doe" />
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="Enter your full name" />
                 </div>
               </div>
 
@@ -183,7 +265,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                 <div className="relative">
                   <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
                   <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="john@example.com" />
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="Enter your Gmail address" />
                 </div>
               </div>
 
@@ -201,7 +283,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                       }
                     }}
                     className={`w-full pl-11 pr-4 py-3.5 rounded-xl glass-input ${/[A-Z]/.test(username) ? '!border-fuchsia-500/50' : ''}`}
-                    placeholder="johndoe123" />
+                    placeholder="Choose a username" />
                 </div>
               </div>
 
@@ -211,7 +293,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
                   <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
                   <input type={showPassword ? 'text' : 'password'} required minLength={8} value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-12 py-3.5 rounded-xl glass-input" placeholder="Min 8 characters" />
+                    className="w-full pl-11 pr-12 py-3.5 rounded-xl glass-input" placeholder="Enter your password" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -249,6 +331,56 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
           </div>
         </motion.div>
       </div>
+
+      {/* Username Prompt Modal */}
+      {showUsernamePrompt && (
+        <Modal
+          isOpen={showUsernamePrompt}
+          onClose={() => setShowUsernamePrompt(false)}
+          title="Choose a Username"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--text-secondary)]">
+              Your default username is already taken. Please choose one from below or type a custom one.
+            </p>
+            {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm">{error}</div>}
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Suggestions</label>
+              <div className="flex flex-wrap gap-2">
+                {usernameSuggestions.map((sugg) => (
+                  <button
+                    key={sugg}
+                    onClick={() => setSelectedUsername(sugg)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      selectedUsername === sugg
+                        ? 'bg-violet-500/20 text-violet-400 border border-violet-500/50'
+                        : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--text-tertiary)]'
+                    }`}
+                  >
+                    {sugg}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Custom Username</label>
+              <input
+                type="text"
+                value={selectedUsername}
+                onChange={(e) => setSelectedUsername(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl glass-input"
+                placeholder="Type your username..."
+              />
+            </div>
+
+            <GlowButton onClick={handleUsernameSubmit} disabled={!selectedUsername || !!isLoading} className="w-full mt-4" size="lg">
+              {isLoading === 'google' ? 'Saving...' : 'Confirm'}
+            </GlowButton>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

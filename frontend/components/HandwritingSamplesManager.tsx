@@ -2,9 +2,8 @@ import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import { User } from '../types';
-import {
-  Upload, X, Trash2, ImagePlus, AlertCircle, CheckCircle,
-  Loader2, ZoomIn, Image as ImageIcon
+import { X, Trash2, ImagePlus, AlertCircle, CheckCircle,
+  Loader2, ZoomIn
 } from 'lucide-react';
 import { Modal } from './Modal';
 

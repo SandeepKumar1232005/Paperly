@@ -9,7 +9,6 @@ gsap.registerPlugin(ScrollTrigger);
 import { ArrowRight, CheckCircle, Star, Shield, Clock, TrendingUp, Zap, Award, Sparkles, Users, BookOpen, ArrowUp } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import GlowButton from '../components/GlowButton';
-import FeatureIcon3D from '../components/FeatureIcon3D';
 import ParticleTrail from '../components/ParticleTrail';
 import Logo from '../components/Logo';
 import RevealOnScroll from '../components/RevealOnScroll';
@@ -21,6 +20,7 @@ import PricingEstimator from '../components/landing/PricingEstimator';
 
 import BookScene from '../components/BookScene';
 import GlowOrbs from '../components/GlowOrbs';
+
 
 interface LandingProps {
   onNavigate: (view: 'LOGIN' | 'REGISTER') => void;
@@ -200,14 +200,11 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       {/* Animated Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[var(--bg-primary)]" />
-        <div className="block hidden">
+        <div>
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px]"></div>
           <div className="orb-1 absolute top-0 left-1/4 w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[150px] mix-blend-screen opacity-40" />
           <div className="orb-2 absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-fuchsia-600/15 rounded-full blur-[140px] mix-blend-screen opacity-40" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[130px] mix-blend-screen opacity-30" />
-        </div>
-        <div className="hidden block">
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-transparent to-fuchsia-50/30" />
         </div>
       </div>
 
@@ -266,7 +263,6 @@ const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
       {/* ═══════ HERO SECTION ═══════ */}
       <section className="hero-section relative z-10 pt-32 pb-16 px-4 min-h-screen flex items-center justify-center overflow-hidden">
-        
         {/* Full-page 3D Background */}
         <div className="three-js-container absolute inset-0 z-0 opacity-80 pointer-events-auto">
           <Suspense fallback={null}>

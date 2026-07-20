@@ -3,7 +3,7 @@ djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
 python-dotenv
-firebase-admin
+supabase
 pyjwt
 passlib
 bcrypt
@@ -14,3 +14,6 @@ google-generativeai
 certifi
 gunicorn
 whitenoise
+daphne
+channels
+stripe

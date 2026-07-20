@@ -6,26 +6,26 @@ from pathlib import Path
 from passlib.hash import pbkdf2_sha256
 
 # Add backend directory to sys.path
-backend_dir = Path(__file__).resolve().parent.parent
+backend_dir = Path(__file__).resolve().parent
 sys.path.append(str(backend_dir))
 
-from utils.firebase import db
+# Initialize Supabase client
+from database.connection import supabase
+from database.repositories.users import UserRepository
 
 def create_admin(email, username, password, name):
-    if db is None:
-        print("CRITICAL: Firebase not connected. Check your firebase-credentials.json.")
+    if not supabase:
+        print("CRITICAL: Supabase not connected.")
         return
 
-    users_ref = db.collection('users')
-    
     # Check if user already exists
-    docs = list(users_ref.where('email', '==', email.lower()).stream())
-    if docs:
+    existing = UserRepository.get_by_email(email)
+    if existing:
         print(f"User with email {email} already exists.")
         return
 
-    docs = list(users_ref.where('username', '==', username.lower()).stream())
-    if docs:
+    existing_username = UserRepository.get_by_email_or_username(username)
+    if existing_username:
         print(f"User with username {username} already exists.")
         return
 
@@ -41,10 +41,10 @@ def create_admin(email, username, password, name):
         'name': name,
         'role': 'ADMIN',
         'is_verified': True,
-        'created_at': datetime.datetime.now(datetime.timezone.utc)
+        'created_at': datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
 
-    db.collection('users').document(user_id).set(new_user)
+    UserRepository.create(new_user)
     print(f"Admin user created successfully!")
     print(f"Email: {email}")
     print(f"Username: {username}")
@@ -58,3 +58,4 @@ if __name__ == "__main__":
         password="adminpassword123",
         name="System Administrator"
     )
+

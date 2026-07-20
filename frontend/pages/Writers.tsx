@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { User } from '../types';
-import { Star, MapPin, CheckCircle, Briefcase, ArrowLeft, Clock, Award, X, Search, Filter } from 'lucide-react';
+import { MapPin, CheckCircle, ArrowLeft, Search } from 'lucide-react';
 import WriterFilter from '../components/WriterFilter';
 import StyleBadge from '../components/StyleBadge';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import WriterProfileModal from '../components/WriterProfileModal';
 
 interface WritersProps {

@@ -4,16 +4,13 @@ import { User, Assignment, AssignmentStatus, ChatMessage } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { checkAssignmentQuality } from '../services/gemini';
 import { api } from '../services/api';
-import EmptyState from '../components/EmptyState';
 import TiltCard from '../components/TiltCard';
-import GlowButton from '../components/GlowButton';
-import { Search, Briefcase, DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, Upload, X, Filter, FileText, Sparkles, Star, Zap, MessageSquare, Copy, ExternalLink } from 'lucide-react';
+import { Search, Briefcase, DollarSign, Clock, CheckCircle, AlertCircle, Upload, X, FileText, Star, Zap, MessageSquare, Copy, ExternalLink } from 'lucide-react';
 import HandwritingSamplesManager from '../components/HandwritingSamplesManager';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, ResponsiveContainer
 } from 'recharts';
 import { Modal } from '../components/Modal';
-import WriterAnalytics from '../components/WriterAnalytics';
 
 interface WriterDashboardProps {
   user: User;
@@ -203,7 +200,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
               className="glass-card-premium p-8 relative overflow-hidden noise-overlay">
               <div className="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-3xl" />
               <div className="relative flex items-center gap-4 mb-4">
-                <img src={user.avatar} alt={user.name} className="w-14 h-14 rounded-2xl border-2 border-[var(--border)] shadow-md" />
+                <img src={user.avatar} alt={user.name} className="w-14 h-14 rounded-2xl border-2 border-[var(--border)] shadow-md" referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 <div>
                   <h1 className="text-2xl font-bold text-[var(--text-primary)] font-display">Welcome, {user.name.split(' ')[0]}!</h1>
                   <div className="flex items-center gap-2 mt-1">
@@ -295,7 +292,7 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
                   <div className="bg-[var(--surface)]/50 rounded-2xl p-6 border border-white/5 space-y-6">
                     <div className="flex items-center gap-4">
                       <div className="relative inline-block flex-shrink-0">
-                        <img src={user.avatar} className="w-16 h-16 rounded-2xl border border-[var(--border)] shadow-md" />
+                        <img src={user.avatar} className="w-16 h-16 rounded-2xl border border-[var(--border)] shadow-md" referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         <button onClick={() => setIsEditingProfile(true)} className="absolute -bottom-1 -right-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-1.5 rounded-lg shadow-lg hover:shadow-xl transition-all">
                           <Upload size={10} />
                         </button>

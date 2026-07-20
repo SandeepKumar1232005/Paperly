@@ -1,21 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
-from utils.firebase import db
+from database.repositories.users import UserRepository
+from database.repositories.assignments import AssignmentRepository
 
 class DashboardStatsView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        if db:
-            docs = list(db.collection('users').stream())
-            total_users = len(docs)
-            # active_assignments = db.assignments.count_documents({'status': {'$ne': 'COMPLETED'}})
-            active_assignments = 0 # Placeholder until assignments are migrated
-        else:
-            total_users = 0
-            active_assignments = 0
+        users = UserRepository.list_all()
+        total_users = len(users)
         
+        assignments = AssignmentRepository.list_all()
+        active_assignments = len([a for a in assignments if a.get('status') not in ('COMPLETED', 'CANCELLED', None)])
+
         total_revenue = 125000 
 
         return Response({

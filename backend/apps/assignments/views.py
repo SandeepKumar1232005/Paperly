@@ -1,13 +1,15 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from utils.firebase import db, run_transaction
+from database.repositories.assignments import AssignmentRepository
+from database.repositories.notifications import NotificationRepository
+from database.repositories.users import UserRepository
 import uuid
 import datetime
 
 class AssignmentViewSet(viewsets.ViewSet):
     """
-    Firestore-backed Assignment ViewSet
+    Supabase PostgreSQL-backed Assignment ViewSet
     """
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
@@ -15,8 +17,7 @@ class AssignmentViewSet(viewsets.ViewSet):
     def list(self, request):
         try:
             # Get all assignments
-            assignments_ref = db.collection('assignments')
-            docs = assignments_ref.stream()
+            all_assignments = AssignmentRepository.list_all()
             
             results = []
             user_id = request.query_params.get('userId')
@@ -24,15 +25,12 @@ class AssignmentViewSet(viewsets.ViewSet):
             # Fetch user to check role and handwriting_style
             current_user = None
             if user_id:
-                user_doc = db.collection('users').document(user_id).get()
-                if user_doc.exists:
-                    current_user = user_doc.to_dict()
+                current_user = UserRepository.get_by_id(user_id)
 
-            for doc in docs:
-                data = doc.to_dict()
+            for data in all_assignments:
                 # Ensure the ID is present
                 if 'id' not in data:
-                    data['id'] = doc.id
+                    continue
                     
                 # Security: Filter direct assignments
                 if data.get('assignmentType') == 'DIRECT':
@@ -50,9 +48,7 @@ class AssignmentViewSet(viewsets.ViewSet):
 
                 results.append(data)
             
-            # Sort by created_at descending if possible
-            results.sort(key=lambda x: x.get('createdAt', ''), reverse=True)
-            
+            # Already sorted by created_at desc from repository
             return Response(results)
         except Exception as e:
             print(f"Error fetching assignments: {e}")
@@ -60,7 +56,7 @@ class AssignmentViewSet(viewsets.ViewSet):
 
     def create(self, request):
         try:
-            data = request.data
+            data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
             # Use provided ID or generate one
             assignment_id = data.get('id') or str(uuid.uuid4())
             
@@ -78,8 +74,7 @@ class AssignmentViewSet(viewsets.ViewSet):
                 # Generate Notification for the specific writer
                 writer_id = data['assignedWriterId']
                 notification_id = str(uuid.uuid4())
-                notification_ref = db.collection('notifications').document(notification_id)
-                notification_ref.set({
+                NotificationRepository.create({
                     'id': notification_id,
                     'userId': writer_id,
                     'type': 'DIRECT_ASSIGNMENT_REQUEST',
@@ -104,7 +99,6 @@ class AssignmentViewSet(viewsets.ViewSet):
                     )
             else:
                 # General assignment creation broadcast
-                # Include preferred styles to filter in WebSocket clients
                 if not data.get('assignmentType'):
                     data['assignmentType'] = 'MARKETPLACE'
                     
@@ -122,33 +116,31 @@ class AssignmentViewSet(viewsets.ViewSet):
                         }
                     )
             
-            # Save to Firestore
-            db.collection('assignments').document(assignment_id).set(data)
+            # Save to Supabase
+            created = AssignmentRepository.create(data)
             
-            return Response(data, status=status.HTTP_201_CREATED)
+            return Response(created, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(f"Error creating assignment: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def retrieve(self, request, pk=None):
         try:
-            doc_ref = db.collection('assignments').document(pk)
-            doc = doc_ref.get()
-            if doc.exists:
-                return Response(doc.to_dict())
+            assignment = AssignmentRepository.get_by_id(pk)
+            if assignment:
+                return Response(assignment)
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
     def update(self, request, pk=None):
         try:
-            data = request.data
-            doc_ref = db.collection('assignments').document(pk)
-            doc_ref.update(data)
+            data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+            AssignmentRepository.update(pk, data)
             
             # Return updated doc
-            updated_doc = doc_ref.get()
-            return Response(updated_doc.to_dict())
+            updated = AssignmentRepository.get_by_id(pk)
+            return Response(updated)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -157,22 +149,20 @@ class AssignmentViewSet(viewsets.ViewSet):
 
     def destroy(self, request, pk=None):
         try:
-            doc_ref = db.collection('assignments').document(pk)
-            doc = doc_ref.get()
-            if not doc.exists:
+            assignment = AssignmentRepository.get_by_id(pk)
+            if not assignment:
                 return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
             
-            data = doc.to_dict()
-            current_status = data.get('status')
+            current_status = assignment.get('status')
             
             # Extract optional cancellation data from query_params or data
             reason = request.query_params.get('reason') or request.data.get('reason', '')
-            student_id = request.query_params.get('studentId') or request.data.get('studentId') or data.get('studentId')
-            writer_id = data.get('writerId')
+            student_id = request.query_params.get('studentId') or request.data.get('studentId') or assignment.get('studentId')
+            writer_id = assignment.get('writerId')
             
             if current_status in ['ASSIGNED', 'IN_PROGRESS', 'ACCEPTED', 'CONFIRMED']:
                 # Soft delete / Cancel
-                doc_ref.update({
+                AssignmentRepository.update(pk, {
                     'status': 'CANCELLED',
                     'cancelledBy': student_id,
                     'cancelledAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -182,19 +172,18 @@ class AssignmentViewSet(viewsets.ViewSet):
                 # Create Notification
                 if writer_id:
                     notif_id = f"notif-{uuid.uuid4().hex[:12]}"
-                    notif_data = {
+                    NotificationRepository.create({
                         'id': notif_id,
                         'userId': writer_id,
                         'type': 'ASSIGNMENT_CANCELLED',
                         'title': 'Assignment Cancelled',
-                        'message': f'The student has cancelled Assignment "{data.get("title", pk)}".',
+                        'message': f'The student has cancelled Assignment "{assignment.get("title", pk)}".',
                         'assignmentId': pk,
                         'studentId': student_id,
                         'writerId': writer_id,
                         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
                         'isRead': False
-                    }
-                    db.collection('notifications').document(notif_id).set(notif_data)
+                    })
                 
                 # Broadcast via channels
                 try:
@@ -216,7 +205,7 @@ class AssignmentViewSet(viewsets.ViewSet):
                 
             else:
                 # Hard delete
-                doc_ref.delete()
+                AssignmentRepository.delete(pk)
                 return Response(status=status.HTTP_204_NO_CONTENT)
                 
         except Exception as e:
@@ -229,16 +218,13 @@ class AssignmentViewSet(viewsets.ViewSet):
         """Writer submits a quote. Does NOT assign the writer yet."""
         try:
             data = request.data  # amount, comment, writerId
-            doc_ref = db.collection('assignments').document(pk)
-            doc = doc_ref.get()
+            assignment = AssignmentRepository.get_by_id(pk)
 
-            if not doc.exists:
+            if not assignment:
                 return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            assignment_data = doc.to_dict()
-
             # Only allow quoting PENDING assignments
-            if assignment_data.get('status') not in ('PENDING', None):
+            if assignment.get('status') not in ('PENDING', None):
                 return Response({'error': 'Assignment is no longer available for quoting'}, status=status.HTTP_400_BAD_REQUEST)
 
             writer_id = data.get('writerId')
@@ -246,7 +232,7 @@ class AssignmentViewSet(viewsets.ViewSet):
             quote_comment = data.get('comment', '')
 
             # Update assignment — do NOT set writerId
-            doc_ref.update({
+            AssignmentRepository.update(pk, {
                 'quotingWriterId': writer_id,
                 'quoted_amount': quoted_amount,
                 'quoteComment': quote_comment,
@@ -254,15 +240,15 @@ class AssignmentViewSet(viewsets.ViewSet):
             })
 
             # Notify the student about the received quote
-            student_id = assignment_data.get('studentId')
+            student_id = assignment.get('studentId')
             if student_id:
                 notification_id = str(uuid.uuid4())
-                db.collection('notifications').document(notification_id).set({
+                NotificationRepository.create({
                     'id': notification_id,
                     'userId': student_id,
                     'type': 'QUOTE_RECEIVED',
                     'title': 'New Quote Received',
-                    'message': f"A writer has quoted \u20b9{quoted_amount} for '{assignment_data.get('title', 'your assignment')}'.",
+                    'message': f"A writer has quoted \u20b9{quoted_amount} for '{assignment.get('title', 'your assignment')}'.",
                     'assignmentId': pk,
                     'isRead': False,
                     'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -285,7 +271,8 @@ class AssignmentViewSet(viewsets.ViewSet):
             except Exception:
                 pass
 
-            return Response(doc_ref.get().to_dict())
+            updated = AssignmentRepository.get_by_id(pk)
+            return Response(updated)
         except Exception as e:
             print(f"Error submitting quote: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -295,21 +282,19 @@ class AssignmentViewSet(viewsets.ViewSet):
         """Student accepts or rejects a writer's quote."""
         try:
             action_type = request.data.get('action')  # ACCEPT or REJECT
-            doc_ref = db.collection('assignments').document(pk)
-            doc = doc_ref.get()
+            assignment = AssignmentRepository.get_by_id(pk)
 
-            if not doc.exists:
+            if not assignment:
                 return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            assignment_data = doc.to_dict()
-            quoting_writer_id = assignment_data.get('quotingWriterId')
+            quoting_writer_id = assignment.get('quotingWriterId')
 
             if action_type == 'ACCEPT':
                 # NOW assign the writer and update budget
-                doc_ref.update({
+                AssignmentRepository.update(pk, {
                     'status': 'ASSIGNED',
                     'writerId': quoting_writer_id,
-                    'budget': assignment_data.get('quoted_amount', assignment_data.get('budget')),
+                    'budget': assignment.get('quoted_amount', assignment.get('budget')),
                     'quotingWriterId': None,
                     'acceptedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()
                 })
@@ -317,12 +302,12 @@ class AssignmentViewSet(viewsets.ViewSet):
                 # Notify writer: quote accepted
                 if quoting_writer_id:
                     notification_id = str(uuid.uuid4())
-                    db.collection('notifications').document(notification_id).set({
+                    NotificationRepository.create({
                         'id': notification_id,
                         'userId': quoting_writer_id,
                         'type': 'QUOTE_ACCEPTED',
                         'title': 'Quote Accepted!',
-                        'message': f"Your quote for '{assignment_data.get('title', 'an assignment')}' was accepted! You can start working.",
+                        'message': f"Your quote for '{assignment.get('title', 'an assignment')}' was accepted! You can start working.",
                         'assignmentId': pk,
                         'isRead': False,
                         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -330,7 +315,7 @@ class AssignmentViewSet(viewsets.ViewSet):
 
             elif action_type == 'REJECT':
                 # Clear quote data and return to PENDING
-                doc_ref.update({
+                AssignmentRepository.update(pk, {
                     'status': 'PENDING',
                     'quotingWriterId': None,
                     'quoted_amount': None,
@@ -340,12 +325,12 @@ class AssignmentViewSet(viewsets.ViewSet):
                 # Notify writer: quote rejected
                 if quoting_writer_id:
                     notification_id = str(uuid.uuid4())
-                    db.collection('notifications').document(notification_id).set({
+                    NotificationRepository.create({
                         'id': notification_id,
                         'userId': quoting_writer_id,
                         'type': 'QUOTE_REJECTED',
                         'title': 'Quote Declined',
-                        'message': f"Your quote for '{assignment_data.get('title', 'an assignment')}' was declined. The assignment is back on the marketplace.",
+                        'message': f"Your quote for '{assignment.get('title', 'an assignment')}' was declined. The assignment is back on the marketplace.",
                         'assignmentId': pk,
                         'isRead': False,
                         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -371,7 +356,8 @@ class AssignmentViewSet(viewsets.ViewSet):
             except Exception:
                 pass
 
-            return Response(doc_ref.get().to_dict())
+            updated = AssignmentRepository.get_by_id(pk)
+            return Response(updated)
         except Exception as e:
             print(f"Error responding to quote: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -380,20 +366,18 @@ class AssignmentViewSet(viewsets.ViewSet):
     def withdraw_quote(self, request, pk=None):
         """Writer withdraws their submitted quote."""
         try:
-            doc_ref = db.collection('assignments').document(pk)
-            doc = doc_ref.get()
+            assignment = AssignmentRepository.get_by_id(pk)
 
-            if not doc.exists:
+            if not assignment:
                 return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            assignment_data = doc.to_dict()
             writer_id = request.data.get('writerId')
 
             # Only the quoting writer can withdraw
-            if assignment_data.get('quotingWriterId') != writer_id:
+            if assignment.get('quotingWriterId') != writer_id:
                 return Response({'error': 'You are not the quoting writer'}, status=status.HTTP_403_FORBIDDEN)
 
-            doc_ref.update({
+            AssignmentRepository.update(pk, {
                 'status': 'PENDING',
                 'quotingWriterId': None,
                 'quoted_amount': None,
@@ -401,21 +385,22 @@ class AssignmentViewSet(viewsets.ViewSet):
             })
 
             # Notify student
-            student_id = assignment_data.get('studentId')
+            student_id = assignment.get('studentId')
             if student_id:
                 notification_id = str(uuid.uuid4())
-                db.collection('notifications').document(notification_id).set({
+                NotificationRepository.create({
                     'id': notification_id,
                     'userId': student_id,
                     'type': 'QUOTE_WITHDRAWN',
                     'title': 'Quote Withdrawn',
-                    'message': f"A writer has withdrawn their quote for '{assignment_data.get('title', 'your assignment')}'.",
+                    'message': f"A writer has withdrawn their quote for '{assignment.get('title', 'your assignment')}'.",
                     'assignmentId': pk,
                     'isRead': False,
                     'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
                 })
 
-            return Response(doc_ref.get().to_dict())
+            updated = AssignmentRepository.get_by_id(pk)
+            return Response(updated)
         except Exception as e:
             print(f"Error withdrawing quote: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -429,26 +414,7 @@ class AssignmentViewSet(viewsets.ViewSet):
             if not writer_id:
                 return Response({'error': 'writerId is required'}, status=status.HTTP_400_BAD_REQUEST)
                 
-            def _accept_txn(transaction):
-                doc_ref = db.collection('assignments').document(pk)
-                snapshot = transaction.get(doc_ref)
-                
-                if not snapshot.exists:
-                    return False, 'Assignment not found'
-                    
-                data = snapshot.to_dict()
-                if data.get('status') != 'PENDING':
-                    return False, 'Assignment already accepted.'
-                    
-                transaction.update(doc_ref, {
-                    'status': 'ASSIGNED',
-                    'writerId': writer_id,
-                    'acceptedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()
-                })
-                
-                return True, None
-                
-            success, error_msg = run_transaction(_accept_txn)
+            success, error_msg = AssignmentRepository.atomic_accept(pk, writer_id)
             
             if not success:
                 return Response({'message': error_msg}, status=status.HTTP_409_CONFLICT)
@@ -471,8 +437,8 @@ class AssignmentViewSet(viewsets.ViewSet):
                 pass
             
             # Get updated doc to return
-            updated_doc = db.collection('assignments').document(pk).get().to_dict()
-            return Response(updated_doc, status=status.HTTP_200_OK)
+            updated = AssignmentRepository.get_by_id(pk)
+            return Response(updated, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -483,21 +449,19 @@ class AssignmentViewSet(viewsets.ViewSet):
     def respond_direct(self, request, pk=None):
         try:
             action_type = request.data.get('action') # 'ACCEPT' or 'REJECT'
-            doc_ref = db.collection('assignments').document(pk)
-            doc = doc_ref.get()
+            assignment = AssignmentRepository.get_by_id(pk)
             
-            if not doc.exists:
+            if not assignment:
                 return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
                 
-            data = doc.to_dict()
-            if data.get('status') != 'PENDING_WRITER_ACCEPTANCE':
+            if assignment.get('status') != 'PENDING_WRITER_ACCEPTANCE':
                 return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
                 
-            writer_id = data.get('assignedWriterId')
-            student_id = data.get('studentId')
+            writer_id = assignment.get('assignedWriterId')
+            student_id = assignment.get('studentId')
                 
             if action_type == 'ACCEPT':
-                doc_ref.update({
+                AssignmentRepository.update(pk, {
                     'status': 'ACCEPTED',
                     'writerId': writer_id
                 })
@@ -518,7 +482,7 @@ class AssignmentViewSet(viewsets.ViewSet):
                 except Exception:
                     pass
             else:
-                doc_ref.update({
+                AssignmentRepository.update(pk, {
                     'status': 'REJECTED'
                 })
                 # Broadcast
@@ -540,7 +504,7 @@ class AssignmentViewSet(viewsets.ViewSet):
             
             # Add notification for student
             notification_id = str(uuid.uuid4())
-            db.collection('notifications').document(notification_id).set({
+            NotificationRepository.create({
                 'id': notification_id,
                 'userId': student_id,
                 'type': 'DIRECT_RESPONSE',
@@ -551,6 +515,7 @@ class AssignmentViewSet(viewsets.ViewSet):
                 'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat()
             })
             
-            return Response(doc_ref.get().to_dict(), status=status.HTTP_200_OK)
+            updated = AssignmentRepository.get_by_id(pk)
+            return Response(updated, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

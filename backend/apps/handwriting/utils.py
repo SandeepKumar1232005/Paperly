@@ -1,8 +1,7 @@
 import os
-import io
 import json
 import numpy as np
-from PIL import Image, ImageStat
+from PIL import Image
 from pathlib import Path
 
 # Configuration

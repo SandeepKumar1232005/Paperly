@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User, Notification } from '../types';
 import ProfileModal from './ProfileModal';
 import Logo from './Logo';
@@ -192,7 +192,7 @@ const Layout: React.FC<LayoutProps> = ({
                     <span className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-widest font-bold">{user.role}</span>
                   </div>
                   <div className={`w-9 h-9 rounded-xl overflow-hidden border-2 border-[var(--border)] ring-2 ring-transparent hover:ring-[var(--accent-muted)] transition-all`}>
-                    <img src={user.avatar} className="w-full h-full object-cover" alt="Avatar" />
+                    <img src={user.avatar} className="w-full h-full object-cover" alt="Avatar" referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white font-bold text-sm">${(user.name || '?')[0].toUpperCase()}</div>`; }} />
                   </div>
                 </button>
 
@@ -206,7 +206,7 @@ const Layout: React.FC<LayoutProps> = ({
                       className="absolute right-0 mt-2 w-56 bg-[var(--bg-secondary)] backdrop-blur-3xl shadow-2xl ring-1 ring-[var(--border)] rounded-2xl overflow-hidden z-[9999]"
                     >
                       <div className="p-4 border-b border-[var(--border)] flex items-center gap-3 bg-[var(--bg-secondary)]">
-                        <img src={user.avatar} className="w-10 h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-hover)]" alt="" />
+                        <img src={user.avatar} className="w-10 h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-hover)]" alt="" referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         <div className="overflow-hidden">
                           <p className="text-sm font-bold text-[var(--text-primary)] truncate">{user.name}</p>
                           <p className="text-xs text-[var(--text-tertiary)] truncate">{user.email}</p>
@@ -267,7 +267,7 @@ const Layout: React.FC<LayoutProps> = ({
               >
                 <div className="p-4 space-y-2">
                   <div className="flex items-center gap-3 p-3 glass-card">
-                    <img src={user.avatar} className="w-10 h-10 rounded-xl" alt="" />
+                    <img src={user.avatar} className="w-10 h-10 rounded-xl" alt="" referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     <div>
                       <p className="font-bold text-sm text-[var(--text-primary)]">{user.name}</p>
                       <p className="text-xs text-[var(--text-tertiary)]">{user.role}</p>

@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
@@ -108,7 +107,7 @@ CHANNEL_LAYERS = {
 
 # Database Configuration
 # ----------------------
-# This project uses Firebase Firestore as the primary production database
+# This project uses Supabase PostgreSQL as the primary production database
 # for all role-based user data, assignments, and core application logic.
 # 
 # Django's standard SQL database (SQLite) is used only for internal 

@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
-import { 
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-    PieChart, Pie, Cell, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar
+import { XAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+    PieChart, Pie, Cell, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, Radar
 } from 'recharts';
 import { Assignment, AssignmentStatus } from '../types';
-import { TrendingUp, CheckCircle, Clock, Star, DollarSign } from 'lucide-react';
+import { TrendingUp, CheckCircle, Star } from 'lucide-react';
 
 interface WriterAnalyticsProps {
     assignments: Assignment[];

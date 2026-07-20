@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, X } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { Modal } from './Modal';
 
 interface LocationPromptProps {

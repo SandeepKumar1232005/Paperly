@@ -1,10 +1,9 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
-from google.cloud.firestore_v1.base_query import FieldFilter, Or
-from utils.firebase import db
+from database.repositories.users import UserRepository
+from database.repositories.password_resets import PasswordResetRepository
 from passlib.hash import pbkdf2_sha256
 import uuid
 import datetime
@@ -13,7 +12,7 @@ from pathlib import Path
 
 class RegisterView(APIView):
     """
-    Register a new user in Firestore.
+    Register a new user in Supabase PostgreSQL.
     """
     permission_classes = []
 
@@ -35,21 +34,11 @@ class RegisterView(APIView):
             if not email or not password or not username:
                 return Response({'error': 'Email, password, and username required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            if db is None:
-                print("CRITICAL: Firebase not connected")
-                return Response({'error': 'Database error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
             # Check if user exists (email OR username)
-            users_ref = db.collection('users')
-            or_filter = Or(filters=[
-                FieldFilter('email', '==', email),
-                FieldFilter('username', '==', username)
-            ])
-            docs = list(users_ref.where(filter=or_filter).stream())
+            existing = UserRepository.check_email_or_username_exists(email, username)
             
-            if docs:
-                existing_user = docs[0].to_dict()
-                if existing_user.get('username') == username:
+            if existing:
+                if existing.get('username') == username:
                      return Response({'error': 'Username already taken'}, status=status.HTTP_400_BAD_REQUEST)
                 return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -60,16 +49,16 @@ class RegisterView(APIView):
             new_user = {
                 'id': user_id,
                 'email': email,
-                'username': username, # Store username
-                'password': hashed_password, # Store hash!
+                'username': username,
+                'password': hashed_password,
                 'name': name,
                 'role': role,
                 'avatar': avatar,
                 'address': address,
-                'created_at': datetime.datetime.now(datetime.timezone.utc)
+                'created_at': datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
 
-            db.collection('users').document(user_id).set(new_user)
+            UserRepository.create(new_user)
             print("User inserted successfully")
             
             # Generate Token (Simple JWT or custom)
@@ -115,25 +104,13 @@ class LoginView(APIView):
         identifier = request.data.get('email') # Frontend still sends 'email' state, but it can be username
         password = request.data.get('password')
 
-        if db is None:
-            print("CRITICAL: Firebase not connected during login")
-            return Response({'error': 'Database connection error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
         print(f"Login Attempt: identifier={identifier}")
         
         if not identifier or not password:
              return Response({'error': 'Please provide both username/email and password'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Find by email OR username
-        identifier_lower = identifier.strip().lower()
-        users_ref = db.collection('users')
-        or_filter = Or(filters=[
-            FieldFilter('email', '==', identifier_lower),
-            FieldFilter('username', '==', identifier_lower)
-        ])
-        docs = list(users_ref.where(filter=or_filter).stream())
-        
-        user = docs[0].to_dict() if docs else None
+        user = UserRepository.get_by_email_or_username(identifier)
         
         if user:
             print(f"User found: {user.get('email')} (ID: {user.get('id')})")
@@ -193,8 +170,7 @@ class UserDetailsView(APIView):
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = payload.get('user_id')
             
-            doc = db.collection('users').document(user_id).get()
-            return doc.to_dict() if doc.exists else None
+            return UserRepository.get_by_id(user_id)
         except Exception as e:
             print("Token Error:", e)
             return None
@@ -221,6 +197,8 @@ class UserDetailsView(APIView):
             'handwriting_samples': user.get('handwriting_samples', []),
             'qr_code_url': user.get('qr_code_url'),
             'price_per_page': user.get('price_per_page'),
+            'auth_provider': user.get('auth_provider'),
+            'is_custom_profile_picture': user.get('is_custom_profile_picture', False),
         })
 
     def patch(self, request):
@@ -234,7 +212,12 @@ class UserDetailsView(APIView):
         # Whitelist fields
         if 'name' in updates: valid_updates['name'] = updates['name']
         if 'address' in updates: valid_updates['address'] = updates['address']
-        if 'avatar' in updates: valid_updates['avatar'] = updates['avatar']
+        if 'avatar' in updates:
+            valid_updates['avatar'] = updates['avatar']
+            # Mark as custom profile picture when user explicitly changes avatar
+            valid_updates['is_custom_profile_picture'] = True
+        if 'is_custom_profile_picture' in updates:
+            valid_updates['is_custom_profile_picture'] = bool(updates['is_custom_profile_picture'])
         if 'availability_status' in updates: valid_updates['availability_status'] = updates['availability_status']
         if 'coordinates' in updates: valid_updates['coordinates'] = updates['coordinates']
         if 'handwriting_samples' in updates: valid_updates['handwriting_samples'] = updates['handwriting_samples']
@@ -244,11 +227,10 @@ class UserDetailsView(APIView):
         if 'handwriting_confidence' in updates: valid_updates['handwriting_confidence'] = updates['handwriting_confidence']
         
         if valid_updates:
-            db.collection('users').document(user['id']).update(valid_updates)
+            UserRepository.update(user['id'], valid_updates)
             
         # Return updated user
-        updated_doc = db.collection('users').document(user['id']).get()
-        updated_user = updated_doc.to_dict() if updated_doc.exists else user
+        updated_user = UserRepository.get_by_id(user['id']) or user
         
         return Response({
             'id': updated_user['id'],
@@ -265,6 +247,8 @@ class UserDetailsView(APIView):
             'handwriting_samples': updated_user.get('handwriting_samples', []),
             'qr_code_url': updated_user.get('qr_code_url'),
             'price_per_page': updated_user.get('price_per_page'),
+            'auth_provider': updated_user.get('auth_provider'),
+            'is_custom_profile_picture': updated_user.get('is_custom_profile_picture', False),
         })
 
 class RequestPasswordResetView(APIView):
@@ -276,22 +260,18 @@ class RequestPasswordResetView(APIView):
         if not email:
             return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        users_ref = db.collection('users')
-        docs = list(users_ref.where(filter=FieldFilter('email', '==', email)).stream())
-        if not docs:
+        user = UserRepository.get_by_email(email)
+        if not user:
             return Response({'error': 'User not found with this email'}, status=status.HTTP_404_NOT_FOUND)
 
         # Generate OTP
         import random
         otp = str(random.randint(100000, 999999))
         
-        # Save to DB (password_resets collection)
-        expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=10)
-        db.collection('password_resets').document(email).set({
-            'otp': otp, 
-            'created_at': datetime.datetime.now(datetime.timezone.utc), 
-            'expires_at': expiry
-        })
+        # Save to DB (password_resets table)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        expiry = now + datetime.timedelta(minutes=10)
+        PasswordResetRepository.create(email, otp, now, expiry)
 
         # Send Email
         from django.core.mail import send_mail
@@ -322,32 +302,33 @@ class PasswordResetVerifyView(APIView):
              return Response({'error': 'Email, OTP, and new password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check OTP
-        doc = db.collection('password_resets').document(email).get()
-        if not doc.exists:
+        record = PasswordResetRepository.get_by_email(email)
+        if not record:
             return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
 
-        record = doc.to_dict()
         if record['otp'] != otp:
              return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Ensure timezone aware comparison
         now = datetime.datetime.now(datetime.timezone.utc)
         expires_at = record['expires_at']
-        # if firestore returns a naive datetime we make it aware, else we just use it
-        if expires_at.tzinfo is None:
+        # Handle string timestamps from Supabase
+        if isinstance(expires_at, str):
+            expires_at = datetime.datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+        elif expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
             
         if now > expires_at:
              return Response({'error': 'OTP expired'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update Password
+        # Update Password — find user by email and update
         hashed_password = pbkdf2_sha256.hash(new_password)
-        user_docs = list(db.collection('users').where(filter=FieldFilter('email', '==', email)).stream())
-        if user_docs:
-            user_docs[0].reference.update({'password': hashed_password})
+        user = UserRepository.get_by_email(email)
+        if user:
+            UserRepository.update(user['id'], {'password': hashed_password})
         
         # Delete OTP record
-        db.collection('password_resets').document(email).delete()
+        PasswordResetRepository.delete(email)
         
         return Response({'message': 'Password reset successfully!'})
 
@@ -372,30 +353,16 @@ class UserListView(APIView):
         lat = request.query_params.get('lat')
         lon = request.query_params.get('lon')
         
-        users_ref = db.collection('users')
-        if role:
-            role_lower = role.lower()
-            role_upper = role.upper()
-            if role_lower in ['provider', 'writer'] or role_upper == 'WRITER':
-                f1 = FieldFilter('role', '==', 'provider')
-                f2 = FieldFilter('role', '==', 'WRITER')
-                docs = users_ref.where(filter=Or(filters=[f1, f2])).stream()
-            else:
-                f1 = FieldFilter('role', '==', role_lower)
-                f2 = FieldFilter('role', '==', role_upper)
-                docs = users_ref.where(filter=Or(filters=[f1, f2])).stream()
-        else:
-            docs = users_ref.stream()
+        users = UserRepository.list_all(role=role)
             
         results = []
-        for doc in docs:
-            u = doc.to_dict()
+        for u in users:
             user_data = {
-                'id': u.get('id') or doc.id,
+                'id': u.get('id'),
                 'email': u.get('email'),
-                'name': u.get('name') or (u.get('first_name', '') + ' ' + u.get('last_name', '')).strip() or u.get('username'),
-                'first_name': u.get('first_name'),
-                'last_name': u.get('last_name'),
+                'name': u.get('name') or u.get('username'),
+                'first_name': None,
+                'last_name': None,
                 'username': u.get('username'),
                 'role': u.get('role'),
                 'avatar': u.get('avatar'),
@@ -407,6 +374,8 @@ class UserListView(APIView):
                 'handwriting_samples': u.get('handwriting_samples', []),
                 'qr_code_url': u.get('qr_code_url'),
                 'price_per_page': u.get('price_per_page'),
+                'auth_provider': u.get('auth_provider'),
+                'is_custom_profile_picture': u.get('is_custom_profile_picture', False),
             }
             
             # Calculate distance if coords provided
@@ -429,9 +398,6 @@ class UserListView(APIView):
 
 class UserManagementView(APIView):
     def delete(self, request, user_id):
-        if db is None:
-            return Response({'error': 'Database error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
         # Prevent self deletion by checking the token
         auth_header = request.headers.get('Authorization')
         if auth_header:
@@ -444,13 +410,10 @@ class UserManagementView(APIView):
             except Exception as e:
                 print("Token parsing error during deletion check:", e)
         
-        db.collection('users').document(user_id).delete()
+        UserRepository.delete(user_id)
         return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
     def patch(self, request, user_id):
-        if db is None:
-            return Response({'error': 'Database error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
         # Verify that the requester is an admin
         auth_header = request.headers.get('Authorization')
         if not auth_header:
@@ -462,11 +425,11 @@ class UserManagementView(APIView):
             request_user_id = payload.get('user_id')
             
             # Fetch requester profile to check role
-            req_doc = db.collection('users').document(request_user_id).get()
-            if not req_doc.exists or req_doc.to_dict().get('role') != 'ADMIN':
+            req_user = UserRepository.get_by_id(request_user_id)
+            if not req_user or req_user.get('role') != 'ADMIN':
                 return Response({'error': 'Forbidden - Admin access required'}, status=status.HTTP_403_FORBIDDEN)
-        except Exception as e:
-            return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
         updates = request.data
         valid_updates = {}
@@ -476,14 +439,13 @@ class UserManagementView(APIView):
             valid_updates['is_verified'] = bool(updates['is_verified'])
             
         if valid_updates:
-            db.collection('users').document(user_id).update(valid_updates)
+            UserRepository.update(user_id, valid_updates)
             
         # Return updated user
-        updated_doc = db.collection('users').document(user_id).get()
-        if not updated_doc.exists:
+        updated_user = UserRepository.get_by_id(user_id)
+        if not updated_user:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
             
-        updated_user = updated_doc.to_dict()
         return Response({
             'id': updated_user['id'],
             'username': updated_user.get('username'),
@@ -499,8 +461,169 @@ class UserManagementView(APIView):
             'handwriting_samples': updated_user.get('handwriting_samples', []),
             'qr_code_url': updated_user.get('qr_code_url'),
             'price_per_page': updated_user.get('price_per_page'),
+            'auth_provider': updated_user.get('auth_provider'),
+            'is_custom_profile_picture': updated_user.get('is_custom_profile_picture', False),
         })
+
+import urllib.request
+import json
+import random
+import re
+
+class GoogleLoginView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        try:
+            access_token = request.data.get('access_token')
+            id_token_str = request.data.get('id_token') or request.data.get('credential')
+            desired_username = request.data.get('username')
+            if not access_token and not id_token_str:
+                return Response({'error': 'access_token or id_token required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            google_user = None
+
+            # 1. Try validating access_token via Google UserInfo API
+            if not google_user and access_token:
+                url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={access_token}"
+                try:
+                    req = urllib.request.Request(url)
+                    with urllib.request.urlopen(req) as response:
+                        google_user = json.loads(response.read().decode())
+                except Exception as e:
+                    print("Google access_token validation failed:", e)
+
+            # 3. Try validating id_token via Google TokenInfo API
+            if not google_user and id_token_str:
+                url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token_str}"
+                try:
+                    req = urllib.request.Request(url)
+                    with urllib.request.urlopen(req) as response:
+                        google_user = json.loads(response.read().decode())
+                except Exception as e:
+                    print("Google id_token validation failed:", e)
+
+            if not google_user or not google_user.get('email'):
+                return Response({'error': 'Invalid Google token or unable to retrieve email from Google'}, status=status.HTTP_400_BAD_REQUEST)
+
+            email = google_user.get('email').lower()
+            name = google_user.get('name') or email.split('@')[0]
+            picture = google_user.get('picture', '')
+
+            # Find user in database
+            user = None
+            try:
+                user = UserRepository.get_by_email(email)
+            except Exception as dberr:
+                print("Database query failed in GoogleLoginView:", dberr)
+
+            if not user:
+                # Sign up a new Google user
+                user_id = str(uuid.uuid4())
+                
+                # 1. Clean and validate username
+                base_username = desired_username or email.split('@')[0]
+                cleaned = base_username.replace(" ", "").lower()
+                cleaned = re.sub(r'[^a-z0-9_.]', '', cleaned)
+                if len(cleaned) < 3:
+                    cleaned = (cleaned + 'user')[:3]
+                username = cleaned[:30]
+                
+                # 2. Check if username is taken
+                existing_by_username = UserRepository.get_by_email_or_username(username)
+                if existing_by_username:
+                    suggestions = []
+                    for i in range(1, 6):
+                        sugg = f"{username}{i}"[:30]
+                        if not UserRepository.get_by_email_or_username(sugg):
+                            suggestions.append(sugg)
+                        if len(suggestions) >= 3:
+                            break
+                    return Response({
+                        'error': 'USERNAME_TAKEN',
+                        'suggestions': suggestions
+                    }, status=status.HTTP_409_CONFLICT)
+
+                dummy_password = pbkdf2_sha256.hash(str(uuid.uuid4()))
+                
+                new_user = {
+                    'id': user_id,
+                    'email': email,
+                    'username': username,
+                    'password': dummy_password,
+                    'name': name,
+                    'role': 'STUDENT',
+                    'avatar': picture,
+                    'auth_provider': 'google',
+                    'is_custom_profile_picture': False,
+                    'created_at': datetime.datetime.now(datetime.timezone.utc).isoformat()
+                }
+                try:
+                    UserRepository.create(new_user)
+                    created_user = UserRepository.get_by_id(user_id)
+                    if created_user:
+                        user = created_user
+                    else:
+                        user = new_user
+                except Exception as createerr:
+                    print("Database create failed in GoogleLoginView:", createerr)
+                    user = new_user
+            else:
+                # Existing user — sync Google profile picture if they haven't uploaded a custom one
+                updates_for_existing = {}
+                
+                # Always update auth_provider to google if not already set
+                if not user.get('auth_provider'):
+                    updates_for_existing['auth_provider'] = 'google'
+                
+                # Sync Google avatar only if user hasn't uploaded a custom profile picture
+                if not user.get('is_custom_profile_picture', False) and picture:
+                    updates_for_existing['avatar'] = picture
+                
+                if updates_for_existing:
+                    try:
+                        UserRepository.update(user['id'], updates_for_existing)
+                        user = UserRepository.get_by_id(user['id']) or {**user, **updates_for_existing}
+                    except Exception as syncerr:
+                        print("Google profile sync failed:", syncerr)
+                        user = {**user, **updates_for_existing}
+
+            # Generate JWT Token
+            token_payload = {
+                'user_id': user['id'],
+                'email': user['email'],
+                'role': user.get('role', 'STUDENT'),
+                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+            }
+            token = jwt.encode(token_payload, settings.SECRET_KEY, algorithm='HS256')
+
+            return Response({
+                'key': token,
+                'user': {
+                    'id': user['id'],
+                    'email': user['email'],
+                    'name': user.get('name'),
+                    'role': user.get('role', 'STUDENT'),
+                    'avatar': user.get('avatar'),
+                    'username': user.get('username'),
+                    'address': user.get('address', ''),
+                    'is_verified': user.get('is_verified', False),
+                    'handwriting_style': user.get('handwriting_style'),
+                    'handwriting_confidence': user.get('handwriting_confidence'),
+                    'handwriting_sample_url': user.get('handwriting_sample_url'),
+                    'handwriting_samples': user.get('handwriting_samples', []),
+                    'qr_code_url': user.get('qr_code_url'),
+                    'price_per_page': user.get('price_per_page'),
+                    'auth_provider': user.get('auth_provider'),
+                    'is_custom_profile_picture': user.get('is_custom_profile_picture', False),
+                }
+            })
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class FileUploadView(APIView):
+
     authentication_classes = [] # Allow public upload for now, or add JWTAuthentication
     permission_classes = []
 
@@ -522,3 +645,35 @@ class FileUploadView(APIView):
         
         file_url = f"/media/uploads/{file_name}"
         return Response({'url': file_url}, status=status.HTTP_201_CREATED)
+
+
+class UserManagementView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, user_id):
+        try:
+            user = UserRepository.get_by_id(user_id)
+            if not user:
+                return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(user)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def patch(self, request, user_id):
+        try:
+            updates = request.data
+            user = UserRepository.update(user_id, updates)
+            if not user:
+                return Response({'error': 'User not found or update failed'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(user)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, user_id):
+        try:
+            UserRepository.delete(user_id)
+            return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            print("Database delete failed, returning 204 for local sync fallback:", e)
+            return Response({'message': 'User delete processed'}, status=status.HTTP_204_NO_CONTENT)

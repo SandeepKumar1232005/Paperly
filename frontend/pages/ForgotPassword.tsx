@@ -122,7 +122,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onNavigate }) => {
                                     <div className="relative">
                                         <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
                                         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="you@example.com" />
+                                            className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="Enter your Gmail address" />
                                     </div>
                                 </div>
                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={isLoading}
@@ -148,7 +148,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onNavigate }) => {
                                         <input type="text" required maxLength={6} value={otp}
                                             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                             className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input tracking-[0.4em] text-center font-mono text-xl"
-                                            placeholder="000000" />
+                                            placeholder="Enter 6-digit OTP" />
                                     </div>
                                 </div>
                                 <div>
@@ -157,7 +157,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onNavigate }) => {
                                         <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
                                         <input type="password" required minLength={8} value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="Min 8 characters" />
+                                            className="w-full pl-11 pr-4 py-3.5 rounded-xl glass-input" placeholder="Enter your new password" />
                                     </div>
                                 </div>
                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={isLoading}

@@ -1,13 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Assignment, AssignmentStatus } from '../types';
-import StatusBadge from '../components/StatusBadge';
 import { api } from '../services/api';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  AreaChart, Area, PieChart, Pie, ComposedChart, Line
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area
 } from 'recharts';
-import { Trash2, AlertCircle, Shield, Users, FileText, CheckCircle, Clock, Search, ExternalLink, DollarSign, Bell, Activity, Server, TrendingUp } from 'lucide-react';
+import { Trash2, Shield, Users, Search, DollarSign, Bell, Activity, Server, TrendingUp } from 'lucide-react';
 import { Modal } from '../components/Modal';
 
 interface AdminDashboardProps {
@@ -22,6 +20,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
   const [userFilter, setUserFilter] = useState<'ALL' | 'STUDENT' | 'WRITER'>('ALL');
   const [userSearch, setUserSearch] = useState('');
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'USERS') {
@@ -44,9 +43,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
 
   const confirmDeleteUser = async () => {
     if (userToDelete) {
-      await api.deleteUser(userToDelete);
-      setAllUsers(prev => prev.filter(u => u.id !== userToDelete));
-      setUserToDelete(null);
+      setIsDeleting(true);
+      try {
+        await api.deleteUser(userToDelete);
+        setAllUsers(prev => prev.filter(u => u.id !== userToDelete));
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+      } finally {
+        setIsDeleting(false);
+        setUserToDelete(null);
+      }
     }
   };
 
@@ -331,8 +337,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
         <h3 className="font-bold text-lg text-[var(--text-primary)] mb-2 font-display">Confirm Deletion</h3>
         <p className="text-[var(--text-secondary)] mb-6">Permanently remove this user?</p>
         <div className="flex gap-3">
-          <button onClick={() => setUserToDelete(null)} className="flex-1 py-3 glass text-[var(--text-primary)] rounded-xl font-bold hover:bg-[var(--surface-hover)] transition-colors">Cancel</button>
-          <button onClick={confirmDeleteUser} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors">Delete</button>
+          <button 
+            onClick={() => setUserToDelete(null)} 
+            disabled={isDeleting}
+            className="flex-1 py-3 glass text-[var(--text-primary)] rounded-xl font-bold hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={confirmDeleteUser} 
+            disabled={isDeleting}
+            className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isDeleting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Deleting...
+              </>
+            ) : 'Delete'}
+          </button>
         </div>
       </Modal>
     </div>
