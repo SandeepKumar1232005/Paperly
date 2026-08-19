@@ -10,14 +10,16 @@ class DashboardStatsView(APIView):
     def get(self, request):
         users = UserRepository.list_all()
         total_users = len(users)
+        active_users = len([u for u in users if u.get('role', '').upper() != 'ADMIN']) or total_users
         
         assignments = AssignmentRepository.list_all()
         active_assignments = len([a for a in assignments if a.get('status') not in ('COMPLETED', 'CANCELLED', None)])
 
-        total_revenue = 125000 
+        total_revenue = sum(a.get('budget', 0) for a in assignments)
 
         return Response({
             "total_users": total_users,
+            "active_users": active_users,
             "active_assignments": active_assignments,
             "total_revenue": total_revenue,
             "system_health": "99.9%"

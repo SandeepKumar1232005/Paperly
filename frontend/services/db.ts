@@ -48,13 +48,29 @@ class LocalDB {
 
   getUsers(): User[] {
     const users = this.get<User>(STORAGE_KEYS.USERS);
+    const adminIdentifiers = ['kit27.cse306@gmail.com', 'admin@paperly.com', 'charlie@admin.com', 'kit27', 'admin'];
+
     // Deduplicate by email to fix older bugs having multiple user ids for the same email
     const uniqueUsers: Record<string, User> = {};
+
+    // Seed mock users first
+    for (const mu of mockUsers) {
+      if (mu.email) uniqueUsers[mu.email.toLowerCase()] = mu;
+    }
+
     for (const u of users) {
+      const emailLower = (u.email || '').toLowerCase();
+      const usernameLower = (u.username || '').toLowerCase();
+
+      // Guarantee ADMIN role for registered admin accounts
+      if (adminIdentifiers.includes(emailLower) || adminIdentifiers.includes(usernameLower)) {
+        u.role = 'ADMIN';
+      }
+
       if (u.email) {
-        uniqueUsers[u.email.toLowerCase()] = u;
+        uniqueUsers[emailLower] = { ...(uniqueUsers[emailLower] || {}), ...u };
       } else if (u.username) {
-        uniqueUsers[u.username.toLowerCase()] = u;
+        uniqueUsers[usernameLower] = { ...(uniqueUsers[usernameLower] || {}), ...u };
       } else {
         uniqueUsers[u.id] = u;
       }

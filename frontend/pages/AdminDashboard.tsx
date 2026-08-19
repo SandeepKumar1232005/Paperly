@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
 } from 'recharts';
-import { Trash2, Shield, Users, Search, DollarSign, Bell, Activity, Server, TrendingUp } from 'lucide-react';
+import { Trash2, Shield, Users, Search, DollarSign, Bell, Activity, Server } from 'lucide-react';
 import { Modal } from '../components/Modal';
 
 interface AdminDashboardProps {
@@ -68,6 +68,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
   const totalRevenue = assignments.reduce((sum, a) => sum + a.budget, 0);
   const totalStudents = users.filter(u => u.role === 'STUDENT').length;
   const totalWriters = users.filter(u => u.role === 'WRITER').length;
+  const totalActiveUsers = users.filter(u => u.role !== 'ADMIN').length || users.length;
 
   const monthlyTrends = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -158,7 +159,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
                   { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, color: 'from-violet-500 to-purple-500', icon: DollarSign },
-                  { label: 'Active Students', value: totalStudents, color: 'from-blue-500 to-cyan-500', icon: Users },
+                  { label: 'Active Users', value: totalActiveUsers, color: 'from-blue-500 to-cyan-500', icon: Users },
                   { label: 'Writers Online', value: totalWriters, color: 'from-violet-500 to-purple-500', icon: Activity },
                   { label: 'Server Load', value: '12%', color: 'from-emerald-500 to-green-500', icon: Server }
                 ].map((kpi, idx) => (
@@ -169,9 +170,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, assignments, user
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${kpi.color} flex items-center justify-center shadow-lg`}>
                         <kpi.icon className="text-white" size={24} />
                       </div>
-                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full flex items-center gap-1">
-                        <TrendingUp size={12} /> +4.5%
-                      </span>
                     </div>
                     <p className="text-[var(--text-secondary)] text-sm font-medium">{kpi.label}</p>
                     <h3 className="text-3xl font-bold text-[var(--text-primary)] mt-1">{kpi.value}</h3>

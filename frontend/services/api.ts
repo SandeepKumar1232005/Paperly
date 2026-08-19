@@ -220,11 +220,12 @@ export const api = {
     );
 
     if (userIndex === -1) {
-      throw new Error('User not found');
+      throw new Error('Invalid credentials');
     }
 
     const localUser = users[userIndex];
-    if (password && (localUser as any).password && (localUser as any).password !== password) {
+    const expectedPassword = (localUser as any).password;
+    if (expectedPassword && password !== expectedPassword) {
       throw new Error('Invalid credentials');
     }
 
