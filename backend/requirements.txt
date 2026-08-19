@@ -7,7 +7,7 @@ supabase
 pyjwt
 passlib
 bcrypt
-tensorflow
+tensorflow==2.15.1
 numpy
 pillow
 google-generativeai
