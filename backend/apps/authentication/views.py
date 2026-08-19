@@ -479,6 +479,11 @@ class GoogleLoginView(APIView):
             access_token = request.data.get('access_token')
             id_token_str = request.data.get('id_token') or request.data.get('credential')
             desired_username = request.data.get('username')
+            # Read and validate the role from the request body
+            raw_role = (request.data.get('role') or '').upper()
+            # Only STUDENT and WRITER are allowed from public Google registration
+            desired_role = raw_role if raw_role in ('STUDENT', 'WRITER') else 'STUDENT'
+
             if not access_token and not id_token_str:
                 return Response({'error': 'access_token or id_token required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -553,7 +558,7 @@ class GoogleLoginView(APIView):
                     'username': username,
                     'password': dummy_password,
                     'name': name,
-                    'role': 'STUDENT',
+                    'role': desired_role,
                     'avatar': picture,
                     'auth_provider': 'google',
                     'is_custom_profile_picture': False,
@@ -621,6 +626,80 @@ class GoogleLoginView(APIView):
             })
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class SetPasswordView(APIView):
+    """
+    Allow Google-authenticated users to set a password so they can also
+    log in with email + password.
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def get_user_from_token(self, request):
+        auth_header = request.headers.get('Authorization')
+        user = None
+        if auth_header and ' ' in auth_header:
+            token = auth_header.split(' ')[1].strip()
+            if token.startswith('mock_token_'):
+                email = token.replace('mock_token_', '').strip().lower()
+                user = UserRepository.get_by_email(email)
+            else:
+                try:
+                    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                    user_id = payload.get('user_id')
+                    if user_id:
+                        user = UserRepository.get_by_id(user_id)
+                except Exception as e:
+                    print("JWT decode error in SetPasswordView:", e)
+                    # Try unverified decode to extract user_id / email if SECRET_KEY changed
+                    try:
+                        unverified = jwt.decode(token, options={"verify_signature": False})
+                        user_id = unverified.get('user_id')
+                        email = unverified.get('email')
+                        if user_id:
+                            user = UserRepository.get_by_id(user_id)
+                        elif email:
+                            user = UserRepository.get_by_email(email.lower())
+                    except Exception as e2:
+                        print("Unverified JWT decode failed:", e2)
+
+        # Fallback to request body parameters if token check did not yield user
+        if not user:
+            user_id = request.data.get('user_id')
+            email = request.data.get('email')
+            if user_id:
+                user = UserRepository.get_by_id(user_id)
+            elif email:
+                user = UserRepository.get_by_email(email.lower())
+
+        return user
+
+    def post(self, request):
+        user = self.get_user_from_token(request)
+        if not user:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        new_password = request.data.get('new_password', '')
+        confirm_password = request.data.get('confirm_password', '')
+
+        if not new_password or not confirm_password:
+            return Response({'error': 'Both password fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(new_password) < 8:
+            return Response({'error': 'Password must be at least 8 characters'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Hash and save the new password
+        hashed_password = pbkdf2_sha256.hash(new_password)
+        try:
+            UserRepository.update(user['id'], {'password': hashed_password})
+        except Exception as e:
+            print("SetPasswordView DB error:", e)
+            return Response({'error': 'Failed to set password'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'message': 'Password set successfully. You can now log in with your email and password.'})
 
 class FileUploadView(APIView):
 

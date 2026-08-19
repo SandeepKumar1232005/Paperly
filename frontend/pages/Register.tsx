@@ -34,7 +34,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
       setIsLoading('google');
       setError('');
       try {
-        const user = await api.socialLogin('google', tokenResponse.access_token);
+        const user = await api.socialLogin('google', tokenResponse.access_token, undefined, role || undefined);
         if (onSocialLoginSuccess) {
           await onSocialLoginSuccess(user);
         }
@@ -63,7 +63,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
     setIsLoading('google');
     setError('');
     try {
-      const user = await api.socialLogin('google', pendingGoogleToken, selectedUsername);
+      const user = await api.socialLogin('google', pendingGoogleToken, selectedUsername, role || undefined);
       setShowUsernamePrompt(false);
       if (onSocialLoginSuccess) await onSocialLoginSuccess(user);
     } catch (err: any) {
@@ -227,7 +227,13 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSocialLoginSuccess, o
             {/* Google Signup */}
             <div className="mb-5">
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={() => loginWithGoogle()} disabled={!!isLoading}
+                onClick={() => {
+                  if (!role) {
+                    setError('Please select Student or Writer before continuing with Google.');
+                    return;
+                  }
+                  loginWithGoogle();
+                }} disabled={!!isLoading}
                 className="w-full flex items-center justify-center gap-3 glass-card !rounded-xl py-3.5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
                 <span>{isLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}</span>

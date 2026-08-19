@@ -3,10 +3,11 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/cropImage';
 import { User } from '../types';
 import HandwritingUpload from './HandwritingUpload';
-import { Camera, Info } from 'lucide-react';
+import { Camera, Info, Lock, Eye, EyeOff } from 'lucide-react';
 import { Modal } from './Modal';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { api } from '../services/api';
 
 interface ProfileModalProps {
   user: User;
@@ -33,6 +34,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
   // Image loading & error states for avatar preview
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
+
+  // Set Password state (for Google-auth users)
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   // Get user initials for fallback
   const getInitials = (fullName: string) => {
@@ -98,6 +107,33 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
     onSave(saveData);
     toast.success('Profile changes saved successfully!');
     onClose();
+  };
+
+  const handleSetPassword = async () => {
+    setPasswordError('');
+    if (!newPassword || !confirmPassword) {
+      setPasswordError('Both fields are required.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError('Password must be at least 8 characters.');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await api.setPassword(newPassword, confirmPassword, user.email, user.id);
+      toast.success('Password set! You can now log in with email + password.');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to set password.');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -251,6 +287,71 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                       <textarea value={address} onChange={(e) => setAddress(e.target.value)}
                         placeholder="Enter your full physical address..."
                         className="w-full px-4 py-3.5 rounded-xl glass-input min-h-[80px] resize-none" />
+                    </div>
+                  )}
+
+                  {/* Set Password section for Google-auth users */}
+                  {user.auth_provider === 'google' && (
+                    <div className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Lock size={16} className="text-violet-400" />
+                        <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Set Password for Email Login</span>
+                      </div>
+                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                        You signed up with Google. Set a password here to also log in with your email and password.
+                      </p>
+                      {passwordError && (
+                        <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" /> {passwordError}
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">New Password</label>
+                        <div className="relative">
+                          <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Min 8 characters"
+                            className="w-full pl-10 pr-10 py-3 rounded-xl glass-input text-sm"
+                          />
+                          <button type="button" onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
+                            {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">Confirm Password</label>
+                        <div className="relative">
+                          <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Re-enter password"
+                            className="w-full pl-10 pr-10 py-3 rounded-xl glass-input text-sm"
+                          />
+                          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
+                            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                        onClick={handleSetPassword}
+                        disabled={passwordLoading || !newPassword || !confirmPassword}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 disabled:opacity-50 transition-all"
+                      >
+                        {passwordLoading ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Setting Password...
+                          </span>
+                        ) : 'Set Password'}
+                      </motion.button>
                     </div>
                   )}
 

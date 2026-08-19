@@ -5,12 +5,12 @@ import { paymentGateway } from './payment';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const BASE_URL = `http://${window.location.hostname}:8000`;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`;
 
 const resolveMediaUrl = (url: string | null | undefined) => {
   if (!url) return '';
   if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  return `${BASE_URL}${url.startsWith(`/') ? '' : '/'}${url}`;
 };
 
 export class UsernameTakenError extends Error {
@@ -29,7 +29,7 @@ export const api = {
     if (!token) return null;
 
     try {
-      const response = await fetch(`http://localhost:8000/api/auth/user/?_t=${Date.now()}`, {
+      const response = await fetch(`${BASE_URL}/api/auth/user/?_t=${Date.now()}`, {
         headers: { 'Authorization': `Token ${token}` }
       });
 
@@ -115,7 +115,7 @@ export const api = {
 
     // 1. Verify with Backend
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login/', {
+      const response = await fetch(`${BASE_URL}/api/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, username: email })
@@ -135,7 +135,7 @@ export const api = {
       if (token) {
         sessionStorage.setItem('auth_token', token);
         // Fetch full user details
-        const userResponse = await fetch(`http://localhost:8000/api/auth/user/?_t=${Date.now()}`, {
+        const userResponse = await fetch(`${BASE_URL}/api/auth/user/?_t=${Date.now()}`, {
           headers: { 'Authorization': `Token ${token}` } 
         });
 
@@ -245,7 +245,7 @@ export const api = {
     // 1. Register with Backend
     try {
       // dj-rest-auth registration endpoint
-      const response = await fetch('http://localhost:8000/api/auth/register/', {
+      const response = await fetch(`${BASE_URL}/api/auth/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -313,9 +313,9 @@ export const api = {
     return newUser;
   },
 
-  async socialLogin(provider: string, accessToken: string, username?: string): Promise<User> {
+  async socialLogin(provider: string, accessToken: string, username?: string, role?: string): Promise<User> {
     try {
-      const response = await fetch(`http://localhost:8000/api/auth/${provider}/`, {
+      const response = await fetch(`${BASE_URL}/api/auth/${provider}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -323,6 +323,7 @@ export const api = {
         body: JSON.stringify({
           access_token: accessToken,
           ...(username ? { username } : {}),
+          ...(role ? { role } : {}),
         }),
       });
 
@@ -344,7 +345,7 @@ export const api = {
 
       if (!userData) {
         // 2. Fetch User Details using Backend Token
-        const userResponse = await fetch('http://localhost:8000/api/auth/user/', {
+        const userResponse = await fetch(`${BASE_URL}/api/auth/user/`, {
           method: 'GET',
           headers: {
             'Authorization': `Token ${backendToken}`,
@@ -363,8 +364,12 @@ export const api = {
 
       const roleMap: Record<string, 'STUDENT' | 'WRITER' | 'ADMIN'> = {
         'student': 'STUDENT',
+        'STUDENT': 'STUDENT',
         'provider': 'WRITER',
-        'admin': 'ADMIN'
+        'writer': 'WRITER',
+        'WRITER': 'WRITER',
+        'admin': 'ADMIN',
+        'ADMIN': 'ADMIN'
       };
 
       const firstName = userData.first_name || '';
@@ -406,6 +411,41 @@ export const api = {
     return user;
   },
 
+  async setPassword(newPassword: string, confirmPassword: string, email?: string, userId?: string): Promise<{ message: string }> {
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+
+    const response = await fetch(`${BASE_URL}/api/auth/set-password/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Token ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+        ...(email ? { email } : {}),
+        ...(userId ? { user_id: userId } : {}),
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to set password');
+    }
+
+    // Also update local mock database if present
+    if (email) {
+      const users = db.getUsers();
+      const idx = users.findIndex(u => (u.email || '').toLowerCase() === email.toLowerCase());
+      if (idx !== -1) {
+        users[idx] = { ...users[idx] };
+        db.saveUsers(users);
+      }
+    }
+
+    return data;
+  },
+
   async updateUser(updates: Partial<User>): Promise<User> {
     try {
       // 1. Try to update Backend if running
@@ -415,7 +455,7 @@ export const api = {
       // However, since the user asked "do it by yourself backend as well", I should try to make it work.
       // The `api` object needs the token.
 
-      const response = await fetch('http://localhost:8000/api/auth/user/', {
+      const response = await fetch(`${BASE_URL}/api/auth/user/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -468,7 +508,7 @@ export const api = {
         backendUpdates.is_custom_profile_picture = true;
       }
 
-      const response = await fetch('http://localhost:8000/api/auth/user/', {
+      const response = await fetch(`${BASE_URL}/api/auth/user/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -538,7 +578,7 @@ export const api = {
 
   async getUsers(role?: string): Promise<User[]> {
     try {
-      let url = 'http://localhost:8000/api/users/';
+      let url = `${BASE_URL}/api/users/`;
       if (role && role !== 'ALL') {
         const backendRole = role === 'WRITER' ? 'provider' : role.toLowerCase();
         url += `?role=${backendRole}`;
@@ -578,7 +618,7 @@ export const api = {
   async deleteUser(userId: string): Promise<void> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+      const response = await fetch(`${BASE_URL}/api/users/${userId}/`, {
         method: 'DELETE',
         headers: {
           'Authorization': token ? `Token ${token}` : '',
@@ -602,7 +642,7 @@ export const api = {
   async verifyUser(userId: string): Promise<User> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/`, {
+      const response = await fetch(`${BASE_URL}/api/users/${userId}/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -643,7 +683,7 @@ export const api = {
       // We pass the userId query parameter securely.
       const currentUserStr = sessionStorage.getItem('current_user');
       const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
-      const url = new URL('http://localhost:8000/api/assignments/');
+      const url = new URL(`${BASE_URL}/api/assignments/`);
       if (currentUser?.id) {
         url.searchParams.append('userId', currentUser.id);
       }
@@ -698,7 +738,7 @@ export const api = {
     // Try backend fetch
     try {
       const token = sessionStorage.getItem('auth_token');
-      let url = 'http://localhost:8000/api/users/?role=provider';
+      let url = `${BASE_URL}/api/users/?role=provider`;
       if (coords) {
         url += `&lat=${coords.lat}&lon=${coords.lon}`;
       }
@@ -754,7 +794,7 @@ export const api = {
       // dj-rest-auth uses token usually.
       // But let's try.
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/users/', {
+      const response = await fetch(`${BASE_URL}/api/users/`, {
         headers: {
           'Authorization': token ? `Token ${token}` : ''
         }
@@ -797,7 +837,7 @@ export const api = {
 
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/assignments/', {
+      const response = await fetch(`${BASE_URL}/api/assignments/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -833,7 +873,7 @@ export const api = {
   async updateAssignment(id: string, updates: Partial<Assignment>): Promise<Assignment> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${id}/`, {
+      const response = await fetch(`${BASE_URL}/api/assignments/${id}/`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -868,7 +908,7 @@ export const api = {
   async respondToDirectHire(id: string, action: 'ACCEPT' | 'REJECT'): Promise<Assignment> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${id}/respond-direct/`, {
+      const response = await fetch(`${BASE_URL}/api/assignments/${id}/respond-direct/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -909,7 +949,7 @@ export const api = {
   async acceptAssignment(id: string, writerId: string): Promise<Assignment> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${id}/accept/`, {
+      const response = await fetch(`${BASE_URL}/api/assignments/${id}/accept/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -942,7 +982,7 @@ export const api = {
   async submitQuote(assignmentId: string, amount: number, comment: string, writerId: string): Promise<Assignment> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/quote/`, {
+      const response = await fetch(`${BASE_URL}/api/assignments/${assignmentId}/quote/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -986,7 +1026,7 @@ export const api = {
   async respondToQuote(assignmentId: string, action: 'ACCEPT' | 'REJECT'): Promise<Assignment> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/respond-quote/`, {
+      const response = await fetch(`${BASE_URL}/api/assignments/${assignmentId}/respond-quote/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1036,7 +1076,7 @@ export const api = {
   async withdrawQuote(assignmentId: string, writerId: string): Promise<Assignment> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/withdraw-quote/`, {
+      const response = await fetch(`${BASE_URL}/api/assignments/${assignmentId}/withdraw-quote/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1078,7 +1118,7 @@ export const api = {
   async getAssignment(id: string): Promise<Assignment | null> {
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/assignments/${id}/`, {
+      const response = await fetch(`${BASE_URL}/api/assignments/${id}/`, {
         headers: {
           'Authorization': token ? `Token ${token}` : ''
         }
@@ -1100,7 +1140,7 @@ export const api = {
     // Sync with backend
     try {
       const token = sessionStorage.getItem('auth_token');
-      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/`, {
+      await fetch(`${BASE_URL}/api/assignments/${assignmentId}/`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -1142,7 +1182,7 @@ export const api = {
     // Sync with backend
     try {
       const token = sessionStorage.getItem('auth_token');
-      await fetch(`http://localhost:8000/api/assignments/${assignmentId}/`, {
+      await fetch(`${BASE_URL}/api/assignments/${assignmentId}/`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -1190,7 +1230,7 @@ export const api = {
 
     try {
       const token = sessionStorage.getItem('auth_token');
-      const url = new URL(`http://localhost:8000/api/assignments/${assignmentId}/`);
+      const url = new URL(`${BASE_URL}/api/assignments/${assignmentId}/`);
       if (reason) url.searchParams.append('reason', reason);
       if (studentId) url.searchParams.append('studentId', studentId);
 
@@ -1261,7 +1301,7 @@ export const api = {
     // I need the access token. I'll assume it's in localStorage for now as is common pattern, or just proceed with Mock for this step 
     // IF the user hasn't asked for full Integration.
     // User asked "Add file upload capabilities...". Backend is ready. 
-    // To make it fully "work", I need to send the request to `http://localhost:8000/api/communication/messages/`
+    // To make it fully "work", I need to send the request to `${BASE_URL}/api/communication/messages/`
 
     // Mocking the "Upload" part effectively for the UI demo since connecting Auth token requires refactoring how `api` is constructed (needs token injection).
     // I will simulate the "upload" by returning the local data URL as the file URL.
@@ -1282,7 +1322,7 @@ export const api = {
 
     // Try backend
     try {
-      const response = await fetch('http://localhost:8000/api/handwriting/predict/', {
+      const response = await fetch(`${BASE_URL}/api/handwriting/predict/`, {
         method: 'POST',
         headers: {
           'Authorization': token ? `Token ${token}` : ''
@@ -1312,7 +1352,7 @@ export const api = {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/upload/', {
+      const response = await fetch(`${BASE_URL}/api/auth/upload/`, {
         method: 'POST',
         body: formData,
       });
@@ -1357,7 +1397,7 @@ export const api = {
     // In a real app with Auth, we would call the backend endpoint
     // Assuming backend is running on localhost:8000
     try {
-      const response = await fetch('http://localhost:8000/api/payments/create-payment-intent/', {
+      const response = await fetch(`${BASE_URL}/api/payments/create-payment-intent/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1383,7 +1423,7 @@ export const api = {
 
   async requestPasswordReset(email: string): Promise<void> {
     try {
-      const response = await fetch('http://localhost:8000/api/users/password-reset-request/', {
+      const response = await fetch(`${BASE_URL}/api/users/password-reset-request/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -1397,7 +1437,7 @@ export const api = {
 
   async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
     try {
-      const response = await fetch('http://localhost:8000/api/users/password-reset-verify/', {
+      const response = await fetch(`${BASE_URL}/api/users/password-reset-verify/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp, new_password: newPassword })
@@ -1421,7 +1461,7 @@ export const api = {
   // Communication
   async getAnnouncements(): Promise<any[]> {
     try {
-      const response = await fetch('http://localhost:8000/api/communication/announcements/');
+      const response = await fetch(`${BASE_URL}/api/communication/announcements/`);
       if (response.ok) return await response.json();
     } catch (e) { console.warn("Backend announcements failed"); }
     return [];
@@ -1429,7 +1469,7 @@ export const api = {
 
   async createAnnouncement(data: any): Promise<any> {
     try {
-      const response = await fetch('http://localhost:8000/api/communication/announcements/', {
+      const response = await fetch(`${BASE_URL}/api/communication/announcements/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }, // Needs auth in real app
         body: JSON.stringify(data)
@@ -1442,7 +1482,7 @@ export const api = {
   // Support
   async getSupportTickets(): Promise<any[]> {
     try {
-      const response = await fetch('http://localhost:8000/api/support/tickets/');
+      const response = await fetch(`${BASE_URL}/api/support/tickets/`);
       if (response.ok) return await response.json();
     } catch (e) { console.warn("Backend tickets failed"); }
     return [
@@ -1452,7 +1492,7 @@ export const api = {
 
   async resolveTicket(id: number): Promise<void> {
     try {
-      await fetch(`http://localhost:8000/api/support/tickets/${id} / `, {
+      await fetch(`${BASE_URL}/api/support/tickets/${id} / `, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'RESOLVED' })
@@ -1463,7 +1503,7 @@ export const api = {
   // Settings
   async getSystemSettings(): Promise<any> {
     try {
-      const response = await fetch('http://localhost:8000/api/core/settings/');
+      const response = await fetch(`${BASE_URL}/api/core/settings/`);
       if (response.ok) {
         const data = await response.json();
         return data.results ? data.results[0] : data[0] || data; // Handle list or object
@@ -1474,7 +1514,7 @@ export const api = {
 
   async updateSystemSettings(id: number, data: any): Promise<void> {
     try {
-      await fetch(`http://localhost:8000/api/core/settings/${id}/`, {
+      await fetch(`${BASE_URL}/api/core/settings/${id}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -1485,7 +1525,7 @@ export const api = {
   // Analytics
   async getDashboardStats(): Promise<any> {
     try {
-      const response = await fetch('http://localhost:8000/api/analytics/dashboard/');
+      const response = await fetch(`${BASE_URL}/api/analytics/dashboard/`);
       if (response.ok) return await response.json();
     } catch (e) { console.warn("Backend stats failed"); }
     return null;
@@ -1494,7 +1534,7 @@ export const api = {
   // Handwriting Samples
   async getWriterSamples(writerId: string): Promise<string[]> {
     try {
-      const response = await fetch(`http://localhost:8000/api/handwriting/writers/${writerId}/samples/`);
+      const response = await fetch(`${BASE_URL}/api/handwriting/writers/${writerId}/samples/`);
       if (response.ok) {
         const data = await response.json();
         return data.samples || [];
@@ -1514,7 +1554,7 @@ export const api = {
     formData.append('image', file);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/handwriting/writers/${writerId}/samples/`, {
+      const response = await fetch(`${BASE_URL}/api/handwriting/writers/${writerId}/samples/`, {
         method: 'POST',
         headers: {
           'Authorization': token ? `Token ${token}` : ''
@@ -1542,7 +1582,7 @@ export const api = {
   async deleteHandwritingSample(writerId: string, sampleUrl: string): Promise<void> {
     const token = sessionStorage.getItem('auth_token');
     try {
-      const response = await fetch(`http://localhost:8000/api/handwriting/writers/${writerId}/samples/delete/`, {
+      const response = await fetch(`${BASE_URL}/api/handwriting/writers/${writerId}/samples/delete/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -47,7 +47,9 @@ const WriterDashboard: React.FC<WriterDashboardProps> = ({ user, users = [], ass
 
   // WebSocket for Real-Time Assignment Locking
   useEffect(() => {
-    const ws = new WebSocket(`ws://localhost:8000/ws/assignments/`);
+    const apiBase = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`;
+    const wsBase = apiBase.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsBase}/ws/assignments/`);
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
