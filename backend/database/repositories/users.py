@@ -252,13 +252,12 @@ def _to_row(data: dict) -> dict:
         'qr_code_url': 'qr_code_url',
         'price_per_page': 'price_per_page',
         'created_at': 'created_at',
-        'auth_provider': 'auth_provider',
-        'is_custom_profile_picture': 'is_custom_profile_picture',
     }
     row = {}
     for key, value in data.items():
         col = mapping.get(key)
-        if col:
+        # Drop columns that are not in the schema
+        if col and col not in ['auth_provider', 'is_custom_profile_picture']:
             row[col] = value
     return row
 
