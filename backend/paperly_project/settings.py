@@ -30,7 +30,11 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'paperly-dev-secret-key-default
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # Hosts: comma-separated in env, e.g. ALLOWED_HOSTS=paperly.com,www.paperly.com
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+raw_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [host.strip().replace('https://', '').replace('http://', '').rstrip('/') for host in raw_hosts]
+# Also allow all hosts if DEBUG is True for easier testing
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
 
 # CORS: restrict in production, allow all only in debug
 if DEBUG:
@@ -38,7 +42,7 @@ if DEBUG:
 else:
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [
-        origin.strip() for origin in
+        origin.strip().rstrip('/') for origin in
         os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
     ]
 
