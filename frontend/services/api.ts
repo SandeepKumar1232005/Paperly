@@ -10,7 +10,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.
 const resolveMediaUrl = (url: string | null | undefined) => {
   if (!url) return '';
   if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return `${BASE_URL}${url.startsWith(`/') ? '' : '/'}${url}`;
+  return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
 export class UsernameTakenError extends Error {
