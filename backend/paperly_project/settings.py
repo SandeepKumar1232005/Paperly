@@ -30,8 +30,9 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'paperly-dev-secret-key-default
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # Hosts: comma-separated in env, e.g. ALLOWED_HOSTS=paperly.com,www.paperly.com
-raw_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+raw_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com').split(',')
 ALLOWED_HOSTS = [host.strip().replace('https://', '').replace('http://', '').rstrip('/') for host in raw_hosts]
+ALLOWED_HOSTS.append('.onrender.com')  # Always allow Render domains
 # Also allow all hosts if DEBUG is True for easier testing
 if DEBUG:
     ALLOWED_HOSTS = ['*']
@@ -44,6 +45,9 @@ else:
     CORS_ALLOWED_ORIGINS = [
         origin.strip().rstrip('/') for origin in
         os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+    ]
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://.*\.vercel\.app$",
     ]
 
 
